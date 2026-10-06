@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+.local/
+.media/
+.coverage/
+coverage/
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+*.pyc
+training/checkpoints/
+training/reports/
