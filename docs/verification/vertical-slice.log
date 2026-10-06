@@ -1,0 +1,82 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> migrate
+> npm run migrate -w @fieldissue/api
+
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> migrate
+> node --import tsx src/migrate.ts
+
+Database migrations applied
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> test
+> npm run test -w @fieldissue/api
+
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> test
+> vitest run
+
+
+ RUN  v5.0.3 <project-root>/apps/api
+
+{"level":30,"time":1791304933953,"pid":120,"hostname":"ce2ed711a6c3","requestId":"fd609610-cdef-4560-8062-64e0b405f1e9","method":"POST","path":"/v1/issues","status":201,"durationMs":38,"msg":"request"}
+{"level":30,"time":1791304933963,"pid":120,"hostname":"ce2ed711a6c3","requestId":"ae47b28d-fc93-4509-adee-34461732ad16","method":"POST","path":"/v1/issues","status":200,"durationMs":6,"msg":"request"}
+{"level":30,"time":1791304933966,"pid":120,"hostname":"ce2ed711a6c3","requestId":"6463fe77-25e5-40ff-859e-696e2be14cb0","method":"POST","path":"/v1/issues","status":409,"durationMs":2,"msg":"request"}
+{"level":30,"time":1791304933969,"pid":120,"hostname":"ce2ed711a6c3","requestId":"4eec5bfa-2413-4f72-bc70-b89eef6669bf","method":"GET","path":"/v1/issues/:id","status":200,"durationMs":2,"msg":"request"}
+{"level":30,"time":1791304933972,"pid":120,"hostname":"ce2ed711a6c3","requestId":"cb1a0677-e3a2-42bf-94a4-32c44112e294","method":"GET","path":"/v1/issues/map","status":200,"durationMs":3,"msg":"request"}
+{"level":30,"time":1791304933974,"pid":120,"hostname":"ce2ed711a6c3","requestId":"1bc10d19-e2b9-461a-b78c-c88ca7a395af","method":"GET","path":"/v1/issues","status":200,"durationMs":2,"msg":"request"}
+{"level":30,"time":1791304933976,"pid":120,"hostname":"ce2ed711a6c3","requestId":"e6e857d5-f5fc-45e3-8c77-12dd1422c8a0","method":"GET","path":"/v1/issues/map","status":400,"durationMs":2,"msg":"request"}
+{"level":30,"time":1791304933989,"pid":120,"hostname":"ce2ed711a6c3","requestId":"2709d6e9-950e-402c-a5e7-61c865f3c89b","method":"POST","path":"/v1/issues/:id/observations","status":201,"durationMs":12,"msg":"request"}
+{"level":30,"time":1791304933990,"pid":120,"hostname":"ce2ed711a6c3","requestId":"80251d8a-3e26-4b6c-b84c-0204a0adaf57","method":"GET","path":"/v1/issues/:id/timeline","status":200,"durationMs":1,"msg":"request"}
+{"level":30,"time":1791304933991,"pid":120,"hostname":"ce2ed711a6c3","requestId":"e70a917f-6074-45d3-ae14-f114f356bc91","method":"GET","path":"/v1/issues/:id/observations","status":200,"durationMs":0,"msg":"request"}
+{"level":30,"time":1791304933999,"pid":120,"hostname":"ce2ed711a6c3","requestId":"4930756a-7e99-4f7d-9d37-58312bc65c0d","method":"POST","path":"/v1/issues/:id/diff","status":201,"durationMs":6,"msg":"request"}
+{"level":30,"time":1791304934001,"pid":120,"hostname":"ce2ed711a6c3","requestId":"66aa703a-71f0-4b19-a4cb-a0b5e11f288f","method":"GET","path":"/v1/issues/:id","status":200,"durationMs":1,"msg":"request"}
+{"level":30,"time":1791304934003,"pid":120,"hostname":"ce2ed711a6c3","requestId":"5375ae83-d4a8-4a43-8286-640e40f0de63","method":"GET","path":"/v1/issues/:id/diffs","status":200,"durationMs":1,"msg":"request"}
+{"level":30,"time":1791304934004,"pid":120,"hostname":"ce2ed711a6c3","requestId":"53b7a2cf-3dd8-4e84-a3b6-4aac4857851b","method":"POST","path":"/v1/issues/:id/diff","status":400,"durationMs":1,"msg":"request"}
+{"level":30,"time":1791304934006,"pid":120,"hostname":"ce2ed711a6c3","requestId":"03d4fb3c-3870-489c-bf5b-97df511316b0","method":"POST","path":"/v1/issues/:id/diff","status":400,"durationMs":1,"msg":"request"}
+{"level":30,"time":1791304934011,"pid":120,"hostname":"ce2ed711a6c3","requestId":"680ab6c6-86ae-4222-9e60-df645241c6ff","method":"POST","path":"/v1/issues","status":201,"durationMs":5,"msg":"request"}
+{"level":30,"time":1791304934012,"pid":120,"hostname":"ce2ed711a6c3","requestId":"d08cd790-ec39-40d5-a220-9545a6fe35bb","method":"POST","path":"/v1/issues/:id/diff","status":404,"durationMs":1,"msg":"request"}
+{"level":30,"time":1791304934015,"pid":120,"hostname":"ce2ed711a6c3","requestId":"8e92d6cf-a8a6-4623-ab40-2701a3220cbe","method":"POST","path":"/v1/issues/:id/resolve","status":200,"durationMs":3,"msg":"request"}
+{"level":30,"time":1791304934017,"pid":120,"hostname":"ce2ed711a6c3","requestId":"aa0ad5a5-e105-48ec-a03e-0f25be7bd95f","method":"PATCH","path":"/v1/issues/:id","status":409,"durationMs":1,"msg":"request"}
+{"level":30,"time":1791304934018,"pid":120,"hostname":"ce2ed711a6c3","requestId":"3d542b99-4edf-49f2-9a45-531533007813","method":"GET","path":"/v1/issues/:id/timeline","status":200,"durationMs":1,"msg":"request"}
+{"level":30,"time":1791304934029,"pid":120,"hostname":"ce2ed711a6c3","requestId":"90c1ac22-b441-4133-a407-dc35d95af778","method":"POST","path":"/v1/issues","status":201,"durationMs":10,"msg":"request"}
+{"level":30,"time":1791304934058,"pid":120,"hostname":"ce2ed711a6c3","requestId":"87180c03-4104-4e18-9d98-58a38e8fba5c","method":"POST","path":"/v1/issues","status":200,"durationMs":39,"msg":"request"}
+{"level":30,"time":1791304934058,"pid":120,"hostname":"ce2ed711a6c3","requestId":"4b06f781-eada-461e-874e-475e00672a93","method":"POST","path":"/v1/issues","status":200,"durationMs":39,"msg":"request"}
+{"level":50,"time":1791304934065,"pid":120,"hostname":"ce2ed711a6c3","requestId":"dba64f12-c515-492b-adf9-007f646cee9e","code":"UNEXPECTED_FAILURE","msg":"request failed"}
+{"level":30,"time":1791304934065,"pid":120,"hostname":"ce2ed711a6c3","requestId":"dba64f12-c515-492b-adf9-007f646cee9e","method":"POST","path":"/v1/issues","status":500,"durationMs":4,"msg":"request"}
+{"level":30,"time":1791304934070,"pid":120,"hostname":"ce2ed711a6c3","requestId":"2c92a91a-d330-4a2b-86ec-6589ffa181ba","method":"POST","path":"/v1/issues","status":201,"durationMs":4,"msg":"request"}
+{"level":30,"time":1791304934071,"pid":120,"hostname":"ce2ed711a6c3","requestId":"61089095-8938-4825-b631-8147690564cc","method":"POST","path":"/v1/issues","status":400,"durationMs":0,"msg":"request"}
+{"level":30,"time":1791304934072,"pid":120,"hostname":"ce2ed711a6c3","requestId":"07eb8559-788d-4db1-b77e-22c6f14e6e75","method":"POST","path":"/v1/issues","status":400,"durationMs":0,"msg":"request"}
+
+ Test Files  5 passed (5)
+      Tests  19 passed (19)
+   Start at  22:12:13
+   Duration  607ms (import 46%, transform 29%, tests 23%, worker 2%)
+
+.....................................................   [100%]
+=============================== warnings summary ===============================
+services/intelligence/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1
+  <project-root>/services/intelligence/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+53 passed, 1 warning, 17 subtests passed in 0.56s
+{
+  "result": "PASS",
+  "publicId": "FI-1000001",
+  "observations": 2,
+  "diffPersisted": true,
+  "status": "RESOLVED",
+  "events": [
+    "ISSUE_CREATED",
+    "CLASSIFICATION_UPDATED",
+    "OBSERVATION_ADDED",
+    "DIFF_GENERATED",
+    "STATUS_CHANGED",
+    "ISSUE_RESOLVED"
+  ],
+  "aiMode": "explicit development mock"
+}
