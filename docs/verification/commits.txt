@@ -1,0 +1,7 @@
+47a1e97 docs: distinguish advisory patch status from npm downgrade suggestion
+9f2f46b docs: record full verification and residual dependency advisory
+de99a42 build: add portable containers realistic seeds and developer guide
+785de00 feat: add Gemma TabPFN and Tinker intelligence adapters
+bb6b9de feat: orchestrate evidence workflows and optional provider integrations
+f967e0f feat: deliver transactional geotagged issue vertical slice
+61b6d9f test: scaffold FieldIssue contracts and vertical slice acceptance
