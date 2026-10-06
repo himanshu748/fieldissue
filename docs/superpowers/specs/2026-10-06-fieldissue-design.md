@@ -1,0 +1,9 @@
+# FieldIssue backend design
+
+The approved user specification defines GitHub Issues for physical problems: observe, open, track, revisit, diff, explicit resolution. No frontend or authentication system. Implement a small TypeScript Hono API with direct PostgreSQL SQL and a private Python FastAPI intelligence service. Database stores immutable observations, auditable events and evidence comparisons; location uses PostGIS, model metadata stays JSONB, public IDs use a database sequence. AI only recommends status, application code validates state transitions and owns transactions.
+
+Image evidence enters via multipart uploads, validated by content signature, MIME, filename and size; domain logic only reads generated storage keys. Local filesystem and S3-compatible providers share the same interface. Arbitrary remote image URLs are never fetched. Internal AI routes require a shared token and are not published by Compose. Production rejects mock mode. Provider absence is explicit; optional place context failure does not block creation, paid audio is cached.
+
+Create idempotency is database-backed with transaction advisory lock and unique key/hash; conflicting replays return 409. Timeline writes share the issue transaction. Diff requires two distinct, ordered observations owned by the same issue. Cursor pagination is stable on creation timestamp plus UUID. Map bounding boxes support antimeridian crossing. No generated SQL is executed.
+
+The first milestone contains storage, create/read/list/map, revisit, compare, timeline and resolve. Verify migrations with real PostGIS/vector, unit/integration tests and HTTP requests against both services. Then add Mastra workflows, TabPFN, Tinker, optional SerpApi, ElevenLabs and sanitized Sentry instrumentation. Docker and Make commands provide reproducible local development; deployments are not authorized.
