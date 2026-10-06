@@ -251,3 +251,7 @@ The production API image uses the supplied `PORT` and listens on `0.0.0.0`; `/he
 - [Compose readiness and one-shot dependency ordering](https://docs.docker.com/compose/how-tos/startup-order/)
 - [Compose one-off commands](https://docs.docker.com/reference/cli/docker/compose/run/)
 - [uv Docker integration](https://docs.astral.sh/uv/guides/integration/docker/)
+
+### Residual dependency advisory
+
+The production dependency audit reports one **moderate** [sprintf-js denial-of-service advisory, GHSA-hp3w-g68c-fv3c](https://github.com/advisories/GHSA-hp3w-g68c-fv3c), propagated across five dependency nodes: `@mastra/core@1.74.0 → gray-matter@4.0.3 → js-yaml@3.15.2 → argparse@1.0.10 → sprintf-js@1.0.3`. The installed audit reports no available fix and no high/critical findings. This is a residual dependency warning, not a demonstrated remote exploit in FieldIssue: these routes do not expose frontmatter parsing or attacker-controlled sprintf format strings. A workflow-only import loads gray-matter/js-yaml but did not load argparse/sprintf-js in the inspected CommonJS module cache. Review upstream updates before adding document/frontmatter or formatting features; no unsupported dependency override was applied. See [the audit record](docs/verification/dependency-audit.json).

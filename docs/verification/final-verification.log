@@ -1,0 +1,109 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> migrate
+> npm run migrate -w @fieldissue/api
+
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> migrate
+> node --import tsx src/migrate.ts
+
+Database migrations applied
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> build
+> npm run build -w @fieldissue/shared && npm run build -w @fieldissue/api
+
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> @fieldissue/shared@0.1.0 build
+> tsc --target ES2023 --module NodeNext --moduleResolution NodeNext --declaration --outDir dist --skipLibCheck src/index.ts
+
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> build
+> tsc -p tsconfig.json
+
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> test
+> npm run build -w @fieldissue/shared && npm run test -w @fieldissue/api
+
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> @fieldissue/shared@0.1.0 build
+> tsc --target ES2023 --module NodeNext --moduleResolution NodeNext --declaration --outDir dist --skipLibCheck src/index.ts
+
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> test
+> vitest run
+
+
+ RUN  v5.0.3 <project-root>/apps/api
+
+{"level":30,"time":1791306016224,"pid":371,"hostname":"ce2ed711a6c3","requestId":"61e26d66-8439-4fb3-b528-04f8752833ec","method":"POST","path":"/v1/issues","status":201,"durationMs":43,"msg":"request"}
+{"level":30,"time":1791306016232,"pid":371,"hostname":"ce2ed711a6c3","requestId":"1b858e8a-3964-4db5-a7f6-25c473d217d2","method":"POST","path":"/v1/issues","status":200,"durationMs":5,"msg":"request"}
+{"level":30,"time":1791306016234,"pid":371,"hostname":"ce2ed711a6c3","requestId":"83f27c15-711c-4723-9e43-acee1c71dcab","method":"POST","path":"/v1/issues","status":409,"durationMs":2,"msg":"request"}
+{"level":30,"time":1791306016237,"pid":371,"hostname":"ce2ed711a6c3","requestId":"2a4d46ff-cb5a-4ec0-a7fa-382e458b204f","method":"GET","path":"/v1/issues/:id","status":200,"durationMs":2,"msg":"request"}
+{"level":30,"time":1791306016240,"pid":371,"hostname":"ce2ed711a6c3","requestId":"70c814f8-e3a9-48a4-b1d4-3bf800725b1a","method":"GET","path":"/v1/issues/map","status":200,"durationMs":3,"msg":"request"}
+{"level":30,"time":1791306016243,"pid":371,"hostname":"ce2ed711a6c3","requestId":"2bf8eefd-5fc9-4750-8ce5-97d5d9186fae","method":"GET","path":"/v1/issues","status":200,"durationMs":2,"msg":"request"}
+{"level":30,"time":1791306016245,"pid":371,"hostname":"ce2ed711a6c3","requestId":"7d94e5b8-4603-4433-803b-685b06f810a2","method":"GET","path":"/v1/issues/map","status":400,"durationMs":2,"msg":"request"}
+{"level":30,"time":1791306016247,"pid":371,"hostname":"ce2ed711a6c3","requestId":"12f7bf51-3ab4-43ce-a50c-bcbe628bf774","method":"GET","path":"/v1/issues/:id","status":200,"durationMs":2,"msg":"request"}
+{"level":30,"time":1791306016248,"pid":371,"hostname":"ce2ed711a6c3","requestId":"b2e60c60-bc86-4c22-b561-f7d5ae344571","method":"GET","path":"/v1/issues/:id","status":200,"durationMs":1,"msg":"request"}
+{"level":30,"time":1791306016249,"pid":371,"hostname":"ce2ed711a6c3","requestId":"626c6262-861f-49f7-91ca-3fcdf4efece3","method":"GET","path":"/v1/issues/:id","status":400,"durationMs":1,"msg":"request"}
+{"level":30,"time":1791306016267,"pid":371,"hostname":"ce2ed711a6c3","requestId":"0c814517-6356-487a-ac00-16934db1822d","method":"POST","path":"/v1/issues/:id/observations","status":201,"durationMs":17,"msg":"request"}
+{"level":30,"time":1791306016269,"pid":371,"hostname":"ce2ed711a6c3","requestId":"01ab0ae1-0388-4bd3-95b2-22f3cb66ee08","method":"GET","path":"/v1/issues/:id/timeline","status":200,"durationMs":1,"msg":"request"}
+{"level":30,"time":1791306016270,"pid":371,"hostname":"ce2ed711a6c3","requestId":"be87a8c1-6b83-4213-a74e-b77fbfdc3b09","method":"GET","path":"/v1/issues/:id/observations","status":200,"durationMs":1,"msg":"request"}
+{"level":30,"time":1791306016273,"pid":371,"hostname":"ce2ed711a6c3","requestId":"c41e70a9-82e1-48db-ad94-362630d886ff","method":"POST","path":"/v1/issues/:id/diff","status":201,"durationMs":2,"msg":"request"}
+{"level":30,"time":1791306016276,"pid":371,"hostname":"ce2ed711a6c3","requestId":"1c5b1bc6-685e-4e81-81c0-78659e78530b","method":"GET","path":"/v1/issues/:id","status":200,"durationMs":2,"msg":"request"}
+{"level":30,"time":1791306016277,"pid":371,"hostname":"ce2ed711a6c3","requestId":"fe2f3815-5ab1-4f72-aad8-b201806cd96a","method":"GET","path":"/v1/issues/:id/diffs","status":200,"durationMs":1,"msg":"request"}
+{"level":30,"time":1791306016278,"pid":371,"hostname":"ce2ed711a6c3","requestId":"d88c50ed-64b8-49e6-8611-0b2ae2f6b570","method":"POST","path":"/v1/issues/:id/diff","status":400,"durationMs":1,"msg":"request"}
+{"level":30,"time":1791306016280,"pid":371,"hostname":"ce2ed711a6c3","requestId":"435aeff0-7138-40f1-a689-5f6daaac528f","method":"POST","path":"/v1/issues/:id/diff","status":400,"durationMs":1,"msg":"request"}
+{"level":30,"time":1791306016289,"pid":371,"hostname":"ce2ed711a6c3","requestId":"c763e5a8-892a-4300-b33b-f3ab199c7dfd","method":"POST","path":"/v1/issues","status":201,"durationMs":9,"msg":"request"}
+{"level":30,"time":1791306016290,"pid":371,"hostname":"ce2ed711a6c3","requestId":"5f2709a7-2a75-474f-b719-8743130f9fad","method":"POST","path":"/v1/issues/:id/diff","status":404,"durationMs":1,"msg":"request"}
+{"level":30,"time":1791306016294,"pid":371,"hostname":"ce2ed711a6c3","requestId":"632ee0ad-fd30-4bae-bc47-0a2ff743baa4","method":"POST","path":"/v1/issues/:id/resolve","status":200,"durationMs":3,"msg":"request"}
+{"level":30,"time":1791306016296,"pid":371,"hostname":"ce2ed711a6c3","requestId":"85d53320-07f3-4258-927f-d21ad3d5ddc8","method":"PATCH","path":"/v1/issues/:id","status":409,"durationMs":2,"msg":"request"}
+{"level":30,"time":1791306016297,"pid":371,"hostname":"ce2ed711a6c3","requestId":"87a8c78e-e33b-40fc-afd5-6eb51031d23e","method":"GET","path":"/v1/issues/:id/timeline","status":200,"durationMs":1,"msg":"request"}
+{"level":30,"time":1791306016300,"pid":371,"hostname":"ce2ed711a6c3","requestId":"40c2cad1-10f1-473e-b273-be749ce52724","method":"POST","path":"/v1/issues/:id/resolve","status":200,"durationMs":3,"msg":"request"}
+{"level":30,"time":1791306016313,"pid":371,"hostname":"ce2ed711a6c3","requestId":"7a91ac40-538d-45f1-b7a5-89ac89187fba","method":"POST","path":"/v1/issues","status":201,"durationMs":13,"msg":"request"}
+{"level":30,"time":1791306016334,"pid":371,"hostname":"ce2ed711a6c3","requestId":"b216e8a1-d5e0-4cf3-9532-45074cada5ef","method":"POST","path":"/v1/issues","status":200,"durationMs":33,"msg":"request"}
+{"level":30,"time":1791306016335,"pid":371,"hostname":"ce2ed711a6c3","requestId":"13830db3-1227-40ba-8711-1a09892477f6","method":"POST","path":"/v1/issues","status":200,"durationMs":35,"msg":"request"}
+{"level":50,"time":1791306016351,"pid":371,"hostname":"ce2ed711a6c3","requestId":"1e54a8f0-1fcf-455b-9a03-8b5497b79c26","code":"UNEXPECTED_FAILURE","msg":"request failed"}
+{"level":30,"time":1791306016351,"pid":371,"hostname":"ce2ed711a6c3","requestId":"1e54a8f0-1fcf-455b-9a03-8b5497b79c26","method":"POST","path":"/v1/issues","status":500,"durationMs":13,"msg":"request"}
+{"level":30,"time":1791306016361,"pid":371,"hostname":"ce2ed711a6c3","requestId":"fc9bbc6e-4f94-4bd8-a354-4e1daee18502","method":"POST","path":"/v1/issues","status":201,"durationMs":8,"msg":"request"}
+{"level":30,"time":1791306016363,"pid":371,"hostname":"ce2ed711a6c3","requestId":"0b427c26-2371-4684-b42c-3f79809964bd","method":"GET","path":"/v1/issues","status":200,"durationMs":1,"msg":"request"}
+{"level":30,"time":1791306016364,"pid":371,"hostname":"ce2ed711a6c3","requestId":"2c2e6ffe-2971-4f9d-a69e-3fb26d539e10","method":"GET","path":"/v1/issues","status":200,"durationMs":1,"msg":"request"}
+{"level":30,"time":1791306016365,"pid":371,"hostname":"ce2ed711a6c3","requestId":"b7d5389c-4982-4994-a5f7-16cec504681b","method":"GET","path":"/v1/issues","status":200,"durationMs":1,"msg":"request"}
+{"level":30,"time":1791306016368,"pid":371,"hostname":"ce2ed711a6c3","requestId":"b6ae523d-c1db-47a2-b79f-13f4b16f2792","method":"GET","path":"/v1/issues/map","status":200,"durationMs":1,"msg":"request"}
+{"level":30,"time":1791306016369,"pid":371,"hostname":"ce2ed711a6c3","requestId":"be680579-1eda-4aec-a1e2-0c0857832c48","method":"POST","path":"/*","status":413,"durationMs":0,"msg":"request"}
+{"level":30,"time":1791306016370,"pid":371,"hostname":"ce2ed711a6c3","requestId":"b0341fe0-3034-4d71-8363-ed3dadd2365e","method":"POST","path":"/v1/issues","status":400,"durationMs":0,"msg":"request"}
+{"level":30,"time":1791306016371,"pid":371,"hostname":"ce2ed711a6c3","requestId":"9afec5e9-f31a-4e9c-b873-54c24209b193","method":"POST","path":"/v1/issues","status":400,"durationMs":0,"msg":"request"}
+{"level":30,"time":1791306016371,"pid":371,"hostname":"ce2ed711a6c3","requestId":"36bd3f31-b5e7-4966-b5db-a1b69f0981e1","method":"POST","path":"/v1/issues","status":400,"durationMs":0,"msg":"request"}
+
+ Test Files  11 passed (11)
+      Tests  40 passed (40)
+   Start at  22:30:15
+   Duration  5.44s (import 81%, tests 14%, transform 5%, worker 1%)
+
+    Isolate  11 workers spawned · ~111ms startup each (spawn + environment, per file)
+             at least ~1.11s faster with isolate: false — reuses workers across files instead of one per file
+
+.......................................................................                                                         [100%]
+71 passed, 17 subtests passed in 0.54s
+{
+  "result": "PASS",
+  "publicId": "FI-1000009",
+  "observations": 2,
+  "diffPersisted": true,
+  "status": "RESOLVED",
+  "events": [
+    "ISSUE_CREATED",
+    "CLASSIFICATION_UPDATED",
+    "OBSERVATION_ADDED",
+    "DIFF_GENERATED",
+    "STATUS_CHANGED",
+    "ISSUE_RESOLVED"
+  ],
+  "aiMode": "explicit development mock"
+}
