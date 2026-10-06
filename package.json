@@ -1,1 +1,24 @@
-{"name":"fieldissue","private":true,"type":"module","workspaces":["apps/api","packages/shared"],"engines":{"node":">=22"},"scripts":{"dev":"npm run dev -w @fieldissue/api","build":"npm run build -w @fieldissue/api","test":"npm run test -w @fieldissue/api","lint":"npm run lint -w @fieldissue/api","migrate":"npm run migrate -w @fieldissue/api","seed":"npm run seed -w @fieldissue/api"}}
+{
+  "name": "fieldissue",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/api",
+    "packages/shared"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "npm run build -w @fieldissue/shared && npm run dev -w @fieldissue/api",
+    "build": "npm run build -w @fieldissue/shared && npm run build -w @fieldissue/api",
+    "test": "npm run build -w @fieldissue/shared && npm run test -w @fieldissue/api",
+    "lint": "npm run build -w @fieldissue/shared && npm run lint -w @fieldissue/api && prettier --check apps/api/src apps/api/test apps/api/vitest.config.ts packages/shared/src",
+    "migrate": "npm run migrate -w @fieldissue/api",
+    "seed": "npm run seed -w @fieldissue/api",
+    "format": "prettier --write apps/api/src apps/api/test apps/api/vitest.config.ts packages/shared/src"
+  },
+  "devDependencies": {
+    "prettier": "3.9.9"
+  }
+}

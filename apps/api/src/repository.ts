@@ -1,51 +1,481 @@
-import { Pool,type PoolClient,type QueryResultRow } from 'pg';
-import type { CreateIssueInput,ObservationInput,Analysis,Comparison,PatchIssueInput,Prediction } from '@fieldissue/shared';
-import type { StoredMedia } from './storage.js';
-import { AppError,notFound } from './errors.js';
-import { canTransition } from './domain.js';
+import { Pool, type PoolClient } from "pg";
+import type {
+  CreateIssueInput,
+  ObservationInput,
+  Analysis,
+  Comparison,
+  PatchIssueInput,
+  Prediction,
+} from "@fieldissue/shared";
+import type { StoredMedia } from "./storage.js";
+import { AppError, notFound } from "./errors.js";
+import { canTransition } from "./domain.js";
+import { trace, reportFailure } from "./telemetry.js";
 
-export type Row=Record<string,any>;
-export const camel=(row:Row):Row=>Object.fromEntries(Object.entries(row).filter(([key])=>key!=='geom').map(([key,value])=>[key.replace(/_([a-z])/g,(_,c:string)=>c.toUpperCase()),value instanceof Date?value.toISOString():value]));
+export type Row = Record<string, any>;
+export const camel = (row: Row): Row =>
+  Object.fromEntries(
+    Object.entries(row)
+      .filter(([key]) => key !== "geom" && key !== "cursor_created_at")
+      .map(([key, value]) => [
+        key.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase()),
+        value instanceof Date ? value.toISOString() : value,
+      ]),
+  );
 export class IssueRepository {
- constructor(public readonly pool:Pool){}
- async transaction<T>(fn:(client:PoolClient)=>Promise<T>){const c=await this.pool.connect();try{await c.query('BEGIN');const result=await fn(c);await c.query('COMMIT');return result;}catch(error){await c.query('ROLLBACK');throw error;}finally{c.release();}}
- private async issue(c:Pool|PoolClient,id:string,lock=false){const r=await c.query(`SELECT * FROM issues WHERE ${id.startsWith('FI-')?'public_id=$1':'id=$1::uuid'} ${lock?'FOR UPDATE':''}`,[id]);if(!r.rows[0])throw notFound();return r.rows[0];}
- async get(id:string):Promise<Row & {observations:Row[];revisitPrediction:Row|null}>{const issue=await this.issue(this.pool,id);const observations=await this.observations(issue.id);const predictions=await this.pool.query('SELECT * FROM revisit_predictions WHERE issue_id=$1 ORDER BY created_at DESC LIMIT 1',[issue.id]);return {...camel(issue),observations:observations.items,revisitPrediction:predictions.rows[0]?camel(predictions.rows[0]):null};}
- async create(input:CreateIssueInput,media:StoredMedia,analysis:Analysis,idempotency?:{key:string;hash:string},client?:PoolClient){
-  const execute=async (c:PoolClient)=>{
-   if(idempotency){await c.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',[idempotency.key]);const r=await c.query('SELECT request_hash,issue_id FROM idempotency_keys WHERE key=$1',[idempotency.key]);if(r.rows[0]){if(r.rows[0].request_hash!==idempotency.hash)throw new AppError('IDEMPOTENCY_CONFLICT',409,'Idempotency key was used for a different request');return {id:r.rows[0].issue_id as string,replayed:true};}}
-   const r=await c.query('INSERT INTO issues(title,description,category,severity,latitude,longitude,reporter_id) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING *',[input.title??`${analysis.objects[0]??'Field issue'}: ${analysis.conditions[0]??'Needs inspection'}`.slice(0,200),input.description,input.category??analysis.suggestedCategory,input.severity??analysis.suggestedSeverity,input.latitude,input.longitude,input.reporterId??null]);const issue=r.rows[0];
-   const observation=await this.insertObservation(c,issue.id,input,media,analysis);
-   await this.event(c,issue.id,'ISSUE_CREATED',{observationId:observation.id});
-   await this.event(c,issue.id,'CLASSIFICATION_UPDATED',{category:issue.category,severity:issue.severity,source:'validated_evidence'});
-   if(idempotency)await c.query('INSERT INTO idempotency_keys(key,request_hash,issue_id) VALUES($1,$2,$3)',[idempotency.key,idempotency.hash,issue.id]);return {id:issue.id as string,replayed:false};
-  };return client?execute(client):this.transaction(execute);
- }
- private async insertObservation(c:PoolClient,id:string,input:ObservationInput,media:StoredMedia,analysis:Analysis){return (await c.query('INSERT INTO observations(issue_id,note,media_url,storage_key,mime_type,latitude,longitude,captured_at,ai_analysis) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *',[id,input.note,media.mediaUrl,media.storageKey,media.mimeType,input.latitude,input.longitude,input.capturedAt??new Date().toISOString(),JSON.stringify(analysis)])).rows[0];}
- async addObservation(id:string,input:ObservationInput,media:StoredMedia,analysis:Analysis){return this.transaction(async c=>{const issue=await this.issue(c,id,true);if(issue.status==='REJECTED')throw new AppError('INVALID_STATUS_TRANSITION',409,'Rejected issues do not accept observations');const o=await this.insertObservation(c,issue.id,input,media,analysis);await c.query('UPDATE issues SET updated_at=clock_timestamp() WHERE id=$1',[issue.id]);await this.event(c,issue.id,'OBSERVATION_ADDED',{observationId:o.id});return camel(o);});}
- async observations(id:string){const issue=await this.issue(this.pool,id);return {items:(await this.pool.query('SELECT * FROM observations WHERE issue_id=$1 ORDER BY captured_at,created_at,id',[issue.id])).rows.map(camel)};}
- async pair(id:string,before:string,after:string){const issue=await this.issue(this.pool,id);if(before===after)throw new AppError('INVALID_DIFF',400,'Diff requires distinct observations');const r=await this.pool.query('SELECT * FROM observations WHERE issue_id=$1 AND id=ANY($2::uuid[])',[issue.id,[before,after]]);const b=r.rows.find(x=>x.id===before),a=r.rows.find(x=>x.id===after);if(!a||!b)throw notFound();if(a.captured_at<b.captured_at||(a.captured_at.getTime()===b.captured_at.getTime()&&a.created_at<=b.created_at))throw new AppError('INVALID_DIFF',400,'After observation must be newer than before observation');return {issueId:issue.id as string,before:b,after:a};}
- async saveDiff(id:string,before:string,after:string,result:Comparison){return this.transaction(async c=>{await this.issue(c,id,true);const existing=await c.query('SELECT * FROM evidence_diffs WHERE issue_id=$1 AND before_observation_id=$2 AND after_observation_id=$3',[id,before,after]);if(existing.rows[0])return camel(existing.rows[0]);const r=await c.query('INSERT INTO evidence_diffs(issue_id,before_observation_id,after_observation_id,summary,removed,added,unchanged,recommended_status,confidence,model,model_version) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *',[id,before,after,result.summary,JSON.stringify(result.removed),JSON.stringify(result.added),JSON.stringify(result.unchanged),result.recommendedStatus,result.confidence,result.model,result.modelVersion]);await this.event(c,id,'DIFF_GENERATED',{diffId:r.rows[0].id,recommendedStatus:result.recommendedStatus});await c.query('UPDATE issues SET updated_at=clock_timestamp() WHERE id=$1',[id]);return camel(r.rows[0]);});}
- async diffs(id:string){const issue=await this.issue(this.pool,id);return {items:(await this.pool.query('SELECT * FROM evidence_diffs WHERE issue_id=$1 ORDER BY created_at,id',[issue.id])).rows.map(camel)};}
- async timeline(id:string){const issue=await this.issue(this.pool,id);return {events:(await this.pool.query('SELECT * FROM issue_events WHERE issue_id=$1 ORDER BY created_at,id',[issue.id])).rows.map(camel)};}
- async patch(id:string,patch:PatchIssueInput,note=''){
-  return this.transaction(async c=>{const current=await this.issue(c,id,true);if(patch.status&&!canTransition(current.status,patch.status))throw new AppError('INVALID_STATUS_TRANSITION',409,`Cannot transition ${current.status} to ${patch.status}`);
-   const columns:Record<string,string>={title:'title',description:'description',category:'category',severity:'severity',status:'status'};const values:unknown[]=[current.id];const assignments=Object.entries(patch).map(([key,value])=>{values.push(value);return `${columns[key]}=$${values.length}`});
-   if(patch.status==='RESOLVED')assignments.push('resolved_at=COALESCE(resolved_at,clock_timestamp())');
-   await c.query(`UPDATE issues SET ${assignments.join(',')},updated_at=clock_timestamp() WHERE id=$1`,values);
-   if(patch.status&&patch.status!==current.status){await this.event(c,current.id,'STATUS_CHANGED',{from:current.status,to:patch.status,note});if(patch.status==='RESOLVED')await this.event(c,current.id,'ISSUE_RESOLVED',{note,source:'explicit_backend_action'});}
-   if(patch.category||patch.severity)await this.event(c,current.id,'CLASSIFICATION_UPDATED',{category:patch.category??current.category,severity:patch.severity??current.severity,source:'explicit_backend_action'});return current.id as string;
-  });
- }
- private async event(c:PoolClient,id:string,type:string,payload:unknown){await c.query('INSERT INTO issue_events(issue_id,event_type,payload) VALUES($1,$2,$3)',[id,type,JSON.stringify(payload)]);}
- async list(filters:{status?:string;category?:string;severity?:string;limit:number;cursor?:{createdAt:string;id:string};nearLat?:number;nearLon?:number;radius?:number}){
-  const params:unknown[]=[];const where:string[]=[];const bind=(v:unknown)=>{params.push(v);return `$${params.length}`};for(const k of ['status','category','severity'] as const)if(filters[k])where.push(`${k}=${bind(filters[k])}`);
-  if(filters.cursor)where.push(`(created_at,id)<(${bind(filters.cursor.createdAt)}::timestamptz,${bind(filters.cursor.id)}::uuid)`);
-  if(filters.nearLat!==undefined)where.push(`ST_DWithin(geom::geography,ST_SetSRID(ST_MakePoint(${bind(filters.nearLon)},${bind(filters.nearLat)}),4326)::geography,${bind(filters.radius)})`);
-  const result=await this.pool.query(`SELECT * FROM issues ${where.length?`WHERE ${where.join(' AND ')}`:''} ORDER BY created_at DESC,id DESC LIMIT ${bind(filters.limit+1)}`,params);const more=result.rows.length>filters.limit;const rows=result.rows.slice(0,filters.limit);const last=rows.at(-1);return {items:rows.map(camel),nextCursor:more&&last?Buffer.from(JSON.stringify({createdAt:last.created_at.toISOString(),id:last.id})).toString('base64url'):null};
- }
- async map(bbox:[number,number,number,number],limit:number){const [west,south,east,north]=bbox;const predicate=west<=east?'geom && ST_MakeEnvelope($1,$2,$3,$4,4326)':'(geom && ST_MakeEnvelope($1,$2,180,$4,4326) OR geom && ST_MakeEnvelope(-180,$2,$3,$4,4326))';const r=await this.pool.query(`SELECT * FROM issues WHERE ${predicate} ORDER BY created_at DESC,id DESC LIMIT $5`,[west,south,east,north,limit+1]);return {type:'FeatureCollection',truncated:r.rows.length>limit,features:r.rows.slice(0,limit).map(x=>({type:'Feature',geometry:{type:'Point',coordinates:[x.longitude,x.latitude]},properties:camel(x)}))};}
- async nearby(latitude:number,longitude:number){return (await this.pool.query("SELECT id,public_id,title FROM issues WHERE status NOT IN ('RESOLVED','REJECTED') AND ST_DWithin(geom::geography,ST_SetSRID(ST_MakePoint($1,$2),4326)::geography,100) LIMIT 10",[longitude,latitude])).rows.map(camel);}
- async features(id:string):Promise<Record<string,string|number>>{const i=await this.issue(this.pool,id);const r=(await this.pool.query('SELECT count(*)::int count,max(captured_at) last FROM observations WHERE issue_id=$1',[i.id])).rows[0];const changes=(await this.pool.query("SELECT count(*)::int count FROM evidence_diffs WHERE issue_id=$1 AND (jsonb_array_length(added)>0 OR jsonb_array_length(removed)>0)",[i.id])).rows[0].count;return {days_since_last_observation:Math.max(0,(Date.now()-r.last.getTime())/86400000),previous_observation_count:r.count,issue_age_days:(Date.now()-i.created_at.getTime())/86400000,severity:i.severity,category:i.category,nearby_issue_count:(await this.pool.query('SELECT count(*)::int count FROM issues WHERE id<>$1 AND status NOT IN (\'RESOLVED\',\'REJECTED\') AND ST_DWithin(geom::geography,ST_SetSRID(ST_MakePoint($2,$3),4326)::geography,100)',[i.id,i.longitude,i.latitude])).rows[0].count,previous_change_count:changes,status:i.status};}
- async savePrediction(id:string,features:Record<string,string|number>,prediction:Prediction){await this.pool.query('INSERT INTO revisit_predictions(issue_id,probability_changed,priority_score,features,model_version) VALUES($1,$2,$3,$4,$5)',[id,prediction.probabilityChanged,prediction.priorityScore,JSON.stringify(features),prediction.modelVersion]);}
+  constructor(public readonly pool: Pool) {}
+  async transaction<T>(fn: (client: PoolClient) => Promise<T>) {
+    const c = await this.pool.connect();
+    try {
+      await c.query("BEGIN");
+      const result = await trace("database transaction", "db.transaction", () =>
+        fn(c),
+      );
+      await c.query("COMMIT");
+      return result;
+    } catch (error) {
+      await c.query("ROLLBACK");
+      reportFailure("DATABASE_TRANSACTION_FAILED", "database");
+      throw error;
+    } finally {
+      c.release();
+    }
+  }
+  private async issue(c: Pool | PoolClient, id: string, lock = false) {
+    const r = await c.query(
+      `SELECT * FROM issues WHERE ${id.startsWith("FI-") ? "public_id=$1" : "id=$1::uuid"} ${lock ? "FOR UPDATE" : ""}`,
+      [id],
+    );
+    if (!r.rows[0]) throw notFound();
+    return r.rows[0];
+  }
+  async get(
+    id: string,
+  ): Promise<Row & { observations: Row[]; revisitPrediction: Row | null }> {
+    const issue = await this.issue(this.pool, id);
+    const observations = await this.observations(issue.id);
+    const predictions = await this.pool.query(
+      "SELECT * FROM revisit_predictions WHERE issue_id=$1 ORDER BY created_at DESC LIMIT 1",
+      [issue.id],
+    );
+    return {
+      ...camel(issue),
+      observations: observations.items,
+      revisitPrediction: predictions.rows[0]
+        ? camel(predictions.rows[0])
+        : null,
+    };
+  }
+  async create(
+    input: CreateIssueInput,
+    media: StoredMedia,
+    analysis: Analysis,
+    idempotency?: { key: string; hash: string },
+    client?: PoolClient,
+  ) {
+    const execute = async (c: PoolClient) => {
+      if (idempotency) {
+        await c.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", [
+          idempotency.key,
+        ]);
+        const r = await c.query(
+          "SELECT request_hash,issue_id FROM idempotency_keys WHERE key=$1",
+          [idempotency.key],
+        );
+        if (r.rows[0]) {
+          if (r.rows[0].request_hash !== idempotency.hash)
+            throw new AppError(
+              "IDEMPOTENCY_CONFLICT",
+              409,
+              "Idempotency key was used for a different request",
+            );
+          return { id: r.rows[0].issue_id as string, replayed: true };
+        }
+      }
+      const r = await c.query(
+        "INSERT INTO issues(title,description,category,severity,latitude,longitude,reporter_id) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING *",
+        [
+          input.title ??
+            `${analysis.objects[0] ?? "Field issue"}: ${analysis.conditions[0] ?? "Needs inspection"}`.slice(
+              0,
+              200,
+            ),
+          input.description,
+          input.category ?? analysis.suggestedCategory,
+          input.severity ?? analysis.suggestedSeverity,
+          input.latitude,
+          input.longitude,
+          input.reporterId ?? null,
+        ],
+      );
+      const issue = r.rows[0];
+      const observation = await this.insertObservation(
+        c,
+        issue.id,
+        input,
+        media,
+        analysis,
+      );
+      await this.event(c, issue.id, "ISSUE_CREATED", {
+        observationId: observation.id,
+      });
+      await this.event(c, issue.id, "CLASSIFICATION_UPDATED", {
+        category: issue.category,
+        severity: issue.severity,
+        source: "validated_evidence",
+      });
+      if (idempotency)
+        await c.query(
+          "INSERT INTO idempotency_keys(key,request_hash,issue_id) VALUES($1,$2,$3)",
+          [idempotency.key, idempotency.hash, issue.id],
+        );
+      return { id: issue.id as string, replayed: false };
+    };
+    return client ? execute(client) : this.transaction(execute);
+  }
+  private async insertObservation(
+    c: PoolClient,
+    id: string,
+    input: ObservationInput,
+    media: StoredMedia,
+    analysis: Analysis,
+  ) {
+    return (
+      await c.query(
+        "INSERT INTO observations(issue_id,note,media_url,storage_key,mime_type,latitude,longitude,captured_at,ai_analysis) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *",
+        [
+          id,
+          input.note,
+          media.mediaUrl,
+          media.storageKey,
+          media.mimeType,
+          input.latitude,
+          input.longitude,
+          input.capturedAt ?? new Date().toISOString(),
+          JSON.stringify(analysis),
+        ],
+      )
+    ).rows[0];
+  }
+  async addObservation(
+    id: string,
+    input: ObservationInput,
+    media: StoredMedia,
+    analysis: Analysis,
+  ) {
+    return this.transaction(async (c) => {
+      const issue = await this.issue(c, id, true);
+      if (issue.status === "REJECTED")
+        throw new AppError(
+          "INVALID_STATUS_TRANSITION",
+          409,
+          "Rejected issues do not accept observations",
+        );
+      const o = await this.insertObservation(
+        c,
+        issue.id,
+        input,
+        media,
+        analysis,
+      );
+      await c.query(
+        "UPDATE issues SET updated_at=clock_timestamp() WHERE id=$1",
+        [issue.id],
+      );
+      await this.event(c, issue.id, "OBSERVATION_ADDED", {
+        observationId: o.id,
+      });
+      return camel(o);
+    });
+  }
+  async observations(id: string) {
+    const issue = await this.issue(this.pool, id);
+    return {
+      items: (
+        await this.pool.query(
+          "SELECT * FROM observations WHERE issue_id=$1 ORDER BY captured_at,created_at,id",
+          [issue.id],
+        )
+      ).rows.map(camel),
+    };
+  }
+  async pair(id: string, before: string, after: string) {
+    const issue = await this.issue(this.pool, id);
+    if (before === after)
+      throw new AppError(
+        "INVALID_DIFF",
+        400,
+        "Diff requires distinct observations",
+      );
+    const r = await this.pool.query(
+      "SELECT * FROM observations WHERE issue_id=$1 AND id=ANY($2::uuid[])",
+      [issue.id, [before, after]],
+    );
+    const b = r.rows.find((x) => x.id === before),
+      a = r.rows.find((x) => x.id === after);
+    if (!a || !b) throw notFound();
+    if (
+      a.captured_at < b.captured_at ||
+      (a.captured_at.getTime() === b.captured_at.getTime() &&
+        a.created_at <= b.created_at)
+    )
+      throw new AppError(
+        "INVALID_DIFF",
+        400,
+        "After observation must be newer than before observation",
+      );
+    return { issueId: issue.id as string, before: b, after: a };
+  }
+  async saveDiff(
+    id: string,
+    before: string,
+    after: string,
+    result: Comparison,
+  ) {
+    return this.transaction(async (c) => {
+      await this.issue(c, id, true);
+      const existing = await c.query(
+        "SELECT * FROM evidence_diffs WHERE issue_id=$1 AND before_observation_id=$2 AND after_observation_id=$3",
+        [id, before, after],
+      );
+      if (existing.rows[0]) return camel(existing.rows[0]);
+      const r = await c.query(
+        "INSERT INTO evidence_diffs(issue_id,before_observation_id,after_observation_id,summary,removed,added,unchanged,recommended_status,confidence,model,model_version) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *",
+        [
+          id,
+          before,
+          after,
+          result.summary,
+          JSON.stringify(result.removed),
+          JSON.stringify(result.added),
+          JSON.stringify(result.unchanged),
+          result.recommendedStatus,
+          result.confidence,
+          result.model,
+          result.modelVersion,
+        ],
+      );
+      await this.event(c, id, "DIFF_GENERATED", {
+        diffId: r.rows[0].id,
+        recommendedStatus: result.recommendedStatus,
+      });
+      await c.query(
+        "UPDATE issues SET updated_at=clock_timestamp() WHERE id=$1",
+        [id],
+      );
+      return camel(r.rows[0]);
+    });
+  }
+  async diffs(id: string) {
+    const issue = await this.issue(this.pool, id);
+    return {
+      items: (
+        await this.pool.query(
+          "SELECT * FROM evidence_diffs WHERE issue_id=$1 ORDER BY created_at,id",
+          [issue.id],
+        )
+      ).rows.map(camel),
+    };
+  }
+  async timeline(id: string) {
+    const issue = await this.issue(this.pool, id);
+    return {
+      events: (
+        await this.pool.query(
+          "SELECT * FROM issue_events WHERE issue_id=$1 ORDER BY created_at,id",
+          [issue.id],
+        )
+      ).rows.map(camel),
+    };
+  }
+  async patch(id: string, patch: PatchIssueInput, note = "") {
+    return this.transaction(async (c) => {
+      const current = await this.issue(c, id, true);
+      if (patch.status && !canTransition(current.status, patch.status))
+        throw new AppError(
+          "INVALID_STATUS_TRANSITION",
+          409,
+          `Cannot transition ${current.status} to ${patch.status}`,
+        );
+      const columns: Record<string, string> = {
+        title: "title",
+        description: "description",
+        category: "category",
+        severity: "severity",
+        status: "status",
+      };
+      const values: unknown[] = [current.id];
+      const assignments = Object.entries(patch).map(([key, value]) => {
+        values.push(value);
+        return `${columns[key]}=$${values.length}`;
+      });
+      if (patch.status === "RESOLVED")
+        assignments.push("resolved_at=COALESCE(resolved_at,clock_timestamp())");
+      await c.query(
+        `UPDATE issues SET ${assignments.join(",")},updated_at=clock_timestamp() WHERE id=$1`,
+        values,
+      );
+      if (patch.status && patch.status !== current.status) {
+        await this.event(c, current.id, "STATUS_CHANGED", {
+          from: current.status,
+          to: patch.status,
+          note,
+        });
+        if (patch.status === "RESOLVED")
+          await this.event(c, current.id, "ISSUE_RESOLVED", {
+            note,
+            source: "explicit_backend_action",
+          });
+      }
+      if (patch.category || patch.severity)
+        await this.event(c, current.id, "CLASSIFICATION_UPDATED", {
+          category: patch.category ?? current.category,
+          severity: patch.severity ?? current.severity,
+          source: "explicit_backend_action",
+        });
+      return current.id as string;
+    });
+  }
+  private async event(
+    c: PoolClient,
+    id: string,
+    type: string,
+    payload: unknown,
+  ) {
+    await c.query(
+      "INSERT INTO issue_events(issue_id,event_type,payload) VALUES($1,$2,$3)",
+      [id, type, JSON.stringify(payload)],
+    );
+  }
+  async list(filters: {
+    status?: string;
+    category?: string;
+    severity?: string;
+    limit: number;
+    cursor?: { createdAt: string; id: string };
+    nearLat?: number;
+    nearLon?: number;
+    radius?: number;
+  }) {
+    const params: unknown[] = [];
+    const where: string[] = [];
+    const bind = (v: unknown) => {
+      params.push(v);
+      return `$${params.length}`;
+    };
+    for (const k of ["status", "category", "severity"] as const)
+      if (filters[k]) where.push(`${k}=${bind(filters[k])}`);
+    if (filters.cursor)
+      where.push(
+        `(created_at,id)<(${bind(filters.cursor.createdAt)}::timestamptz,${bind(filters.cursor.id)}::uuid)`,
+      );
+    if (filters.nearLat !== undefined)
+      where.push(
+        `ST_DWithin(geom::geography,ST_SetSRID(ST_MakePoint(${bind(filters.nearLon)},${bind(filters.nearLat)}),4326)::geography,${bind(filters.radius)})`,
+      );
+    const result = await this.pool.query(
+      `SELECT *,to_char(created_at AT TIME ZONE 'UTC','YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"') AS cursor_created_at FROM issues ${where.length ? `WHERE ${where.join(" AND ")}` : ""} ORDER BY created_at DESC,id DESC LIMIT ${bind(filters.limit + 1)}`,
+      params,
+    );
+    const more = result.rows.length > filters.limit;
+    const rows = result.rows.slice(0, filters.limit);
+    const last = rows.at(-1);
+    return {
+      items: rows.map(camel),
+      nextCursor:
+        more && last
+          ? Buffer.from(
+              JSON.stringify({
+                createdAt: last.cursor_created_at,
+                id: last.id,
+              }),
+            ).toString("base64url")
+          : null,
+    };
+  }
+  async map(bbox: [number, number, number, number], limit: number) {
+    const [west, south, east, north] = bbox;
+    const predicate =
+      west <= east
+        ? "geom && ST_MakeEnvelope($1,$2,$3,$4,4326)"
+        : "(geom && ST_MakeEnvelope($1,$2,180,$4,4326) OR geom && ST_MakeEnvelope(-180,$2,$3,$4,4326))";
+    const r = await this.pool.query(
+      `SELECT * FROM issues WHERE ${predicate} ORDER BY created_at DESC,id DESC LIMIT $5`,
+      [west, south, east, north, limit + 1],
+    );
+    return {
+      type: "FeatureCollection",
+      truncated: r.rows.length > limit,
+      features: r.rows.slice(0, limit).map((x) => ({
+        type: "Feature",
+        geometry: { type: "Point", coordinates: [x.longitude, x.latitude] },
+        properties: camel(x),
+      })),
+    };
+  }
+  async nearby(
+    latitude: number,
+    longitude: number,
+    client: Pool | PoolClient = this.pool,
+  ) {
+    return (
+      await client.query(
+        "SELECT id,public_id,title FROM issues WHERE status NOT IN ('RESOLVED','REJECTED') AND ST_DWithin(geom::geography,ST_SetSRID(ST_MakePoint($1,$2),4326)::geography,100) LIMIT 10",
+        [longitude, latitude],
+      )
+    ).rows.map(camel);
+  }
+  async features(
+    id: string,
+    client: Pool | PoolClient = this.pool,
+  ): Promise<Record<string, string | number>> {
+    const i = await this.issue(client, id);
+    const r = (
+      await client.query(
+        "SELECT count(*)::int count,max(captured_at) last FROM observations WHERE issue_id=$1",
+        [i.id],
+      )
+    ).rows[0];
+    const changes = (
+      await client.query(
+        "SELECT count(*)::int count FROM evidence_diffs WHERE issue_id=$1 AND (jsonb_array_length(added)>0 OR jsonb_array_length(removed)>0)",
+        [i.id],
+      )
+    ).rows[0].count;
+    return {
+      days_since_last_observation: Math.max(
+        0,
+        (Date.now() - r.last.getTime()) / 86400000,
+      ),
+      previous_observation_count: r.count,
+      issue_age_days: (Date.now() - i.created_at.getTime()) / 86400000,
+      severity: i.severity,
+      category: i.category,
+      nearby_issue_count: (
+        await client.query(
+          "SELECT count(*)::int count FROM issues WHERE id<>$1 AND status NOT IN ('RESOLVED','REJECTED') AND ST_DWithin(geom::geography,ST_SetSRID(ST_MakePoint($2,$3),4326)::geography,100)",
+          [i.id, i.longitude, i.latitude],
+        )
+      ).rows[0].count,
+      previous_change_count: changes,
+      status: i.status,
+    };
+  }
+  async savePrediction(
+    id: string,
+    features: Record<string, string | number>,
+    prediction: Prediction,
+    client: Pool | PoolClient = this.pool,
+  ) {
+    await client.query(
+      "INSERT INTO revisit_predictions(issue_id,probability_changed,priority_score,features,model_version) VALUES($1,$2,$3,$4,$5)",
+      [
+        id,
+        prediction.probabilityChanged,
+        prediction.priorityScore,
+        JSON.stringify(features),
+        prediction.modelVersion,
+      ],
+    );
+  }
 }

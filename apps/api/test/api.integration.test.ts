@@ -1,32 +1,355 @@
-import { beforeAll, afterAll, describe, expect, it } from 'vitest';
-import { Pool } from 'pg';
-import { mkdtemp, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { createApp } from '../src/app.js';
-import { IssueRepository } from '../src/repository.js';
-import { IssueService } from '../src/service.js';
-import { LocalStorageProvider } from '../src/storage.js';
-import { migrate } from '../src/migrate.js';
-const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl6X8sAAAAASUVORK5CYII=','base64');
-const analysis={objects:['park bench'],conditions:['broken slat'],suggestedCategory:'INFRASTRUCTURE',suggestedSeverity:'MEDIUM',evidence:['visible broken slat'],confidence:0.9,model:'test-fixture',modelVersion:'1'};
-const comparison={summary:'Seat repaired',removed:['broken slat'],added:['repaired seat'],unchanged:['frame'],recommendedStatus:'RESOLVED',confidence:0.9,model:'test-fixture',modelVersion:'1'};
-const describeDb=process.env.TEST_DATABASE_URL?describe:describe.skip;
-describeDb('real PostgreSQL API integration',()=>{
- let pool:Pool; let directory:string; let app:ReturnType<typeof createApp>; let issueId:string; let firstId:string; let secondId:string;
- const body=(note='broken bench')=>{const f=new FormData();f.set('title','Broken park bench');f.set('note',note);f.set('latitude','12.9716');f.set('longitude','77.5946');f.set('image',new File([png],'bench.png',{type:'image/png'}));return f};
- beforeAll(async()=>{pool=new Pool({connectionString:process.env.TEST_DATABASE_URL});await migrate(pool);await pool.query('TRUNCATE issues RESTART IDENTITY CASCADE; ALTER SEQUENCE issue_public_seq RESTART WITH 1');directory=await mkdtemp(join(tmpdir(),'fi-api-'));const repository=new IssueRepository(pool);const storage=new LocalStorageProvider(directory,'http://localhost:3000/media');const intelligence={analyze:async()=>analysis,compare:async()=>comparison,predict:async()=>({probabilityChanged:0.5,priorityScore:0.4,modelVersion:'test'})};app=createApp({service:new IssueService(repository,storage,intelligence as never),repository,storage,maxUploadBytes:1048576});});
- afterAll(async()=>{await pool?.end();if(directory)await rm(directory,{recursive:true,force:true});});
- it('creates geotagged issue and first observation atomically',async()=>{const r=await app.request('/v1/issues',{method:'POST',body:body(),headers:{'Idempotency-Key':'fixture-create'}});expect(r.status).toBe(201);const v=await r.json();issueId=v.id;firstId=v.observations[0].id;expect(v.publicId).toMatch(/^FI-\d{6,}$/);expect(v.latitude).toBe(12.9716);expect(v.status).toBe('OPEN');const geom=await pool.query('SELECT ST_X(geom) lon,ST_Y(geom) lat FROM issues WHERE id=$1',[issueId]);expect(geom.rows[0].lon).toBe(77.5946);});
- it('returns same issue for an idempotent replay and rejects conflicting payload',async()=>{const r=await app.request('/v1/issues',{method:'POST',body:body(),headers:{'Idempotency-Key':'fixture-create'}});expect(r.status).toBe(200);expect((await r.json()).id).toBe(issueId);const conflict=await app.request('/v1/issues',{method:'POST',body:body('different'),headers:{'Idempotency-Key':'fixture-create'}});expect(conflict.status).toBe(409);});
- it('retrieves issue and accepts map bounding-box and proximity queries',async()=>{expect((await app.request(`/v1/issues/${issueId}`)).status).toBe(200);const map=await app.request('/v1/issues/map?bbox=77,12,78,13');expect((await map.json()).features.map((x:any)=>x.properties.id)).toContain(issueId);const list=await app.request('/v1/issues?near_lat=12.9716&near_lon=77.5946&radius_meters=50');expect((await list.json()).items.map((x:any)=>x.id)).toContain(issueId);expect((await app.request('/v1/issues/map?bbox=181,12,190,13')).status).toBe(400);});
- it('appends a second observation and chronological event',async()=>{const r=await app.request(`/v1/issues/${issueId}/observations`,{method:'POST',body:body('repaired seat')});expect(r.status).toBe(201);secondId=(await r.json()).observation.id;const timeline=await (await app.request(`/v1/issues/${issueId}/timeline`)).json();expect(timeline.events.map((x:any)=>x.eventType)).toContain('OBSERVATION_ADDED');const rows=await (await app.request(`/v1/issues/${issueId}/observations`)).json();expect(rows.items).toHaveLength(2);});
- it('generates persisted diff but does not let model resolve issue',async()=>{const r=await app.request(`/v1/issues/${issueId}/diff`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({beforeObservationId:firstId,afterObservationId:secondId})});expect(r.status).toBe(201);expect((await r.json()).removed).toEqual(['broken slat']);expect((await (await app.request(`/v1/issues/${issueId}`)).json()).status).toBe('OPEN');expect((await (await app.request(`/v1/issues/${issueId}/diffs`)).json()).items).toHaveLength(1);});
- it('rejects same/reversed observations and cross-issue evidence',async()=>{const request=async(before:string,after:string)=>app.request(`/v1/issues/${issueId}/diff`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({beforeObservationId:before,afterObservationId:after})});expect((await request(firstId,firstId)).status).toBe(400);expect((await request(secondId,firstId)).status).toBe(400);const other=await (await app.request('/v1/issues',{method:'POST',body:body('other bench')})).json();expect((await request(firstId,other.observations[0].id)).status).toBe(404);});
- it('explicitly resolves and prevents invalid transitions',async()=>{const r=await app.request(`/v1/issues/${issueId}/resolve`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({note:'Verified on site'})});expect(r.status).toBe(200);expect((await r.json()).status).toBe('RESOLVED');const patch=await app.request(`/v1/issues/${issueId}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'OPEN'})});expect(patch.status).toBe(409);const events=(await (await app.request(`/v1/issues/${issueId}/timeline`)).json()).events;expect(events.map((x:any)=>x.eventType)).toContain('ISSUE_RESOLVED');});
+import { beforeAll, afterAll, describe, expect, it } from "vitest";
+import { Pool } from "pg";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { createApp } from "../src/app.js";
+import { IssueRepository } from "../src/repository.js";
+import { IssueService } from "../src/service.js";
+import { LocalStorageProvider } from "../src/storage.js";
+import { migrate } from "../src/migrate.js";
+const png = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl6X8sAAAAASUVORK5CYII=",
+  "base64",
+);
+const analysis = {
+  objects: ["park bench"],
+  conditions: ["broken slat"],
+  suggestedCategory: "INFRASTRUCTURE",
+  suggestedSeverity: "MEDIUM",
+  evidence: ["visible broken slat"],
+  confidence: 0.9,
+  model: "test-fixture",
+  modelVersion: "1",
+};
+const comparison = {
+  summary: "Seat repaired",
+  removed: ["broken slat"],
+  added: ["repaired seat"],
+  unchanged: ["frame"],
+  recommendedStatus: "RESOLVED",
+  confidence: 0.9,
+  model: "test-fixture",
+  modelVersion: "1",
+};
+const describeDb = process.env.TEST_DATABASE_URL ? describe : describe.skip;
+describeDb("real PostgreSQL API integration", () => {
+  let pool: Pool;
+  let directory: string;
+  let app: ReturnType<typeof createApp>;
+  let issueId: string;
+  let publicId: string;
+  let firstId: string;
+  let secondId: string;
+  const body = (note = "broken bench") => {
+    const f = new FormData();
+    f.set("title", "Broken park bench");
+    f.set("note", note);
+    f.set("latitude", "12.9716");
+    f.set("longitude", "77.5946");
+    f.set("image", new File([png], "bench.png", { type: "image/png" }));
+    return f;
+  };
+  beforeAll(async () => {
+    pool = new Pool({ connectionString: process.env.TEST_DATABASE_URL });
+    await migrate(pool);
+    await pool.query(
+      "TRUNCATE issues RESTART IDENTITY CASCADE; ALTER SEQUENCE issue_public_seq RESTART WITH 1",
+    );
+    directory = await mkdtemp(join(tmpdir(), "fi-api-"));
+    const repository = new IssueRepository(pool);
+    const storage = new LocalStorageProvider(
+      directory,
+      "http://localhost:3000/media",
+    );
+    const intelligence = {
+      analyze: async () => analysis,
+      compare: async () => comparison,
+      predict: async () => ({
+        probabilityChanged: 0.5,
+        priorityScore: 0.4,
+        modelVersion: "test",
+      }),
+    };
+    app = createApp({
+      service: new IssueService(repository, storage, intelligence as never),
+      repository,
+      storage,
+      maxUploadBytes: 1048576,
+    });
+  });
+  afterAll(async () => {
+    await pool?.end();
+    if (directory) await rm(directory, { recursive: true, force: true });
+  });
+  it("creates geotagged issue and first observation atomically", async () => {
+    const r = await app.request("/v1/issues", {
+      method: "POST",
+      body: body(),
+      headers: { "Idempotency-Key": "fixture-create" },
+    });
+    expect(r.status).toBe(201);
+    const v = await r.json();
+    issueId = v.id;
+    publicId = v.publicId;
+    firstId = v.observations[0].id;
+    expect(v.publicId).toMatch(/^FI-\d{6,}$/);
+    expect(v.latitude).toBe(12.9716);
+    expect(v.status).toBe("OPEN");
+    const geom = await pool.query(
+      "SELECT ST_X(geom) lon,ST_Y(geom) lat FROM issues WHERE id=$1",
+      [issueId],
+    );
+    expect(geom.rows[0].lon).toBe(77.5946);
+  });
+  it("returns same issue for an idempotent replay and rejects conflicting payload", async () => {
+    const r = await app.request("/v1/issues", {
+      method: "POST",
+      body: body(),
+      headers: { "Idempotency-Key": "fixture-create" },
+    });
+    expect(r.status).toBe(200);
+    expect((await r.json()).id).toBe(issueId);
+    const conflict = await app.request("/v1/issues", {
+      method: "POST",
+      body: body("different"),
+      headers: { "Idempotency-Key": "fixture-create" },
+    });
+    expect(conflict.status).toBe(409);
+  });
+  it("retrieves issue and accepts map bounding-box and proximity queries", async () => {
+    expect((await app.request(`/v1/issues/${issueId}`)).status).toBe(200);
+    const map = await app.request("/v1/issues/map?bbox=77,12,78,13");
+    expect(
+      (await map.json()).features.map((x: any) => x.properties.id),
+    ).toContain(issueId);
+    const list = await app.request(
+      "/v1/issues?near_lat=12.9716&near_lon=77.5946&radius_meters=50",
+    );
+    expect((await list.json()).items.map((x: any) => x.id)).toContain(issueId);
+    expect(
+      (await app.request("/v1/issues/map?bbox=181,12,190,13")).status,
+    ).toBe(400);
+  });
+  it("accepts normalized human and UUID identifiers", async () => {
+    expect(
+      (await app.request(`/v1/issues/${publicId.toLowerCase()}`)).status,
+    ).toBe(200);
+    expect(
+      (await app.request(`/v1/issues/${issueId.toUpperCase()}`)).status,
+    ).toBe(200);
+    expect((await app.request("/v1/issues/invalid-id")).status).toBe(400);
+  });
+  it("appends a second observation and chronological event", async () => {
+    const r = await app.request(`/v1/issues/${issueId}/observations`, {
+      method: "POST",
+      body: body("repaired seat"),
+    });
+    expect(r.status).toBe(201);
+    secondId = (await r.json()).observation.id;
+    const timeline = await (
+      await app.request(`/v1/issues/${issueId}/timeline`)
+    ).json();
+    expect(timeline.events.map((x: any) => x.eventType)).toContain(
+      "OBSERVATION_ADDED",
+    );
+    const rows = await (
+      await app.request(`/v1/issues/${issueId}/observations`)
+    ).json();
+    expect(rows.items).toHaveLength(2);
+  });
+  it("generates persisted diff but does not let model resolve issue", async () => {
+    const r = await app.request(`/v1/issues/${issueId}/diff`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        beforeObservationId: firstId,
+        afterObservationId: secondId,
+      }),
+    });
+    expect(r.status).toBe(201);
+    expect((await r.json()).removed).toEqual(["broken slat"]);
+    expect(
+      (await (await app.request(`/v1/issues/${issueId}`)).json()).status,
+    ).toBe("OPEN");
+    expect(
+      (await (await app.request(`/v1/issues/${issueId}/diffs`)).json()).items,
+    ).toHaveLength(1);
+  });
+  it("rejects same/reversed observations and cross-issue evidence", async () => {
+    const request = async (before: string, after: string) =>
+      app.request(`/v1/issues/${issueId}/diff`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          beforeObservationId: before,
+          afterObservationId: after,
+        }),
+      });
+    expect((await request(firstId, firstId)).status).toBe(400);
+    expect((await request(secondId, firstId)).status).toBe(400);
+    const other = await (
+      await app.request("/v1/issues", {
+        method: "POST",
+        body: body("other bench"),
+      })
+    ).json();
+    expect((await request(firstId, other.observations[0].id)).status).toBe(404);
+  });
+  it("explicitly resolves and prevents invalid transitions", async () => {
+    const r = await app.request(`/v1/issues/${issueId}/resolve`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ note: "Verified on site" }),
+    });
+    expect(r.status).toBe(200);
+    expect((await r.json()).status).toBe("RESOLVED");
+    const patch = await app.request(`/v1/issues/${issueId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "OPEN" }),
+    });
+    expect(patch.status).toBe(409);
+    const events = (
+      await (await app.request(`/v1/issues/${issueId}/timeline`)).json()
+    ).events;
+    expect(events.map((x: any) => x.eventType)).toContain("ISSUE_RESOLVED");
+  });
 
- it('serializes concurrent idempotency keys without duplicating issue or events',async()=>{const responses=await Promise.all([1,2,3].map(()=>app.request('/v1/issues',{method:'POST',body:body(),headers:{'Idempotency-Key':'concurrent-fixture'}})));expect(responses.map(x=>x.status).sort()).toEqual([200,200,201]);const objects=await Promise.all(responses.map(x=>x.json()));expect(new Set(objects.map(x=>x.id)).size).toBe(1);const count=await pool.query('SELECT count(*)::int c FROM issue_events WHERE issue_id=$1 AND event_type=$2',[objects[0].id,'ISSUE_CREATED']);expect(count.rows[0].c).toBe(1);});
- it('rolls back all tables when an event write fails',async()=>{const before=(await pool.query('SELECT count(*)::int c FROM issues')).rows[0].c;await pool.query("CREATE FUNCTION fixture_reject_event() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'fixture'; END $$; CREATE TRIGGER fixture_event_failure BEFORE INSERT ON issue_events FOR EACH ROW EXECUTE FUNCTION fixture_reject_event()");try{expect((await app.request('/v1/issues',{method:'POST',body:body('transaction rollback')})).status).toBe(500);expect((await pool.query('SELECT count(*)::int c FROM issues')).rows[0].c).toBe(before);}finally{await pool.query('DROP TRIGGER fixture_event_failure ON issue_events; DROP FUNCTION fixture_reject_event()');}});
- it('expands human identifiers beyond six digits',async()=>{await pool.query("SELECT setval('issue_public_seq',999999,true)");const r=await app.request('/v1/issues',{method:'POST',body:body('millionth')});expect((await r.json()).publicId).toBe('FI-1000000');});
- it('rejects client URL evidence, invalid MIME and oversized bodies',async()=>{const f=body();f.delete('image');f.set('mediaUrl','http://169.254.169.254/latest/meta-data');expect((await app.request('/v1/issues',{method:'POST',body:f})).status).toBe(400);const bad=body();bad.set('image',new File(['bad'],'bench.png',{type:'image/png'}));expect((await app.request('/v1/issues',{method:'POST',body:bad})).status).toBe(400);});
+  it("accepts a bodyless explicit resolution replay", async () => {
+    const response = await app.request(`/v1/issues/${issueId}/resolve`, {
+      method: "POST",
+    });
+    expect(response.status).toBe(200);
+    expect((await response.json()).status).toBe("RESOLVED");
+  });
+  it("serializes concurrent idempotency keys without duplicating issue or events", async () => {
+    const responses = await Promise.all(
+      [1, 2, 3].map(() =>
+        app.request("/v1/issues", {
+          method: "POST",
+          body: body(),
+          headers: { "Idempotency-Key": "concurrent-fixture" },
+        }),
+      ),
+    );
+    expect(responses.map((x) => x.status).sort()).toEqual([200, 200, 201]);
+    const objects = await Promise.all(responses.map((x) => x.json()));
+    expect(new Set(objects.map((x) => x.id)).size).toBe(1);
+    const count = await pool.query(
+      "SELECT count(*)::int c FROM issue_events WHERE issue_id=$1 AND event_type=$2",
+      [objects[0].id, "ISSUE_CREATED"],
+    );
+    expect(count.rows[0].c).toBe(1);
+  });
+  it("rolls back all tables when an event write fails", async () => {
+    const before = (await pool.query("SELECT count(*)::int c FROM issues"))
+      .rows[0].c;
+    await pool.query(
+      "CREATE FUNCTION fixture_reject_event() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'fixture'; END $$; CREATE TRIGGER fixture_event_failure BEFORE INSERT ON issue_events FOR EACH ROW EXECUTE FUNCTION fixture_reject_event()",
+    );
+    try {
+      expect(
+        (
+          await app.request("/v1/issues", {
+            method: "POST",
+            body: body("transaction rollback"),
+          })
+        ).status,
+      ).toBe(500);
+      expect(
+        (await pool.query("SELECT count(*)::int c FROM issues")).rows[0].c,
+      ).toBe(before);
+    } finally {
+      await pool.query(
+        "DROP TRIGGER fixture_event_failure ON issue_events; DROP FUNCTION fixture_reject_event()",
+      );
+    }
+  });
+  it("expands human identifiers beyond six digits", async () => {
+    await pool.query("SELECT setval('issue_public_seq',999999,true)");
+    const r = await app.request("/v1/issues", {
+      method: "POST",
+      body: body("millionth"),
+    });
+    expect((await r.json()).publicId).toBe("FI-1000000");
+  });
+
+  it("paginates tied microsecond creation times without omissions", async () => {
+    const ids = [
+      "10000000-0000-4000-8000-000000000001",
+      "10000000-0000-4000-8000-000000000002",
+      "10000000-0000-4000-8000-000000000003",
+    ];
+    try {
+      for (const id of ids)
+        await pool.query(
+          "INSERT INTO issues(id,title,category,severity,latitude,longitude,created_at) VALUES($1,'Pagination fixture','OTHER','LOW',0,0,'2030-01-01T00:00:00.123456Z')",
+          [id],
+        );
+      const found: string[] = [];
+      let cursor: string | null = null;
+      for (let page = 0; page < 3; page++) {
+        const r = await (
+          await app.request(
+            "/v1/issues?limit=1" + (cursor ? "&cursor=" + cursor : ""),
+          )
+        ).json();
+        found.push(r.items[0].id);
+        cursor = r.nextCursor;
+      }
+      expect(new Set(found)).toEqual(new Set(ids));
+    } finally {
+      await pool.query("DELETE FROM issues WHERE id=ANY($1::uuid[])", [ids]);
+    }
+  });
+  it("maps an antimeridian crossing without matching Greenwich", async () => {
+    const ids = [
+      "20000000-0000-4000-8000-000000000001",
+      "20000000-0000-4000-8000-000000000002",
+    ];
+    try {
+      for (let i = 0; i < ids.length; i++)
+        await pool.query(
+          "INSERT INTO issues(id,title,category,severity,latitude,longitude) VALUES($1,'Map fixture','OTHER','LOW',1,$2)",
+          [ids[i], i === 0 ? 179 : -179],
+        );
+      const r = await (
+        await app.request("/v1/issues/map?bbox=170,-5,-170,5")
+      ).json();
+      expect(new Set(r.features.map((x: any) => x.properties.id))).toEqual(
+        new Set(ids),
+      );
+    } finally {
+      await pool.query("DELETE FROM issues WHERE id=ANY($1::uuid[])", [ids]);
+    }
+  });
+  it("rejects client URL evidence, invalid MIME and oversized bodies", async () => {
+    const oversized = await app.request("/v1/issues", {
+      method: "POST",
+      headers: { "Content-Type": "application/octet-stream" },
+      body: new Uint8Array(1200000),
+    });
+    expect(oversized.status).toBe(413);
+    const duplicate = body();
+    duplicate.append(
+      "image",
+      new File([png], "second.png", { type: "image/png" }),
+    );
+    expect(
+      (await app.request("/v1/issues", { method: "POST", body: duplicate }))
+        .status,
+    ).toBe(400);
+    const f = body();
+    f.delete("image");
+    f.set("mediaUrl", "http://169.254.169.254/latest/meta-data");
+    expect(
+      (await app.request("/v1/issues", { method: "POST", body: f })).status,
+    ).toBe(400);
+    const bad = body();
+    bad.set("image", new File(["bad"], "bench.png", { type: "image/png" }));
+    expect(
+      (await app.request("/v1/issues", { method: "POST", body: bad })).status,
+    ).toBe(400);
+  });
 });
