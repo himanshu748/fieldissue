@@ -15,7 +15,7 @@ The complete local backend vertical slice passes against genuine PostgreSQL 17.1
 - Real PostGIS geography distance, vector similarity and HNSW index checks passed
 - Separate fresh seed validation: 7 issues, 8 observations, 1 manually authored resolved bench diff, 14 timeline events; all eight actual media routes returned valid labeled 640×240 PNGs; reapplication was idempotent
 - Independent code review and independent rerun found no remaining critical local-slice defect
-- Production npm audit: zero high/critical, one moderate underlying advisory propagated across five dependency nodes, no available fix
+- Production npm audit: zero high/critical, one moderate underlying advisory propagated across five dependency nodes; no patched sprintf-js release is listed. npm suggests a Mastra 1.0.4 replacement flagged as a breaking change, which was not applied
 
 The actual command output is in [final-verification.log](final-verification.log); database version/query evidence is in [spatial-database.txt](spatial-database.txt). Tests cover concurrent idempotency, rollback, malformed output, status/observation ownership, timeout, storage, exact cursor precision, antimeridian maps, audio cache concurrency, and hosted database TLS option consistency.
 
@@ -43,4 +43,4 @@ This provisions a separate disposable fieldissue_test database and rejects a tes
 
 ## Dependency warning
 
-GHSA-hp3w-g68c-fv3c affects sprintf-js@1.0.3 through Mastra's gray-matter/js-yaml/argparse chain. Its trigger is attacker-controlled sprintf format strings, which these routes do not accept or execute. Workflow import loads gray-matter/js-yaml but did not load argparse/sprintf-js in the inspected CommonJS cache. This is a residual advisory, not evidence that all transitive code is unreachable or a claim of zero vulnerabilities. No incompatible override was introduced.
+GHSA-hp3w-g68c-fv3c affects sprintf-js@1.0.3 through Mastra's gray-matter/js-yaml/argparse chain. Its trigger is attacker-controlled sprintf format strings, which these routes do not accept or execute. Workflow import loads gray-matter/js-yaml but did not load argparse/sprintf-js in the inspected CommonJS cache. This is a residual advisory, not evidence that all transitive code is unreachable or a claim of zero vulnerabilities. No incompatible override or unverified Mastra downgrade was introduced.
