@@ -44,3 +44,7 @@ This provisions a separate disposable fieldissue_test database and rejects a tes
 ## Dependency warning
 
 GHSA-hp3w-g68c-fv3c affects sprintf-js@1.0.3 through Mastra's gray-matter/js-yaml/argparse chain. Its trigger is attacker-controlled sprintf format strings, which these routes do not accept or execute. Workflow import loads gray-matter/js-yaml but did not load argparse/sprintf-js in the inspected CommonJS cache. This is a residual advisory, not evidence that all transitive code is unreachable or a claim of zero vulnerabilities. No incompatible override or unverified Mastra downgrade was introduced.
+
+## Publication note
+
+Verification logs preserve their command results; local workspace and home-directory prefixes have been replaced with `<project-root>` and `<user-home>` for publication. `commits.txt` records the original local implementation commits. Publishing through the authenticated GitHub connector reproduces those logical changes with new commit identifiers.
