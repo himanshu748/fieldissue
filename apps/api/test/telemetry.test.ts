@@ -1,5 +1,25 @@
 import { expect, it } from "vitest";
-import { sanitizeEvent } from "../src/telemetry.js";
+import { sanitizeEvent, sanitizeSpan } from "../src/telemetry.js";
+it("strips private attributes and unknown fields from streamed spans", () => {
+  const span = sanitizeSpan({
+    trace_id: "a".repeat(32),
+    span_id: "b".repeat(16),
+    start_timestamp: 1,
+    end_timestamp: 2,
+    status: "ok",
+    is_segment: true,
+    name: "secret-note",
+    attributes: { "sentry.op": "secret", api_key: "secret-key" },
+    links: [{ attributes: { note: "secret-linked-note" } }],
+    future_sdk_field: "secret-private-payload",
+  } as any);
+  expect(JSON.stringify(span)).not.toContain("secret");
+  expect(span.name).toBe("FieldIssue operation");
+  expect(span.attributes).toEqual({ "sentry.op": "fieldissue.operation" });
+  expect(span.start_timestamp).toBe(1);
+  expect(span.end_timestamp).toBe(2);
+  expect(span.links).toEqual([]);
+});
 it("strips private request bodies, secrets and breadcrumbs", () => {
   const event: any = sanitizeEvent({
     request: { data: "image bytes", headers: { authorization: "secret" } },

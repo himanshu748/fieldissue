@@ -29,7 +29,9 @@ scripts/local-db.sh run scripts/verify-vertical-slice.sh
 
 This provisions a separate disposable fieldissue_test database and rejects a test database with the same name as the development database. Database tests are destructive only to that dedicated test fixture. The command starts both services in one process/network lifetime and stops them after verification. For ordinary local Docker development use the README's make dev/test/migrate/seed/lint commands.
 
-## Honest verification limits
+## Original implementation verification limits (historical)
+
+The bullets below describe the initial implementation snapshot. Subsequent CI, live Gemma, SerpApi, Sentry, Tinker, Tiger Data console, and Entire evidence supersede the relevant bullets; see [the current stack ledger](../zero-cost-stack.md). No full hosted readiness is claimed.
 
 - Docker is absent from this execution workspace. Dockerfiles/Compose passed static review; image builds and Compose startup were not executed
 - Node 24.19.0 and Python 3.12.14 were used here; Docker targets Node 22 and Python 3.12

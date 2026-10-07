@@ -40,15 +40,15 @@ remain blocked until database trust, durable storage and TabPFN are resolved.
 | Tiger Data | Free shared service provisioned; authenticated SQL console verified PostgreSQL 18.6, PostGIS 3.6.4, vector 0.8.6 and both migrations | Direct `pg` connection still fails certificate-chain verification. Do not disable TLS verification or upgrade to paid compute to hide it |
 | SerpApi | Existing Free Plan verified by Account API; production adapter returned a nearby Bengaluru landmark after fixing single-place and distance handling | 250 searches/month plan. `node scripts/live-serpapi.mjs` checks zero-price plan and remaining allowance before one public lookup |
 | ElevenLabs | Real TTS adapter, MP3 validation, deterministic saved-issue briefing and cache implemented/tested | Sign-in and key/voice configuration pending; use free quota or a verified no-card promotion. No speech call made |
-| Sentry | Sanitized Node/Python and Tinker instrumentation implemented/tested. Existing Sponsored Team subscription has a **$0 pay-as-you-go limit** | Dedicated `fieldissue` Hono project form prepared; creation approval and live sanitized-event verification pending |
-| Tinker | Actual SDK training and base-versus-checkpoint evaluation scripts; 54 transparently synthetic note annotations, held-out split and provenance checks | Account terms step pending; no verified free training credits, no training run, no checkpoint or fabricated scores. Remains separate from Gemma vision |
+| Sentry | Sanitized Node/Python and Tinker instrumentation implemented/tested. Existing Sponsored Team subscription has a **$0 pay-as-you-go limit** | Dedicated `fieldissue` Hono project created; controlled sanitized error verified as FIELDISSUE-1 and 37 actual Tinker evaluation events as FIELDISSUE-2 in the dashboard. See `docs/verification/sentry-live-2026-10-07.json` |
+| Tinker | Actual SDK training and base-versus-checkpoint evaluation scripts; 54 transparently synthetic note annotations, held-out split and provenance checks | MLH $10 grant redeemed; auto-reload off, no saved payment method. Named key saved only in ignored local environment. Real one-epoch Qwen3-8B training and 18-note held-out evaluation completed under a $1 promotional-credit cap; manifest, raw outputs and bounded cost evidence are in `docs/verification/tinker-*-2026-10-07.json`. Both models: 18/18 strict schema, 17/18 category. Severity: base 14/18, trained 16/18. Tiny synthetic demo only; one-hour checkpoint TTL. Remains separate from Gemma vision |
 | Prior Labs TabPFN | Real local classifier adapter with all eight requested features, official-weight configuration, strict CSV validation and bounded inference | Genuine labeled revisit history and official weights/license missing. Local inference has no per-call cash charge, but real data cannot be fabricated; no production heuristic fallback |
 | Entire | Official CLI 0.11.4 downloaded and checksum verified; local Codex setup initialized. This actual session was manually attached to checkpoint `01M4AQGE79FAFZK4W186TFH848`; telemetry and automatic checkpoint pushing disabled | Seven Codex hooks require approval via `/hooks` for future automatic capture. Workspace-specific hook paths and captured transcripts stay local. No remote session publication is claimed |
 
 ## Verified boundaries
 
-- No paid resource, credit purchase, subscription upgrade or training job was
-  created during this setup. Render's existing promotional credit balance was
+- No cash purchase, paid hosting resource, or subscription upgrade was made.
+  Tinker training uses the redeemed MLH promotional grant only. Render's credit balance was
   previously verified as $50 and was not used by this work.
 - Provider quotas and credit expiration can change. Recheck the account before
   activation; never treat a historical screenshot as unlimited free usage.

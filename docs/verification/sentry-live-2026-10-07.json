@@ -1,0 +1,23 @@
+{
+  "kind": "fieldissue-sentry-live-verification",
+  "verifiedAt": "2026-10-07T10:10:21.845Z",
+  "project": "fieldissue",
+  "platform": "node-hono",
+  "eventId": "042e1e5a055646a6b59cc25a8d51b4d5",
+  "issue": "FIELDISSUE-1",
+  "issueUrl": "https://himanshu-lj.sentry.io/issues/7778518922/?project=4512214382346240",
+  "verification": "Controlled sanitized error sent through initializeTelemetry/reportFailure/flushTelemetry and observed in project dashboard",
+  "code": "LIVE_INTEGRATION_CHECK",
+  "operation": "integration_verification",
+  "usersReported": 0,
+  "cashSpentUsd": 0,
+  "payAsYouGoLimitUsd": 0,
+  "limitations": "Controlled event delivery verifies transport and sanitization, not every production trace or provider error.",
+  "evaluation": {
+    "issue": "FIELDISSUE-2",
+    "issueUrl": "https://himanshu-lj.sentry.io/issues/7778539212/?project=4512214382346240",
+    "observedEventCount": 37,
+    "usersReported": 0,
+    "description": "18 base and 18 checkpoint sampling events plus one comparison event from the actual Tinker evaluation"
+  }
+}

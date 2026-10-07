@@ -52,6 +52,48 @@ export function sanitizeEvent<T extends Record<string, unknown>>(event: T): T {
   if (event.transaction) clean.transaction = "FieldIssue API";
   return clean as T;
 }
+type StreamedSpan = Parameters<
+  NonNullable<Sentry.NodeOptions["beforeSendSpan"]>
+>[0];
+export function sanitizeSpan(span: StreamedSpan): StreamedSpan {
+  return {
+    trace_id: span.trace_id,
+    span_id: span.span_id,
+    parent_span_id: span.parent_span_id,
+    start_timestamp: span.start_timestamp,
+    end_timestamp: span.end_timestamp,
+    status: span.status,
+    is_segment: span.is_segment,
+    name: [
+      "API request",
+      "database transaction",
+      "Gemma evidence analysis",
+      "Gemma evidence comparison",
+      "TabPFN revisit prediction",
+      "Mastra workflow",
+      "place-context",
+      "audio-summary",
+    ].includes(span.name)
+      ? span.name
+      : "FieldIssue operation",
+    attributes: {
+      "sentry.op":
+        typeof span.attributes["sentry.op"] === "string" &&
+        [
+          "http.server",
+          "http.client",
+          "db.transaction",
+          "ai.gemma",
+          "ai.tabpfn",
+          "ai.workflow",
+        ].includes(span.attributes["sentry.op"])
+          ? span.attributes["sentry.op"]
+          : "fieldissue.operation",
+    },
+    links: [],
+  };
+}
+
 export function initializeTelemetry(dsn?: string) {
   if (!dsn) return;
   Sentry.init({
@@ -71,38 +113,13 @@ export function initializeTelemetry(dsn?: string) {
       stackFrameVariables: false,
       frameContextLines: 0,
     },
+    traceLifecycle: "stream",
     tracesSampleRate: 0.1,
     beforeSend: (event) =>
       sanitizeEvent(
         event as unknown as Record<string, unknown>,
       ) as unknown as typeof event,
-    beforeSendTransaction: (event) =>
-      sanitizeEvent(
-        event as unknown as Record<string, unknown>,
-      ) as unknown as typeof event,
-    beforeSendSpan: (span) => ({
-      ...span,
-      name: [
-        "API request",
-        "database transaction",
-        "Gemma evidence analysis",
-        "Gemma evidence comparison",
-        "TabPFN revisit prediction",
-        "Mastra workflow",
-        "place-context",
-        "audio-summary",
-      ].includes(span.name)
-        ? span.name
-        : "FieldIssue operation",
-      attributes: {
-        "sentry.op":
-          typeof span.attributes["sentry.op"] === "string" &&
-          /^[a-z.]{1,40}$/.test(span.attributes["sentry.op"])
-            ? span.attributes["sentry.op"]
-            : "fieldissue.operation",
-      },
-      links: [],
-    }),
+    beforeSendSpan: sanitizeSpan,
   });
   enabled = true;
 }

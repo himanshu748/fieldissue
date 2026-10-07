@@ -1,6 +1,6 @@
 # FieldIssue: real Tinker note → compact strict JSON demo
 
-This runnable supervised fine-tuning/evaluation demonstration uses the actual Tinker SDK. No paid training or inference run was performed to produce this repository, and no measured model scores are claimed. Running with credentials uses Tinker's remote service and can incur training, sampling, and checkpoint-storage charges. Review [current models and pricing](https://tinker-docs.thinkingmachines.ai/tinker/models/models_and_pricing/) first.
+This runnable supervised fine-tuning/evaluation demonstration uses the actual Tinker SDK. A real credit-funded Qwen3-8B run completed on October 7, 2026: 36 training notes, one epoch, nine optimizer steps, and an 18-note held-out base-versus-checkpoint evaluation. The [training manifest](../../../docs/verification/tinker-training-2026-10-07.json), [raw evaluation](../../../docs/verification/tinker-evaluation-2026-10-07.json), and [cost evidence](../../../docs/verification/tinker-cost-2026-10-07.json) preserve the results. Both models passed strict JSON/schema validation on 18/18 notes; category accuracy stayed at 17/18, and severity accuracy changed from 14/18 to 16/18. This is a tiny synthetic plumbing demonstration, not real-world validation. Checkpoints have a one-hour TTL and are not permanent deployed models. Running with credentials uses Tinker's remote service and can incur training, sampling, and checkpoint-storage charges. Review [current models and pricing](https://tinker-docs.thinkingmachines.ai/tinker/models/models_and_pricing/) first.
 
 ## Canonical learned target
 
@@ -60,7 +60,7 @@ python -m pip install -e '.[dev,training]'
 # Set TINKER_API_KEY securely in your local environment. Do not commit it.
 ```
 
-Required optional dependency: `tinker>=0.30.4,<1`. The SDK brings its tokenizer/Transformers dependency. This implementation does not require PyTorch or the Tinker Cookbook. Importing `training.common`, `training.train`, or `training.evaluate` does not import Tinker or contact a service.
+Required training dependencies: `tinker>=0.30.4,<1` and `jinja2>=3.1.6,<4` for the official chat template. The SDK brings its tokenizer/Transformers dependency. This implementation does not require PyTorch or the Tinker Cookbook. Importing `training.common`, `training.train`, or `training.evaluate` does not import Tinker or contact a service.
 
 Without `TINKER_API_KEY`, either executable exits with code 2 and a useful message **before importing the SDK or making a network request**. `--help` and offline unit tests work without a key or Tinker installation.
 

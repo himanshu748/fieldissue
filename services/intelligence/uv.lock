@@ -382,6 +382,7 @@ tabpfn = [
     { name = "tabpfn" },
 ]
 training = [
+    { name = "jinja2" },
     { name = "tinker" },
 ]
 
@@ -389,6 +390,7 @@ training = [
 requires-dist = [
     { name = "fastapi", specifier = ">=0.115,<1" },
     { name = "httpx", specifier = ">=0.28,<1" },
+    { name = "jinja2", marker = "extra == 'training'", specifier = ">=3.1.6,<4" },
     { name = "numpy", marker = "extra == 'tabpfn'", specifier = ">=1.26,<3" },
     { name = "pydantic", specifier = ">=2.10,<3" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8,<10" },
