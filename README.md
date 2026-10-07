@@ -115,6 +115,8 @@ The wrapper's `run` command keeps the database and its child command in one proc
 
 ## Tests and verification limits
 
+The `Backend CI` GitHub Actions workflow runs `make test` against a disposable real PostGIS/pgvector database, runs lint, starts/migrates/seeds the Docker stack, verifies both extensions, and exercises the HTTP vertical slice. It then rebuilds the API with the compiled runtime target and repeats the HTTP checks without the source bind mount. Both HTTP runs explicitly use development AI fixtures. CI requires no provider secrets and retains diagnostic logs as a workflow artifact; a passing run is not evidence of live AI quality or deployment.
+
 ```sh
 npm run lint
 npm run build
@@ -182,6 +184,8 @@ curl --fail-with-body -sS -X POST "$BASE/v1/issues/$ISSUE_ID/revisit-prediction"
 ```
 
 An idempotent replay returns the same issue; reusing a key with different evidence is a conflict. Observations may inherit the issue's coordinates if omitted. Comparisons require two distinct observations from the same issue in chronological order. Use `GET /v1/issues/{id}/observations` and `GET /v1/issues/{id}/diffs` for evidence history. `PATCH /v1/issues/{id}` updates allowed issue fields/status, subject to transition rules. Both UUID and `FI-...` routes are supported. Lists expose `items` and `nextCursor`; pass that cursor to retrieve the next page. Map output is GeoJSON with bounded `limit`; bounding boxes can cross the antimeridian.
+
+Issue creation runs inference and media uploads outside the database transaction. A short transaction rechecks the idempotency key under a lock and commits the issue, first observation, timeline events and key together. Already committed replays bypass inference and uploads. Concurrent first attempts can perform duplicate inference/uploads, but only one issue commits and unused uploads are cleaned up. Optional revisit metadata runs after commit; feature, prediction or prediction-write failures return `revisitMetadata.available=false` without rolling back the issue or deleting its evidence.
 
 `GET /health` is liveness; `GET /ready` checks database schema availability and intelligence readiness. Errors contain a stable code and request ID, without echoing notes, images, credentials, or raw provider responses. The API returns an `X-Request-ID` header.
 
