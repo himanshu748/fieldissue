@@ -8,7 +8,6 @@ import { IssueRepository } from "./repository.js";
 import type { IntelligenceProvider, EvidenceInput } from "./intelligence.js";
 import type { StorageProvider, Media } from "./storage.js";
 import { AppError } from "./errors.js";
-import type { PoolClient } from "pg";
 import {
   runCreateWorkflow,
   runRevisitWorkflow,
@@ -37,75 +36,55 @@ export class IssueService {
       .digest("hex");
     let cleanupKey: string | undefined;
     try {
-      const created = await this.repository.transaction(async (c) => {
-        if (key) {
-          await c.query(
-            "SELECT pg_advisory_xact_lock(hashtextextended($1,0))",
-            [key],
-          );
-          const existing = (
-            await c.query(
-              "SELECT request_hash,issue_id FROM idempotency_keys WHERE key=$1",
-              [key],
-            )
-          ).rows[0];
-          if (existing) {
-            if (existing.request_hash !== hash)
-              throw new AppError(
-                "IDEMPOTENCY_CONFLICT",
-                409,
-                "Idempotency key was used for a different request",
-              );
-            return { id: existing.issue_id as string, replayed: true };
-          }
-        }
+      // Committed replays need no provider calls. The repository rechecks under
+      // its transaction lock to handle requests that race this initial lookup.
+      let issueId = key
+        ? await this.repository.findIdempotentIssue(key, hash)
+        : null;
+      let replayed = issueId !== null;
+      let revisitMetadata: Record<string, unknown> | undefined;
+      if (!issueId) {
         const result = await runCreateWorkflow(input, {
           analyze: () =>
             this.intelligence.analyze(this.evidence(media, input.note)),
-          nearby: () =>
-            this.repository.nearby(input.latitude, input.longitude, c),
+          nearby: () => this.repository.nearby(input.latitude, input.longitude),
           persist: async (_input, analysis) => {
             const stored = await this.storage.put(media);
             cleanupKey = stored.storageKey;
-            return (
-              await this.repository.create(
-                input,
-                stored,
-                analysis,
-                undefined,
-                c,
-              )
-            ).id;
+            // Only issue/observation/event/idempotency writes hold a connection.
+            // Inference and storage IO run outside the database transaction.
+            const created = await this.repository.create(
+              input,
+              stored,
+              analysis,
+              key ? { key, hash } : undefined,
+            );
+            replayed = created.replayed;
+            if (replayed) await this.storage.delete(stored.storageKey);
+            // Once committed, later optional failures must not delete evidence.
+            cleanupKey = undefined;
+            return created.id;
           },
-          metadata: (issueId) => this.revisitMetadata(issueId, c),
+          metadata: (id) =>
+            replayed ? Promise.resolve({}) : this.revisitMetadata(id),
         });
-        if (key)
-          await c.query(
-            "INSERT INTO idempotency_keys(key,request_hash,issue_id) VALUES($1,$2,$3)",
-            [key, hash, result.issueId],
-          );
-        return {
-          id: result.issueId,
-          replayed: false,
-          revisitMetadata: result.revisitMetadata,
-        };
-      });
-      cleanupKey = undefined;
+        issueId = result.issueId;
+        revisitMetadata = replayed ? undefined : result.revisitMetadata;
+      }
       const placeContext =
-        !created.replayed && this.place
+        !replayed && this.place
           ? await this.place
               .context(input.latitude, input.longitude)
               .catch(() => null)
           : null;
       return {
-        ...(await this.repository.get(created.id)),
+        ...(await this.repository.get(issueId)),
         placeContext,
         nearbyIssues: (
           await this.repository.nearby(input.latitude, input.longitude)
-        ).filter((nearby) => nearby.id !== created.id),
-        replayed: created.replayed,
-        revisitMetadata:
-          "revisitMetadata" in created ? created.revisitMetadata : undefined,
+        ).filter((nearby) => nearby.id !== issueId),
+        replayed,
+        revisitMetadata,
       };
     } catch (error) {
       if (cleanupKey) await this.storage.delete(cleanupKey).catch(() => {});
@@ -188,14 +167,12 @@ export class IssueService {
     );
     return { ...result.diff, revisitMetadata: result.revisitMetadata };
   }
-  private async revisitMetadata(
-    id: string,
-    client?: PoolClient,
-  ): Promise<Record<string, unknown>> {
-    const features = await this.repository.features(id, client);
+  private async revisitMetadata(id: string): Promise<Record<string, unknown>> {
+    let features: Record<string, string | number> | undefined;
     try {
+      features = await this.repository.features(id);
       const prediction = await this.intelligence.predict(features);
-      await this.repository.savePrediction(id, features, prediction, client);
+      await this.repository.savePrediction(id, features, prediction);
       return { available: true, features, prediction };
     } catch (error) {
       return {

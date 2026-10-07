@@ -49,9 +49,29 @@ export class IssueRepository {
     if (!r.rows[0]) throw notFound();
     return r.rows[0];
   }
+  async findIdempotentIssue(
+    key: string,
+    hash: string,
+    client: Pool | PoolClient = this.pool,
+  ): Promise<string | null> {
+    const r = await client.query(
+      "SELECT request_hash,issue_id FROM idempotency_keys WHERE key=$1",
+      [key],
+    );
+    if (!r.rows[0]) return null;
+    if (r.rows[0].request_hash !== hash)
+      throw new AppError(
+        "IDEMPOTENCY_CONFLICT",
+        409,
+        "Idempotency key was used for a different request",
+      );
+    return r.rows[0].issue_id as string;
+  }
   async get(
     id: string,
-  ): Promise<Row & { observations: Row[]; revisitPrediction: Row | null }> {
+  ): Promise<
+    Row & { id: string; observations: Row[]; revisitPrediction: Row | null }
+  > {
     const issue = await this.issue(this.pool, id);
     const observations = await this.observations(issue.id);
     const predictions = await this.pool.query(
@@ -60,6 +80,7 @@ export class IssueRepository {
     );
     return {
       ...camel(issue),
+      id: issue.id as string,
       observations: observations.items,
       revisitPrediction: predictions.rows[0]
         ? camel(predictions.rows[0])
@@ -78,19 +99,12 @@ export class IssueRepository {
         await c.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", [
           idempotency.key,
         ]);
-        const r = await c.query(
-          "SELECT request_hash,issue_id FROM idempotency_keys WHERE key=$1",
-          [idempotency.key],
+        const existingId = await this.findIdempotentIssue(
+          idempotency.key,
+          idempotency.hash,
+          c,
         );
-        if (r.rows[0]) {
-          if (r.rows[0].request_hash !== idempotency.hash)
-            throw new AppError(
-              "IDEMPOTENCY_CONFLICT",
-              409,
-              "Idempotency key was used for a different request",
-            );
-          return { id: r.rows[0].issue_id as string, replayed: true };
-        }
+        if (existingId) return { id: existingId, replayed: true };
       }
       const r = await c.query(
         "INSERT INTO issues(title,description,category,severity,latitude,longitude,reporter_id) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING *",

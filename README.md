@@ -183,6 +183,8 @@ curl --fail-with-body -sS -X POST "$BASE/v1/issues/$ISSUE_ID/revisit-prediction"
 
 An idempotent replay returns the same issue; reusing a key with different evidence is a conflict. Observations may inherit the issue's coordinates if omitted. Comparisons require two distinct observations from the same issue in chronological order. Use `GET /v1/issues/{id}/observations` and `GET /v1/issues/{id}/diffs` for evidence history. `PATCH /v1/issues/{id}` updates allowed issue fields/status, subject to transition rules. Both UUID and `FI-...` routes are supported. Lists expose `items` and `nextCursor`; pass that cursor to retrieve the next page. Map output is GeoJSON with bounded `limit`; bounding boxes can cross the antimeridian.
 
+Issue creation runs inference and media uploads outside the database transaction. A short transaction rechecks the idempotency key under a lock and commits the issue, first observation, timeline events and key together. Already committed replays bypass inference and uploads. Concurrent first attempts can perform duplicate inference/uploads, but only one issue commits and unused uploads are cleaned up. Optional revisit metadata runs after commit; feature, prediction or prediction-write failures return `revisitMetadata.available=false` without rolling back the issue or deleting its evidence.
+
 `GET /health` is liveness; `GET /ready` checks database schema availability and intelligence readiness. Errors contain a stable code and request ID, without echoing notes, images, credentials, or raw provider responses. The API returns an `X-Request-ID` header.
 
 ## Environment and genuine provider configuration
