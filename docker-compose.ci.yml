@@ -1,0 +1,8 @@
+# CI-only override: run compiled JavaScript without mounting TypeScript sources.
+# Inherits the explicit development mock settings from the local Compose file.
+services:
+  api:
+    build:
+      target: runtime
+    volumes: !override
+      - media:/app/.media
