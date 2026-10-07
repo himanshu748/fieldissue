@@ -593,6 +593,27 @@ class TrainingTests(unittest.TestCase):
             {"op": "tinker.sample.fine_tuned", "description": "Tinker fine-tuned sample"},
         )
 
+    def test_transaction_timing_survives_sdk_iso_serialization(self):
+        evaluate = module("evaluate")
+        event = {
+            "start_timestamp": "2026-10-07T10:24:50.000000Z",
+            "timestamp": "2026-10-07T10:24:52.500000+00:00",
+            "spans": [{
+                "op": "tinker.sample.base",
+                "start_timestamp": "2026-10-07T10:24:50.000000Z",
+                "timestamp": "2026-10-07T10:24:51.000000Z",
+            }],
+        }
+        result = evaluate.sanitize_evaluation_transaction(event, {})
+        self.assertEqual(result["timestamp"] - result["start_timestamp"], 2.5)
+        self.assertEqual(
+            result["spans"][0]["timestamp"] - result["spans"][0]["start_timestamp"], 1
+        )
+        for invalid in ("private-note", "2026-10-07T10:24:50", "NaN"):
+            with self.subTest(invalid=invalid):
+                sanitized = evaluate._trace_metadata({"timestamp": invalid})
+                self.assertNotIn("timestamp", sanitized)
+
     def test_telemetry_rejects_unrecognized_and_nonstring_tag_values(self):
         evaluate = module("evaluate")
         result = evaluate.sanitize_evaluation_event(

@@ -62,6 +62,14 @@ def _trace_metadata(value: dict[str, Any]) -> dict[str, Any]:
             result[key] = candidate
     for key in ("start_timestamp", "timestamp"):
         candidate = value.get(key)
+        # The real SDK serializes datetimes to ISO strings before this hook.
+        # Parse only timezone-aware timestamps, then retain numeric time values.
+        if isinstance(candidate, str):
+            try:
+                parsed = datetime.fromisoformat(candidate)
+                candidate = parsed if parsed.tzinfo is not None else None
+            except ValueError:
+                candidate = None
         if isinstance(candidate, datetime):
             candidate = candidate.timestamp()
         if type(candidate) in (int, float) and math.isfinite(candidate):

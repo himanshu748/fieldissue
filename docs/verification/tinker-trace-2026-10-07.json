@@ -1,0 +1,13 @@
+{
+  "kind": "fieldissue-live-tinker-trace-smoke",
+  "sampleId": "test-cleanliness-01",
+  "traceId": "5a4ee24fb1004d98850ffdfbc5ca9be7",
+  "outputs": {
+    "base": "{\n  \"category\": \"CLEANLINESS\",\n  \"object\": \"picnic_table\",\n  \"condition\": \"food_scattered\",\n  \"severity\": \"LOW\",\n  \"evidence\": [\"food scraps scattered underneath\"]\n}",
+    "fine_tuned": "{\"category\":\"CLEANLINESS\",\"object\":\"picnic_table\",\"condition\":\"food_scattered\",\"severity\":\"MEDIUM\",\"evidence\":[\"food scraps under picnic table\"]}"
+  },
+  "sampleCalls": 2,
+  "maxOutputTokensPerCall": 512,
+  "maxInputTokensPerCall": 4096,
+  "maximumExtraTokenCostUsd": 0.00221184
+}
