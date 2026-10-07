@@ -9,5 +9,21 @@
   "sampleCalls": 2,
   "maxOutputTokensPerCall": 512,
   "maxInputTokensPerCall": 4096,
-  "maximumExtraTokenCostUsd": 0.00221184
+  "maximumExtraTokenCostUsd": 0.00221184,
+  "sentryVerified": true,
+  "sentryTraceUrl": "https://himanshu-lj.sentry.io/explore/traces/trace/5a4ee24fb1004d98850ffdfbc5ca9be7/?project=4512214382346240",
+  "observedSpans": [
+    {
+      "operation": "tinker.sample.base",
+      "durationSeconds": 6.96
+    },
+    {
+      "operation": "tinker.sample.fine_tuned",
+      "durationSeconds": 7.74
+    },
+    {
+      "operation": "fieldissue.evaluate",
+      "durationSeconds": 19.16
+    }
+  ]
 }

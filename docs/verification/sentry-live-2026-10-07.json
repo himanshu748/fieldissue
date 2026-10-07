@@ -19,5 +19,10 @@
     "observedEventCount": 37,
     "usersReported": 0,
     "description": "18 base and 18 checkpoint sampling events plus one comparison event from the actual Tinker evaluation"
+  },
+  "traceVerification": {
+    "traceId": "5a4ee24fb1004d98850ffdfbc5ca9be7",
+    "observedSpans": 3,
+    "description": "Actual Tinker base/checkpoint sampling and root transaction observed in Sentry after timestamp sanitizer repair; no replayed or fabricated spans."
   }
 }
