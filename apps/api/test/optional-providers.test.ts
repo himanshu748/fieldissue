@@ -1,6 +1,68 @@
 import { expect, it } from "vitest";
 import { SerpApiPlaceContextProvider } from "../src/place.js";
 import { ElevenLabsSpeechProvider, buildBriefing } from "../src/audio.js";
+it.each(["local_results", "place_results"])(
+  "accepts SerpApi's %s response shape",
+  async (field) => {
+    const place = {
+      title: "Public park",
+      address: "Bengaluru",
+      place_id: "place-123",
+      gps_coordinates: { latitude: 12.9763, longitude: 77.5929 },
+    };
+    const provider = new SerpApiPlaceContextProvider(
+      "test-key",
+      100,
+      async () =>
+        Response.json({ [field]: field === "local_results" ? [place] : place }),
+    );
+    expect(await provider.context(12.9763, 77.5929)).toEqual({
+      name: place.title,
+      address: place.address,
+      providerPlaceId: place.place_id,
+      source: "SerpApi",
+    });
+  },
+);
+it.each([
+  {
+    title: "Park Landmark",
+    gps_coordinates: { latitude: 18.457, longitude: 73.864 },
+  },
+  { title: "Place without a verified position" },
+])("ignores geographically unverified Maps results", async (place) => {
+  const provider = new SerpApiPlaceContextProvider("test-key", 100, async () =>
+    Response.json({ place_results: place }),
+  );
+  expect(await provider.context(12.9763, 77.5929)).toBeNull();
+});
+it("chooses the closest nearby result instead of the first search hit", async () => {
+  const provider = new SerpApiPlaceContextProvider("test-key", 100, async () =>
+    Response.json({
+      local_results: [
+        {
+          title: "Far away",
+          gps_coordinates: { latitude: 18.457, longitude: 73.864 },
+        },
+        {
+          title: "Nearby",
+          gps_coordinates: { latitude: 12.985, longitude: 77.593 },
+        },
+        {
+          title: "Closest",
+          gps_coordinates: { latitude: 12.9763, longitude: 77.5929 },
+        },
+      ],
+    }),
+  );
+  expect((await provider.context(12.9763, 77.5929))?.name).toBe("Closest");
+});
+it("rejects malformed single-place results without blocking issue creation", async () => {
+  const provider = new SerpApiPlaceContextProvider("test-key", 100, async () =>
+    Response.json({ place_results: { title: "   " } }),
+  );
+  expect(await provider.context(12, 77)).toBeNull();
+});
 it("optional place failure returns no context", async () => {
   const provider = new SerpApiPlaceContextProvider(
     "test-key",

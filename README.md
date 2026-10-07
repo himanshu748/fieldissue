@@ -217,15 +217,17 @@ When changing the host API `PORT`, also update `MEDIA_BASE_URL` so newly uploade
 | Mastra | Typed multi-step create/revisit workflows in `apps/api/src/workflows.ts`; image bytes stay outside workflow state |
 | Prior Labs TabPFN | Local classifier for probability of a material change on revisit. Requires official trusted weights, genuine labeled history CSV, pinned model/data version, and optional `tabpfn` Python dependency. No automatic downloads or heuristic substitute in real mode |
 | PostgreSQL / PostGIS / pgvector | Durable transactions, spatial queries, and an installed vector extension; semantic indexing is not implemented |
-| Tiger Data | A compatible hosted PostgreSQL destination via your own `DATABASE_URL`, verified TLS, and enabled PostGIS/vector extensions; no Tiger Data service was provisioned or contacted here |
-| SerpApi | Optional best-effort nearby park/landmark context. Set `SERPAPI_API_KEY`. Shares supplied coordinates with SerpApi; failure does not block issue creation |
+| Tiger Data | Free hosted PostgreSQL service provisioned; extensions and migrations verified through its authenticated SQL console. Direct `pg` TLS verification is still blocked by the service certificate chain |
+| SerpApi | Real nearby landmark context verified on the Free Plan. Handles list and single-place results, requires coordinates within 2 km and selects the closest candidate. Set `SERPAPI_API_KEY`; failure does not block creation |
 | ElevenLabs | Optional concise MP3 briefing via `POST /v1/issues/{id}/audio-summary`. Set key and an authorized public voice ID; optional model ID defaults to `eleven_multilingual_v2`. Sends the issue title/status/age/revisit recommendation text, caches audio in storage, and fails explicitly when unavailable |
 | Sentry | Opt-in sanitized API/Python diagnostics with `SENTRY_DSN`; no image bytes, notes, raw model output, credentials, or request bodies are intentionally collected |
 | Tinker | Separate real SDK training/evaluation demonstration, deliberately invoked with `TINKER_API_KEY`; not part of production vision analysis |
 | DigitalOcean | Portable production Docker image and standard `PORT`, `0.0.0.0`, health/readiness interfaces; no DigitalOcean resources or deployment were created |
-| Entire | Optional development provenance CLI; it is not installed in this workspace, so no initialization or recording was performed and no fake runtime integration is claimed |
+| Entire | Official CLI 0.11.4 installed and initialized; this Codex session was manually captured into a local checkpoint. Automatic hooks await approval; telemetry and automatic checkpoint uploads are disabled |
 
 These names describe implemented interfaces, not partnerships or endorsements. Optional integrations can incur provider charges when enabled. Confirm data-sharing, licenses, credentials, and budget in your own deployment before making live calls.
+
+This project's current budget is **$0 out of pocket**, with every originally requested technology retained. See the [complete stack and activation ledger](docs/zero-cost-stack.md) for verified free plans, live checks and unresolved dependencies. Never activate paid overage to satisfy a readiness check.
 
 For real mode, **both** Gemma and TabPFN must be provisioned for intelligence readiness. The default service image installs base dependencies only; set `INSTALL_TABPFN=true` before rebuilding with `make dev`, or use native `uv sync --frozen --extra tabpfn`, to install the optional TabPFN runtime. Mount trusted weights/history into your chosen service runtime and configure their container-visible paths. Such model/data mounts are deliberately not present in the demo Compose file. Detailed contracts, vision-runtime requirements, timeouts, privacy controls, and TabPFN features are in [services/intelligence/README.md](services/intelligence/README.md).
 
@@ -241,7 +243,7 @@ Production must use `NODE_ENV=production` / `ENVIRONMENT=production`, `AI_MOCK_M
 
 Use the service's actual credentialed PostgreSQL URL as `DATABASE_URL` and set `DATABASE_SSL=true` for verified TLS. Keep SSL query options out of that URL because [node-postgres replaces explicit SSL configuration when those options are present](https://node-postgres.com/features/ssl). Use the provider's supported certificate trust configuration; never disable certificate verification to work around a failure.
 
-[Tiger Data documents PostGIS and pgvector availability](https://docs.tigerdata.com/use-timescale/latest/extensions). Before migrating, check your specific database supports both `postgis` and `vector` and that the migration role can enable them and create schema objects. Have an authorized database owner pre-enable the extensions if the ordinary migration role lacks that permission. No hosted database has been verified here. Use a distinct disposable database for integration tests, never the hosted production service.
+[Tiger Data documents PostGIS and pgvector availability](https://docs.tigerdata.com/use-timescale/latest/extensions). Before migrating, check your specific database supports both `postgis` and `vector` and that the migration role can enable them and create schema objects. Have an authorized database owner pre-enable the extensions if the ordinary migration role lacks that permission. The provisioned free service's SQL console has verified both extensions and migrations; a direct, certificate-verified application connection is still pending. Use a distinct disposable database for integration tests, never the hosted production service.
 
 ### Portable image, including DigitalOcean
 
