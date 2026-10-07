@@ -1,0 +1,31 @@
+# syntax=docker/dockerfile:1
+# One free web instance; Python listens only on loopback, never a public port.
+FROM node:22-bookworm-slim AS build
+WORKDIR /app
+COPY package.json package-lock.json ./
+COPY apps/api/package.json ./apps/api/package.json
+COPY packages/shared/package.json ./packages/shared/package.json
+RUN npm ci
+COPY apps/api ./apps/api
+COPY packages/shared ./packages/shared
+RUN npm run build && npm prune --omit=dev
+
+FROM node:22-bookworm-slim
+COPY --from=ghcr.io/astral-sh/uv:0.12.19 /uv /bin/uv
+RUN apt-get update && apt-get install -y --no-install-recommends python3 ca-certificates \
+    && rm -r /var/lib/apt/lists/*
+WORKDIR /app
+ENV NODE_ENV=production ENVIRONMENT=production AI_MOCK_MODE=false \
+    PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 UV_PYTHON_DOWNLOADS=never
+COPY services/intelligence/pyproject.toml services/intelligence/uv.lock ./intelligence/
+COPY services/intelligence/src ./intelligence/src
+RUN cd intelligence && uv sync --frozen --no-dev
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/apps/api/dist ./apps/api/dist
+COPY --from=build /app/packages/shared ./packages/shared
+COPY --from=build /app/package.json ./package.json
+COPY db ./db
+COPY scripts/render-start.mjs ./scripts/render-start.mjs
+USER node
+EXPOSE 10000
+CMD ["node", "scripts/render-start.mjs"]

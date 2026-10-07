@@ -78,6 +78,7 @@ const app = createApp({
   repository,
   storage,
   maxUploadBytes: config.MAX_UPLOAD_BYTES,
+  accessToken: config.API_ACCESS_TOKEN,
   ready: () => intelligence.ready(),
   audio: audio ? (id) => audio.generate(id) : undefined,
 });

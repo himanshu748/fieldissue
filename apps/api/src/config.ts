@@ -13,6 +13,7 @@ export const configSchema = z
     DATABASE_SSL: z.enum(["true", "false"]).default("false"),
     AI_MOCK_MODE: z.enum(["true", "false"]).default("false"),
     INTERNAL_SERVICE_TOKEN: z.string().min(16),
+    API_ACCESS_TOKEN: z.string().min(32).optional(),
     INTELLIGENCE_URL: z.string().url().default("http://127.0.0.1:8000"),
     PROVIDER_TIMEOUT_MS: z.coerce
       .number()

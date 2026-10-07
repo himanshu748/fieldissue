@@ -78,4 +78,13 @@ See [training/README.md](training/README.md) for the runnable, opt-in Tinker not
 - [Prior Labs classifier source](https://github.com/PriorLabs/TabPFN/blob/main/src/tabpfn/classifier.py)
 - [Tinker SDK cheatsheet](https://tinker-docs.thinkingmachines.ai/tinker/sdk-cheatsheet/)
 
-Only development HTTP and SDK boundary tests have been run here. Genuine Gemma/TabPFN inference and paid Tinker training/evaluation require provisioned models, labels and credentials.
+On October 7, 2026, real Gemma analysis and an identical-photo comparison passed through the production-configured Python HTTP boundary using Google's free-tier hosted `models/gemma-4-26b-a4b-it`, reported version `001`. The API base is `https://generativelanguage.googleapis.com/v1beta/openai`. This is a provider-reported version, not an immutable checkpoint digest. See [the live report](../../docs/verification/gemma-google-live-2026-10-07.json). A failed comparison before prompt clarification is recorded there too. TabPFN and Tinker remain unverified; full readiness still fails without genuine revisit labels and weights.
+
+Run an explicit live smoke check from this directory with an authorized photo:
+
+```sh
+uv run --no-sync --env-file ../../.env python ../../scripts/live-gemma.py \
+  --image /absolute/path/to/photo.jpg --output /absolute/path/to/report.json
+```
+
+The script uses a local HTTP transport with real remote Gemma calls, checks internal authentication, and records full readiness separately. It compares the same photo twice as a negative control. The Google free tier may use inputs/outputs to improve products; use public or otherwise authorized test material and review the applicable data terms before private field uploads.

@@ -1,6 +1,6 @@
 # FieldIssue backend
 
-A backend for geotagged field observations, chronological evidence, explicit issue resolution, and before/after real-world diffs. This repository contains the TypeScript API, private Python intelligence service, database migrations, local tooling, and an opt-in training/evaluation demonstration. It contains no frontend or deployment infrastructure.
+A backend for geotagged field observations, chronological evidence, explicit issue resolution, and before/after real-world diffs. This repository contains the TypeScript API, private Python intelligence service, database migrations, local tooling, and an opt-in training/evaluation demonstration. It contains no frontend. A validated Render deployment scaffold and its remaining gates are documented in [docs/render-deployment.md](docs/render-deployment.md).
 
 ## Architecture
 
@@ -233,7 +233,7 @@ The small Tinker dataset is synthetic, manually annotated, and intended to test 
 
 ## Security and production boundaries
 
-This is a local-development backend. The public API does not yet implement end-user authentication, authorization, rate limiting, tenant isolation, moderation, or operational emergency response. Reporter IDs are supplied metadata, not authenticated identity. The media route serves stored objects to callers who have their URLs. Add your access-control and retention policy before using private field reports or exposing the API publicly. S3 credentials need only the minimum permissions for the selected bucket; telemetry is opt-in. Do not expose the private intelligence service.
+This backend does not yet implement end-user authentication, tenant authorization, rate limiting, moderation, or operational emergency response. An optional `API_ACCESS_TOKEN` provides a shared demo gateway for all report and media routes, required by the Render supervisor. Reporter IDs remain supplied metadata, not authenticated identity. Without that token the media route serves stored objects to callers who have their URLs. Add your access-control and retention policy before using private field reports. S3 credentials need only the minimum permissions for the selected bucket; telemetry is opt-in. Do not expose the private intelligence service.
 
 Production must use `NODE_ENV=production` / `ENVIRONMENT=production`, `AI_MOCK_MODE=false`, a fresh strong internal token, actual configured providers, TLS where appropriate, managed credentials, verified database access, controlled media sharing, and backups. The demo token and mock mode are not production settings. Local Compose is not a deployment recipe.
 
@@ -245,7 +245,11 @@ Use the service's actual credentialed PostgreSQL URL as `DATABASE_URL` and set `
 
 ### Portable image, including DigitalOcean
 
-The production API image uses the supplied `PORT` and listens on `0.0.0.0`; `/health` is process liveness and `/ready` is dependency readiness. Configure your host's HTTP port to match the supplied `PORT`. DigitalOcean App Platform exposes these through its documented [port configuration](https://docs.digitalocean.com/products/app-platform/reference/api/) and [health checks](https://docs.digitalocean.com/products/app-platform/how-to/manage-health-checks/). Keep intelligence private and provide persistent/object media storage. These are portability notes only: no deployment manifest, account setup, resource creation, image publication, or live deployment is included.
+The production API image uses the supplied `PORT` and listens on `0.0.0.0`; `/health` is process liveness and `/ready` is dependency readiness. Configure your host's HTTP port to match the supplied `PORT`. DigitalOcean App Platform exposes these through its documented [port configuration](https://docs.digitalocean.com/products/app-platform/reference/api/) and [health checks](https://docs.digitalocean.com/products/app-platform/how-to/manage-health-checks/). Keep intelligence private and provide persistent/object media storage. The separate [Render scaffold](docs/render-deployment.md) combines the two processes with loopback isolation and a shared access gateway. It has not been deployed; the database TLS, object storage, and TabPFN gates remain open.
+
+### Live Gemma evidence, October 7, 2026
+
+The production-configured Python HTTP boundary successfully called Google's free-tier Gemma 4 endpoint for a public CC0 pothole photo: analysis 4.392 seconds, identical-photo comparison 4.198 seconds. Anonymous access returned 401. The comparison returned no added/removed conditions and recommended `OPEN`. An earlier comparison was rejected for empty-string list entries; the prompt was clarified and strict validation retained. See [the actual report](docs/verification/gemma-google-live-2026-10-07.json). This is a bounded live-provider smoke check, not a real revisit, accuracy benchmark, Node/database end-to-end test, or hosted deployment. Full readiness still returns 503 because genuine TabPFN data/weights are absent.
 
 ## Official implementation references
 

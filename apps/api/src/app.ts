@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { secureHeaders } from "hono/secure-headers";
-import { randomUUID } from "node:crypto";
+import { randomUUID, timingSafeEqual } from "node:crypto";
 import { z, ZodError } from "zod";
 import pino from "pino";
 import {
@@ -51,6 +51,7 @@ interface Dependencies {
   repository: IssueRepository;
   storage: StorageProvider;
   maxUploadBytes: number;
+  accessToken?: string;
   ready?: () => Promise<boolean>;
   audio?: (id: string) => Promise<unknown>;
 }
@@ -84,6 +85,36 @@ export function createApp(deps: Dependencies) {
       },
       "request",
     );
+  });
+  // Deployment gateway: protect reports, media and inference before parsing bodies.
+  // This is shared demo access, not end-user identity or tenant authorization.
+  app.use("*", async (c, next) => {
+    if (
+      deps.accessToken &&
+      !(c.req.method === "GET" && ["/health", "/ready"].includes(c.req.path))
+    ) {
+      const expected = Buffer.from(`Bearer ${deps.accessToken}`);
+      const supplied = Buffer.from(c.req.header("Authorization") ?? "");
+      if (
+        supplied.length !== expected.length ||
+        !timingSafeEqual(supplied, expected)
+      ) {
+        c.header("WWW-Authenticate", "Bearer");
+        c.header("Cache-Control", "no-store");
+        return c.json(
+          {
+            error: {
+              code: "UNAUTHORIZED",
+              message: "Access token required",
+              requestId: c.get("requestId"),
+            },
+          },
+          401,
+        );
+      }
+      c.header("Cache-Control", "private, no-store");
+    }
+    await next();
   });
   app.use(
     "*",
@@ -357,7 +388,12 @@ export function createApp(deps: Dependencies) {
   app.get("/media/:key", async (c) => {
     const media = await deps.storage.read(c.req.param("key"));
     c.header("Content-Type", media.mime);
-    c.header("Cache-Control", "public, max-age=86400, immutable");
+    c.header(
+      "Cache-Control",
+      deps.accessToken
+        ? "private, no-store"
+        : "public, max-age=86400, immutable",
+    );
     return c.body(new Uint8Array(media.bytes));
   });
   return app;

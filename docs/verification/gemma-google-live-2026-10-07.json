@@ -1,0 +1,74 @@
+{
+  "checkedAt": "2026-10-07T07:53:35.833392+00:00",
+  "boundary": "production-configured Python HTTP API, local ASGI transport, real remote Gemma",
+  "comparisonControl": "Identical photo used twice. Not a real revisit or accuracy evaluation.",
+  "model": "models/gemma-4-26b-a4b-it",
+  "configuredModelVersion": "001",
+  "checks": {
+    "analysis": {
+      "status": 200,
+      "seconds": 4.392,
+      "response": {
+        "objects": [
+          "road",
+          "pavement",
+          "curb",
+          "wall",
+          "stones"
+        ],
+        "conditions": [
+          "pothole",
+          "broken curb",
+          "cracked pavement",
+          "loose stones"
+        ],
+        "suggestedCategory": "INFRASTRUCTURE",
+        "suggestedSeverity": "MEDIUM",
+        "evidence": [
+          "Visual: large pothole filled with gravel on the road surface",
+          "Visual: broken and uneven curb stones",
+          "Visual: loose stones on the sidewalk and road edge"
+        ],
+        "confidence": 0.95,
+        "model": "models/gemma-4-26b-a4b-it",
+        "modelVersion": "001"
+      }
+    },
+    "comparison": {
+      "status": 200,
+      "seconds": 4.198,
+      "response": {
+        "summary": "The road surface shows a large pothole filled with gravel, and the sidewalk curb is damaged and uneven.",
+        "removed": [],
+        "added": [],
+        "unchanged": [
+          "large pothole filled with gravel",
+          "damaged and uneven sidewalk curb"
+        ],
+        "recommendedStatus": "OPEN",
+        "confidence": 0.9,
+        "model": "models/gemma-4-26b-a4b-it",
+        "modelVersion": "001"
+      }
+    }
+  },
+  "anonymousStatus": 401,
+  "fullReadiness": {
+    "status": 503,
+    "response": {
+      "error": "tabpfn_configuration_missing: configure TABPFN_TRAINING_DATA, TABPFN_WEIGHTS_PATH and TABPFN_MODEL_VERSION"
+    }
+  },
+  "imageSource": {
+    "url": "https://commons.wikimedia.org/wiki/File:Potholes_in_Bengaluru_road.jpg",
+    "author": "Mallikarjunasj",
+    "license": "CC0",
+    "testImage": "500px thumbnail, 500x664; public photograph, not user field evidence"
+  },
+  "precedingFailure": {
+    "status": 502,
+    "error": "invalid_structured_output",
+    "cause": "Model emitted empty-string entries instead of empty arrays for removed/added. Strict validation rejected them.",
+    "fix": "Prompt specifies empty arrays and forbids placeholder entries; output validation unchanged."
+  }
+}
