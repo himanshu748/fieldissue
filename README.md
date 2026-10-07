@@ -8,9 +8,10 @@ Built for the DEV **Hacktoberfest Open-Source AI Challenge, Week 1: Touch Grass*
 
 | What | Link |
 | --- | --- |
+| Try it in a browser | Open `/` on any running FieldIssue API (local: <http://127.0.0.1:3000/>). Walkthrough and video shot list: [DEMO.md](DEMO.md) |
+| Hosted demo | _not deployed yet; one-click judge profile in [`render.demo.yaml`](render.demo.yaml), see [docs/render-deployment.md](docs/render-deployment.md#judge-demo-profile-renderdemoyaml)_ |
 | DEV post | _add after publishing_ |
 | Demo video | _add link_ |
-| Hosted API | _not deployed yet; the Render blueprint is in [`render.yaml`](render.yaml), see [docs/render-deployment.md](docs/render-deployment.md)_ |
 | Verified live provider runs | [docs/zero-cost-stack.md](docs/zero-cost-stack.md) and [docs/verification/](docs/verification/) |
 
 ## How it gets people outside
@@ -36,15 +37,17 @@ Other integrations: SerpApi place context (verified), Sentry error and evaluatio
 cp .env.example .env
 make dev                                   # Docker: API, intelligence service, PostGIS; migrates and seeds 7 demo issues
 curl http://127.0.0.1:3000/health
-curl "http://127.0.0.1:3000/v1/issues?status=OPEN&limit=20"
+# then open http://127.0.0.1:3000/ for the demo page (report → revisit → compare → resolve)
 ```
+
+In mock mode the page shows a banner: analysis and comparison come from your notes, not the photo, with confidence 0.
 
 No Docker? See [Native development](#native-development-and-docker-free-verification). Set `AI_MOCK_MODE=false` and the `GEMMA_*` variables in `.env` for real vision inference.
 
 ## Hackathon disclosures
 
 - **Window:** first commit 6 October 2026; all work is inside the challenge window. **Commits after the 11 October 23:59 PDT deadline:** none so far. Any later commit will be listed here, as the challenge rules require.
-- **AI tools:** built with AI coding assistance (Codex sessions, checkpointed with the Entire CLI per [docs/zero-cost-stack.md](docs/zero-cost-stack.md)). _Author: confirm or complete this list._
+- **AI tools:** built with AI coding assistance (Codex sessions, checkpointed with the Entire CLI per [docs/zero-cost-stack.md](docs/zero-cost-stack.md)). The browser demo page, the Render judge-demo profile and DEMO.md (8 October) were drafted with an AI assistant (Hark) and checked with the test suite and a headless-browser run. _Author: confirm or complete this list._
 - **Demo data** is fictional and labelled `DEMO FIXTURE` in every image.
 - **License:** MIT, see [LICENSE](LICENSE).
 
@@ -52,7 +55,7 @@ No Docker? See [Native development](#native-development-and-docker-free-verifica
 
 ## Backend reference
 
-A backend for geotagged field observations, chronological evidence, explicit issue resolution, and before/after real-world diffs. This repository contains the TypeScript API, private Python intelligence service, database migrations, local tooling, and an opt-in training/evaluation demonstration. It contains no frontend. A validated Render deployment scaffold and its remaining gates are documented in [docs/render-deployment.md](docs/render-deployment.md).
+A backend for geotagged field observations, chronological evidence, explicit issue resolution, and before/after real-world diffs. This repository contains the TypeScript API, private Python intelligence service, database migrations, local tooling, and an opt-in training/evaluation demonstration. The only frontend is a single static demo page the API serves at `/` (no build step, no accounts; see [DEMO.md](DEMO.md)). A validated Render deployment scaffold and its remaining gates are documented in [docs/render-deployment.md](docs/render-deployment.md).
 
 ### Architecture
 
@@ -90,7 +93,7 @@ make verify-db
 make logs
 ```
 
-`make dev` creates `.env` if absent, builds the local services, waits for database and intelligence readiness, applies migrations, then writes and seeds demo media/data. The API is published only on `127.0.0.1:${PORT}`. Database and intelligence ports are not published. The database is on an internal network; API/intelligence also have outbound access for deliberately configured providers. There is no frontend to open.
+`make dev` creates `.env` if absent, builds the local services, waits for database and intelligence readiness, applies migrations, then writes and seeds demo media/data. The API is published only on `127.0.0.1:${PORT}`. Database and intelligence ports are not published. The database is on an internal network; API/intelligence also have outbound access for deliberately configured providers. Open `http://127.0.0.1:${PORT}/` for the demo page.
 
 The DB image derives from the official `postgres:17-bookworm` image and installs **both** `postgresql-17-postgis-3` and `postgresql-17-pgvector` from the image's signed package repository. Its build verifies extension control files and the vector library. Migrations run `CREATE EXTENSION` for PostGIS and vector. No assumption is made that a PostGIS image includes vector.
 

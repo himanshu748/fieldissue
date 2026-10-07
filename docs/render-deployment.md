@@ -39,6 +39,55 @@ Do not change the health check to `/health` to present an incomplete backend as
 ready. The Blueprint is a reviewed starting configuration, not a claim that
 the free tier supports the full local TabPFN stack.
 
+## Judge demo profile (`render.demo.yaml`)
+
+The production Blueprint above stays gated. For a short-lived hackathon demo,
+`render.demo.yaml` describes a smaller, clearly labelled profile:
+
+| | Production (`render.yaml`) | Judge demo (`render.demo.yaml`) |
+| --- | --- | --- |
+| Vision | Real Gemma | Real Gemma (mocks are still refused) |
+| TabPFN | Required for `/ready` | Not configured; revisit predictions return `available=false` |
+| Database | External PostGIS/pgvector, verified TLS | Free Render Postgres 17 on the private network; migrations run at start |
+| Media | S3-compatible bucket | Instance disk under `/tmp`, **lost on restart or spin-down** (or set `STORAGE_PROVIDER=s3` and the S3 variables) |
+| Health check | `/ready` | `/health` (liveness only), because `/ready` needs TabPFN |
+| Access | Shared bearer token | Same shared bearer token, pasted into the demo page |
+
+What a judge gets: the demo page at `/` (report with a photo, real Gemma
+description, revisit photo, before/after comparison, manual resolve, timeline).
+What it does not give: durable photos, revisit predictions, or production
+readiness. Say this wherever you share the link.
+
+Steps:
+
+1. Get a Gemma API key from Google AI Studio (free tier). Free-tier content is
+   subject to Google's data-use terms, so only upload photos you are happy to
+   share.
+2. Merge the branch to `main` (the Blueprint deploys from `main`).
+3. Render dashboard → **New → Blueprint** → pick `himanshu748/fieldissue`, set
+   **Blueprint Path** to `render.demo.yaml`. It creates `fieldissue-demo-db`
+   (free Postgres) and the `fieldissue-demo` free web service.
+4. When prompted, paste `GEMMA_API_KEY`. Leave everything else as generated.
+5. After the deploy: open the service → **Environment** → copy `API_ACCESS_TOKEN`.
+   Open `https://<service>.onrender.com/`, paste the token, and run the full
+   flow once with a real photo. `/health` passing proves only that the process
+   is up; this manual run is the real check.
+6. Share the URL and the token with judges (for example in the DEV post).
+   Anyone with the token can upload, so rotate or delete the service after
+   judging.
+
+Free-tier facts that affect the demo ([Render free limits](https://render.com/docs/free)):
+the web service sleeps after 15 minutes without traffic and takes about a minute
+to wake; local files are lost when it sleeps; the free database expires 30 days
+after creation; only one free database per workspace. PostGIS and pgvector are
+enabled with `CREATE EXTENSION`, which the first migration does
+([Render Postgres extensions](https://render.com/docs/postgresql-extensions)).
+
+The demo profile has been exercised locally only: `scripts/render-start.mjs`
+with `FIELDISSUE_DEMO_PROFILE=true` against a fresh PostGIS database and a local
+OpenAI-compatible stub in place of Gemma (plumbing, not model quality). It has
+not been deployed to Render from this repository yet.
+
 ## Access and secrets
 
 Render generates separate `API_ACCESS_TOKEN` and `INTERNAL_SERVICE_TOKEN` values.

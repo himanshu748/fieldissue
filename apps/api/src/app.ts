@@ -17,6 +17,7 @@ import type { IssueRepository } from "./repository.js";
 import { validateImage, type StorageProvider, type Media } from "./storage.js";
 import { AppError } from "./errors.js";
 import { trace, reportFailure } from "./telemetry.js";
+import { demoPageCsp, demoPageHtml, demoPageScript } from "./demo-page.js";
 const logger = pino({ level: process.env.LOG_LEVEL ?? "info" });
 const numeric = (min: number, max: number) =>
   z
@@ -91,7 +92,12 @@ export function createApp(deps: Dependencies) {
   app.use("*", async (c, next) => {
     if (
       deps.accessToken &&
-      !(c.req.method === "GET" && ["/health", "/ready"].includes(c.req.path))
+      !(
+        c.req.method === "GET" &&
+        ["/", "/demo.js", "/favicon.ico", "/health", "/ready"].includes(
+          c.req.path,
+        )
+      )
     ) {
       const expected = Buffer.from(`Bearer ${deps.accessToken}`);
       const supplied = Buffer.from(c.req.header("Authorization") ?? "");
@@ -248,6 +254,19 @@ export function createApp(deps: Dependencies) {
       );
     }
   }
+  // The demo page and its script are static and contain no secrets, so they
+  // stay public; every API call they make still passes the access gateway.
+  app.get("/", (c) => {
+    c.header("Content-Security-Policy", demoPageCsp);
+    c.header("Cache-Control", "no-cache");
+    return c.html(demoPageHtml);
+  });
+  app.get("/demo.js", (c) => {
+    c.header("Content-Type", "text/javascript; charset=utf-8");
+    c.header("Cache-Control", "no-cache");
+    return c.body(demoPageScript);
+  });
+  app.get("/favicon.ico", (c) => c.body(null, 204));
   app.get("/health", (c) =>
     c.json({ status: "ok", service: "fieldissue-api" }),
   );

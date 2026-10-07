@@ -1,20 +1,22 @@
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
+import { renderEnvironment } from "./render-config.mjs";
 
-// Refuse accidental mock deployments, ephemeral uploads, or an open public API.
-for (const name of ["API_ACCESS_TOKEN", "INTERNAL_SERVICE_TOKEN", "DATABASE_URL",
-  "GEMMA_BASE_URL", "GEMMA_MODEL", "GEMMA_MODEL_VERSION", "GEMMA_API_KEY",
-  "S3_BUCKET", "S3_ACCESS_KEY_ID", "S3_SECRET_ACCESS_KEY", "MEDIA_BASE_URL"]) {
-  if (!process.env[name]?.trim()) throw new Error(`Missing deployment setting: ${name}`);
-}
-if (process.env.API_ACCESS_TOKEN.length < 32 ||
-    process.env.INTERNAL_SERVICE_TOKEN.length < 32 ||
-    process.env.API_ACCESS_TOKEN === process.env.INTERNAL_SERVICE_TOKEN ||
-    process.env.NODE_ENV !== "production" || process.env.ENVIRONMENT !== "production" ||
-    process.env.AI_MOCK_MODE !== "false" || process.env.DATABASE_SSL !== "true" ||
-    process.env.STORAGE_PROVIDER !== "s3" || process.env.PORT === "8000") {
-  throw new Error("Unsafe Render configuration; check docs/render-deployment.md");
-}
+// Refuse accidental mock deployments, ephemeral uploads outside the explicit
+// demo profile, or an open public API. See scripts/render-config.mjs.
+const { env, demo, migrateFirst } = renderEnvironment(process.env);
+Object.assign(process.env, env);
 process.env.INTELLIGENCE_URL = "http://127.0.0.1:8000";
+if (demo)
+  console.log(
+    "FieldIssue judge demo profile: real Gemma, no TabPFN, " +
+      (process.env.STORAGE_PROVIDER === "local" ? "ephemeral local media" : "S3 media"),
+  );
+if (migrateFirst) {
+  const migration = spawnSync(process.execPath, ["apps/api/dist/migrate.js"], {
+    stdio: "inherit",
+  });
+  if (migration.status !== 0) process.exit(1);
+}
 const children = [
   spawn("/app/intelligence/.venv/bin/python", ["-m", "uvicorn",
     "fieldissue_intelligence.app:app", "--host", "127.0.0.1", "--port", "8000"],
