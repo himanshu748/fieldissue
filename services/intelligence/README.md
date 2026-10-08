@@ -33,7 +33,7 @@ Real mode requires all three settings:
 - `TABPFN_TRAINING_DATA`: UTF-8 CSV of genuine, labeled FieldIssue observation-history examples
 - `TABPFN_MODEL_VERSION`: a pinned identifier linking the installed weights, training data version and feature encoding
 
-Install the optional local runtime with `uv sync --extra tabpfn`. For the Docker image, build with `--build-arg INSTALL_TABPFN=true`; the default lightweight image omits the local model dependency and readiness will clearly fail if real TabPFN is configured there. This service uses `tabpfn.TabPFNClassifier(model_path=..., device=..., categorical_features_indices=[3,4,7])`, `fit(X,y)` and `predict_proba(X)`. It does not download weights, ask for provider login, call paid Prior Labs APIs, or load arbitrary pickled estimators. `TABPFN_DEVICE` defaults to `cpu`; use `cuda` for a provisioned GPU.
+Install the optional local runtime with `uv sync --extra tabpfn`. For the Docker image, build with `--build-arg INSTALL_TABPFN=true`; the default lightweight image omits the local model dependency and prediction capability remains unavailable without the optional runtime. This service uses `tabpfn.TabPFNClassifier(model_path=..., device=..., categorical_features_indices=[3,4,7])`, `fit(X,y)` and `predict_proba(X)`. It does not download weights, ask for provider login, call paid Prior Labs APIs, or load arbitrary pickled estimators. `TABPFN_DEVICE` defaults to `cpu`; use `cuda` for a provisioned GPU.
 
 The CSV header must contain exactly:
 
@@ -55,7 +55,7 @@ All POST endpoints require `X-Internal-Token`, compared in constant time to `INT
 - `POST /internal/compare`: `{before:{image_base64,mime_type,note,evidence?}, after:{image_base64,mime_type,note,evidence?}}`; evidence is a complete prior analysis
 - `POST /internal/predict/revisit`: flat, snake_case eight-feature object matching the CSV without the target label
 - `GET /health`: process liveness
-- `GET /ready`: validates internal token and required settings; verifies the exact Gemma model in the runtime’s `/v1/models` catalog and fits the configured local TabPFN adapter before reporting readiness. Missing dependencies, unreachable runtimes and failed fits return explicit errors
+- `GET /ready`: validates internal token and required settings; verifies the exact Gemma model in the runtime’s `/v1/models` catalog before reporting core readiness. Missing core dependencies and unreachable runtimes return explicit errors. Authenticated `/internal/capabilities` reports optional TabPFN readiness separately
 
 Analyze responses contain exactly `objects`, `conditions`, `suggestedCategory`, `suggestedSeverity`, `evidence`, `confidence`, `model`, `modelVersion`. Compare contains exactly `summary`, `removed`, `added`, `unchanged`, `recommendedStatus`, `confidence`, `model`, `modelVersion`. Predict contains exactly `probabilityChanged`, `priorityScore`, `modelVersion`. Category/severity/status values and response bounds match `packages/shared/src/index.ts`. JSON inputs reject extra fields and type coercion. Validation responses never echo images or notes. A 30-MiB streaming request limit and early token validation run before JSON parsing. Legacy `INTERNAL_AI_TOKEN`/`INTERNAL_TOKEN` aliases are accepted only when the canonical token is absent.
 
@@ -78,7 +78,7 @@ See [training/README.md](training/README.md) for the runnable, opt-in Tinker not
 - [Prior Labs classifier source](https://github.com/PriorLabs/TabPFN/blob/main/src/tabpfn/classifier.py)
 - [Tinker SDK cheatsheet](https://tinker-docs.thinkingmachines.ai/tinker/sdk-cheatsheet/)
 
-On October 7, 2026, real Gemma analysis and an identical-photo comparison passed through the production-configured Python HTTP boundary using Google's free-tier hosted `models/gemma-4-26b-a4b-it`, reported version `001`. The API base is `https://generativelanguage.googleapis.com/v1beta/openai`. This is a provider-reported version, not an immutable checkpoint digest. See [the live report](../../docs/verification/gemma-google-live-2026-10-07.json). A failed comparison before prompt clarification is recorded there too. TabPFN and Tinker remain unverified; full readiness still fails without genuine revisit labels and weights.
+On October 7, 2026, real Gemma analysis and an identical-photo comparison passed through the production-configured Python HTTP boundary using Google's free-tier hosted `models/gemma-4-26b-a4b-it`, reported version `001`. The API base is `https://generativelanguage.googleapis.com/v1beta/openai`. This is a provider-reported version, not an immutable checkpoint digest. See [the live report](../../docs/verification/gemma-google-live-2026-10-07.json). A failed comparison before prompt clarification is recorded there too. Tinker was subsequently verified with a small synthetic-note evaluation (see the Model Lab). TabPFN remains experimental; missing labels and weights do not block core readiness.
 
 Run an explicit live smoke check from this directory with an authorized photo:
 

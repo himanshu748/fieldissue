@@ -3,12 +3,14 @@ FROM node:22-bookworm-slim AS dependencies
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY apps/api/package.json ./apps/api/package.json
+COPY apps/web/package.json ./apps/web/package.json
 COPY packages/shared/package.json ./packages/shared/package.json
 RUN npm ci
 
 # Complete local tooling, including TypeScript migration and integration tests.
 FROM dependencies AS development
 COPY --chown=node:node apps/api ./apps/api
+COPY --chown=node:node apps/web ./apps/web
 COPY --chown=node:node packages/shared ./packages/shared
 COPY --chown=node:node db ./db
 COPY --chown=node:node scripts ./scripts
@@ -47,6 +49,7 @@ COPY --chown=node:node package.json ./package.json
 COPY --chown=node:node apps/api/package.json ./apps/api/package.json
 COPY --chown=node:node packages/shared/package.json ./packages/shared/package.json
 COPY --from=build --chown=node:node /app/apps/api/dist ./apps/api/dist
+COPY --from=build --chown=node:node /app/apps/web/dist ./apps/web/dist
 COPY --from=build --chown=node:node /app/apps/api/public ./apps/api/public
 COPY --from=build --chown=node:node /app/packages/shared/dist ./packages/shared/dist
 COPY --chown=node:node db ./db

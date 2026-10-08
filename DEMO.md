@@ -1,3 +1,5 @@
+> V2 uses the React build served by the API: `/` landing, `/app/explore`, `/app/report`, issue-specific revisit/compare/resolve routes, `/app/walk`, and `/app/lab`. Build with `npm run build`. See [V2 implementation](docs/v2-implementation.md). The shot list below is a filming guide, not proof that a physical revisit occurred.
+
 # FieldIssue demo walkthrough
 
 A judge can try FieldIssue in a browser: `/` introduces the project and `/app`

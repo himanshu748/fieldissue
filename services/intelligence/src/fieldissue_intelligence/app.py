@@ -10,6 +10,7 @@ from fastapi.responses import JSONResponse
 
 from . import telemetry
 from .config import Settings
+from .embeddings import EmbeddingInput, EmbeddingService
 from .middleware import InternalBoundaryMiddleware
 from .providers import GemmaEvidenceProvider, ProviderError
 from .revisit import TabPFNRevisitProvider
@@ -92,11 +93,25 @@ def create_app(settings: Settings | None = None, evidence_provider=None, revisit
             raise ProviderError("internal_token_not_configured")
         if provider_error:
             raise provider_error
-        if revisit_error:
-            raise revisit_error
         await evidence_provider.ready()
-        await revisit_provider.ready()
         return {"status": "ready", "mode": "mock" if settings.ai_mock_mode else "real"}
+
+    @app.get("/internal/capabilities", dependencies=[Depends(authenticate)])
+    async def capabilities():
+        # Optional experiments must not gate the report/revisit evidence workflow.
+        revisit_available = revisit_error is None
+        if revisit_available:
+            try:
+                await revisit_provider.ready()
+            except ProviderError:
+                revisit_available = False
+        return {"revisit_prediction": {"available": revisit_available, "experimental": True}}
+
+    embeddings = EmbeddingService()
+
+    @app.post("/internal/embed", dependencies=[Depends(authenticate)])
+    async def embed(request: EmbeddingInput):
+        return await embeddings.embed(request)
 
     @app.post(
         "/internal/analyze", response_model=AnalyzeResult, dependencies=[Depends(authenticate)]

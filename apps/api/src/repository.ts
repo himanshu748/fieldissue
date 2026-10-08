@@ -370,9 +370,31 @@ export class IssueRepository {
       ).rows.map(camel),
     };
   }
-  async patch(id: string, patch: PatchIssueInput, note = "") {
+  async patch(
+    id: string,
+    patch: PatchIssueInput,
+    note = "",
+    resolution?: {
+      basis: "latest_observation" | "manual_confirmation";
+      observationId?: string;
+    },
+  ) {
     return this.transaction(async (c) => {
       const current = await this.issue(c, id, true);
+      if (resolution?.basis === "latest_observation") {
+        const latest = (
+          await c.query(
+            "SELECT id FROM observations WHERE issue_id=$1 ORDER BY captured_at DESC,created_at DESC,id DESC LIMIT 1",
+            [current.id],
+          )
+        ).rows[0];
+        if (!latest || latest.id !== resolution.observationId)
+          throw new AppError(
+            "EVIDENCE_CHANGED",
+            409,
+            "Select the latest observation before confirming resolution.",
+          );
+      }
       if (patch.status && !canTransition(current.status, patch.status))
         throw new AppError(
           "INVALID_STATUS_TRANSITION",
@@ -409,8 +431,23 @@ export class IssueRepository {
           await this.event(c, current.id, "ISSUE_RESOLVED", {
             note,
             source: "explicit_backend_action",
+            basis: resolution?.basis ?? "manual_confirmation",
+            observationId: resolution?.observationId ?? null,
           });
       }
+      const edits = Object.fromEntries(
+        ["title", "description"].flatMap((key) => {
+          const value = patch[key as "title" | "description"];
+          return value !== undefined && value !== current[key]
+            ? [[key, { before: current[key], after: value }]]
+            : [];
+        }),
+      );
+      if (Object.keys(edits).length)
+        await this.event(c, current.id, "ISSUE_UPDATED", {
+          source: "explicit_backend_action",
+          edits,
+        });
       if (patch.category || patch.severity)
         await this.event(c, current.id, "CLASSIFICATION_UPDATED", {
           category: patch.category ?? current.category,
@@ -502,6 +539,27 @@ export class IssueRepository {
         geometry: { type: "Point", coordinates: [x.longitude, x.latitude] },
         properties: camel(x),
       })),
+    };
+  }
+  async walkSuggestions(
+    latitude: number,
+    longitude: number,
+    radius: number,
+    limit: number,
+  ) {
+    const result = await this.pool.query(
+      `SELECT i.id AS issue_id,i.title,i.status,
+        ST_Distance(i.geom::geography,p.point) AS distance_meters,
+        COALESCE((SELECT max(o.captured_at) FROM observations o WHERE o.issue_id=i.id),i.created_at) AS last_observed_at
+       FROM issues i CROSS JOIN (SELECT ST_SetSRID(ST_MakePoint($1,$2),4326)::geography AS point) p
+       WHERE i.status NOT IN ('RESOLVED','REJECTED') AND ST_DWithin(i.geom::geography,p.point,$3)
+       ORDER BY distance_meters ASC,last_observed_at ASC,i.id ASC LIMIT $4`,
+      [longitude, latitude, radius, limit],
+    );
+    return {
+      items: result.rows.map(camel),
+      sortingMethod: "distance_then_age",
+      routeCalculated: false,
     };
   }
   async nearby(

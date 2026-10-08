@@ -73,6 +73,7 @@ export function sanitizeSpan(span: StreamedSpan): StreamedSpan {
       "Mastra workflow",
       "place-context",
       "audio-summary",
+      "Backboard interpretation",
     ].includes(span.name)
       ? span.name
       : "FieldIssue operation",
@@ -86,6 +87,7 @@ export function sanitizeSpan(span: StreamedSpan): StreamedSpan {
           "ai.gemma",
           "ai.tabpfn",
           "ai.workflow",
+          "ai.backboard",
         ].includes(span.attributes["sentry.op"])
           ? span.attributes["sentry.op"]
           : "fieldissue.operation",

@@ -1,7 +1,7 @@
 // Validates the Render environment before any process starts. Two profiles:
 //
 // - production (default): S3 media, certificate-verified database TLS, and the
-//   /ready health check that requires Gemma, TabPFN and the database.
+//   /ready health check that requires Gemma and the database.
 // - judge demo (FIELDISSUE_DEMO_PROFILE=true): real Gemma only, never mocks.
 //   Media must use durable PostgreSQL or S3 storage, the database may be a
 //   Render private-network Postgres, and migrations run at start. TabPFN stays

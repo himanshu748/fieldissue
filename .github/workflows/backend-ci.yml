@@ -32,7 +32,7 @@ jobs:
       - name: Check isolation and fail-closed readiness
         # Dummy configuration tests process boundaries only, never live providers.
         run: |
-          docker run -d --name fieldissue-render-smoke -p 127.0.0.1:13000:10000 \
+          docker run -d --memory=512m --memory-swap=512m --name fieldissue-render-smoke -p 127.0.0.1:13000:10000 \
             -e PORT=10000 -e DATABASE_SSL=true -e STORAGE_PROVIDER=s3 \
             -e DATABASE_URL=postgresql://localhost/unused \
             -e API_ACCESS_TOKEN=render-ci-public-test-token-000000000000 \
@@ -57,6 +57,10 @@ jobs:
           bindings = [line.split()[1] for line in entries if line.split()[1].endswith(":1F40")]
           assert bindings == ["0100007F:1F40"], bindings
           '
+      - name: Verify bundled local embeddings under the free-instance memory limit
+        run: |
+          printf '{"texts":["A fallen tree blocks the path."]}' | docker exec -i fieldissue-render-smoke /app/intelligence/.venv/bin/python -m fieldissue_intelligence.embedding_worker > /tmp/fieldissue-embedding.json
+          python3 -c 'import json,math; d=json.load(open("/tmp/fieldissue-embedding.json")); v=d["vectors"][0]; assert len(v)==384 and all(math.isfinite(x) for x in v); assert abs(sum(x*x for x in v)-1)<0.001'
       - name: Stop the whole service if the Python child exits
         run: |
           docker exec fieldissue-render-smoke python3 -c '

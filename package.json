@@ -4,6 +4,7 @@
   "type": "module",
   "workspaces": [
     "apps/api",
+    "apps/web",
     "packages/shared"
   ],
   "engines": {
@@ -11,9 +12,9 @@
   },
   "scripts": {
     "dev": "npm run build -w @fieldissue/shared && npm run dev -w @fieldissue/api",
-    "build": "npm run build -w @fieldissue/shared && npm run build -w @fieldissue/api",
+    "build": "npm run build -w @fieldissue/shared && npm run build -w @fieldissue/api && npm run build -w @fieldissue/web",
     "test": "npm run build -w @fieldissue/shared && npm run test -w @fieldissue/api",
-    "lint": "npm run build -w @fieldissue/shared && npm run lint -w @fieldissue/api && prettier --check apps/api/src apps/api/test apps/api/vitest.config.ts packages/shared/src",
+    "lint": "npm run build -w @fieldissue/shared && npm run lint -w @fieldissue/api && prettier --check apps/api/src apps/api/test apps/api/vitest.config.ts packages/shared/src && npm run typecheck -w @fieldissue/web",
     "migrate": "npm run migrate -w @fieldissue/api",
     "seed": "npm run seed -w @fieldissue/api",
     "format": "prettier --write apps/api/src apps/api/test apps/api/vitest.config.ts packages/shared/src"

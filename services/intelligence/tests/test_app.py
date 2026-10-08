@@ -90,6 +90,28 @@ async def test_missing_real_configuration_not_ready():
         assert failure.json()["error"].startswith("gemma_configuration_missing")
 
 
+async def test_optional_revisit_unavailable_does_not_block_core():
+    from fieldissue_intelligence.app import create_app
+    from fieldissue_intelligence.config import Settings
+
+    class ReadyEvidence:
+        async def ready(self):
+            return None
+
+    application = create_app(
+        Settings(internal_token="test-internal-token"), evidence_provider=ReadyEvidence()
+    )
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=application), base_url="http://test"
+    ) as client:
+        assert (await client.get("/ready")).status_code == 200
+        assert (await client.get("/internal/capabilities")).status_code == 401
+        result = await client.get(
+            "/internal/capabilities", headers={"X-Internal-Token": "test-internal-token"}
+        )
+        assert result.json()["revisit_prediction"] == {"available": False, "experimental": True}
+
+
 async def test_missing_internal_token_cannot_be_bypassed():
     from fieldissue_intelligence.app import create_app
     from fieldissue_intelligence.config import Settings

@@ -1,3 +1,5 @@
+import { BackboardProvider, ModelComparisonService } from "./backboard.js";
+import { SemanticSearch, embeddingClient } from "./semantic.js";
 import { PostgresStorageProvider } from "./postgres-storage.js";
 import { RequestGuard, dailyAllowance } from "./request-guard.js";
 import { serve } from "@hono/node-server";
@@ -5,6 +7,7 @@ import { Pool } from "pg";
 import { databaseOptions } from "./db.js";
 import { S3Client } from "@aws-sdk/client-s3";
 import { resolve } from "node:path";
+import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { readConfig } from "./config.js";
 import {
@@ -90,7 +93,121 @@ const speech =
 const audio = speech
   ? new AudioSummaryService(repository, storage, speech, consume)
   : undefined;
+const tiger =
+  config.SEMANTIC_SEARCH_ENABLED === "true" && config.TIGER_DATABASE_URL
+    ? new Pool({
+        connectionString: config.TIGER_DATABASE_URL,
+        ssl: { rejectUnauthorized: true },
+        max: 2,
+        connectionTimeoutMillis: 10000,
+        statement_timeout: 15000,
+      })
+    : undefined;
+tiger?.on("error", () =>
+  reportFailure("SEMANTIC_DATABASE_FAILURE", "database"),
+);
+const semantic = tiger
+  ? new SemanticSearch(
+      repository,
+      tiger,
+      embeddingClient(config.INTELLIGENCE_URL, config.INTERNAL_SERVICE_TOKEN),
+    )
+  : undefined;
+let indexTimer: NodeJS.Timeout | undefined;
+if (semantic) {
+  indexTimer = setInterval(() => void semantic.processNext(), 30000);
+  indexTimer.unref();
+}
+const webDirectory = fileURLToPath(new URL("../../web/dist", import.meta.url));
 const app = createApp({
+  modelComparison: config.BACKBOARD_API_KEY
+    ? new ModelComparisonService(
+        repository,
+        new BackboardProvider(config.BACKBOARD_API_KEY),
+        consume,
+      )
+    : undefined,
+  semantic,
+  consumeSearch: () => consume(1),
+  webDirectory: existsSync(resolve(webDirectory, "index.html"))
+    ? webDirectory
+    : undefined,
+  integrations: [
+    {
+      id: "render",
+      name: "Render",
+      status: process.env.RENDER ? "configured" : "local",
+      detail: "Primary PostgreSQL database and application hosting.",
+    },
+    {
+      id: "gemma",
+      name: "Gemma",
+      status: "configured",
+      detail:
+        "Core readiness checks model availability; saved observations carry actual inference provenance.",
+    },
+    {
+      id: "mastra",
+      name: "Mastra",
+      status: "configured",
+      detail: "Validated evidence workflow orchestration.",
+    },
+    {
+      id: "serpapi",
+      name: "SerpApi",
+      status: place ? "configured" : "unavailable",
+      detail:
+        "Optional nearby place context; report creation survives provider failure.",
+    },
+    {
+      id: "sentry",
+      name: "Sentry",
+      status: config.SENTRY_DSN ? "configured" : "unavailable",
+      detail: "Sanitized service errors and timing; no report photos or notes.",
+    },
+    {
+      id: "tinker",
+      name: "Tinker",
+      status: "recorded",
+      detail:
+        "Real training run on synthetic notes; expired checkpoint, offline evaluation only.",
+    },
+    {
+      id: "elevenlabs",
+      name: "ElevenLabs",
+      status: audio ? "configured" : "unavailable",
+      detail:
+        "Cached spoken issue briefings when quota and credentials are configured.",
+    },
+    {
+      id: "backboard",
+      name: "Backboard",
+      status: config.BACKBOARD_API_KEY ? "configured" : "unavailable",
+      detail:
+        "Consent-based Gemma 3 and Qwen 2.5 text interpretation comparison; results never resolve issues.",
+    },
+    {
+      id: "tiger",
+      name: "Tiger Data",
+      status: semantic ? "configured" : "unavailable",
+      detail:
+        "Secondary hybrid keyword and open-model vector search; writes use a durable retry queue.",
+    },
+    {
+      id: "entire",
+      name: "Entire",
+      status: "local_evidence",
+      detail:
+        "Actual Claude frontend session attached to the V2 commit; reviewed provenance is in docs/verification/entire-v2-2026-10-08.md. Raw transcript stays private.",
+    },
+    {
+      id: "tabpfn",
+      name: "TabPFN",
+      status: "experimental",
+      detail:
+        "Disabled without genuine labeled revisit history, runtime and evaluation.",
+    },
+  ],
   service,
   repository,
   storage,
@@ -119,13 +236,16 @@ let stopping = false;
 const shutdown = () => {
   if (stopping) return;
   stopping = true;
+  if (indexTimer) clearInterval(indexTimer);
   const timeout = setTimeout(() => process.exit(1), 10000);
   timeout.unref();
   server.close(() => {
-    void Promise.all([pool.end(), flushTelemetry()]).finally(() => {
-      clearTimeout(timeout);
-      process.exit(0);
-    });
+    void Promise.all([pool.end(), tiger?.end(), flushTelemetry()]).finally(
+      () => {
+        clearTimeout(timeout);
+        process.exit(0);
+      },
+    );
   });
 };
 process.on("SIGTERM", shutdown);

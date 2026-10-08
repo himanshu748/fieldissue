@@ -1,5 +1,7 @@
 # October 8 integration repair
 
+> V2 update: the temporary plan to use Tiger as the primary was reverted before deployment. Render remains primary; Tiger is now the secondary semantic index. See `tiger-semantic-2026-10-08.json` and `docs/v2-implementation.md`.
+
 ## Database
 
 The authenticated Tiger console showed $1,000 in prepaid Performance Trial

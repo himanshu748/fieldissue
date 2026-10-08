@@ -233,9 +233,16 @@ export class IssueService {
   async patch(id: string, patch: PatchIssueInput) {
     return this.repository.get(await this.repository.patch(id, patch));
   }
-  async resolve(id: string, note: string) {
+  async resolve(
+    id: string,
+    note: string,
+    resolution?: {
+      basis: "latest_observation" | "manual_confirmation";
+      observationId?: string;
+    },
+  ) {
     return this.repository.get(
-      await this.repository.patch(id, { status: "RESOLVED" }, note),
+      await this.repository.patch(id, { status: "RESOLVED" }, note, resolution),
     );
   }
   async predict(id: string) {

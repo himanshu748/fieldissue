@@ -1,0 +1,53 @@
+{
+  "checkedAt": "2026-10-08T16:19:06.973Z",
+  "dataStatus": "synthetic-text-control",
+  "cashSpent": 0,
+  "creditOnly": true,
+  "maxAuthorizedTestCredit": 0.25,
+  "results": [
+    {
+      "ok": true,
+      "model": "google/gemma-3-27b-it",
+      "provider": "Backboard / OpenRouter",
+      "promptVersion": "fieldissue-text-interpretation-v1",
+      "inputModality": "text",
+      "result": {
+        "category": "INFRASTRUCTURE",
+        "severity": "MEDIUM",
+        "rationale": "The observation describes damage to park infrastructure (a bench). Severity is assessed as medium because a missing slat reduces usability but doesn't entirely disable the bench. The text doesn't indicate immediate danger but a potential tripping hazard if someone were to lean/sit incorrectly. Reliance solely on provided text limits assessment.",
+        "evidence": [
+          "a broken bench",
+          "one missing wooden seat slat",
+          "No repair has been observed"
+        ]
+      },
+      "latencyMs": 15954,
+      "inputTokens": 196,
+      "outputTokens": 103,
+      "costUsd": null,
+      "createdAt": "2026-10-08T16:18:52.844Z"
+    },
+    {
+      "ok": true,
+      "model": "qwen/qwen-2.5-72b-instruct",
+      "provider": "Backboard / OpenRouter",
+      "promptVersion": "fieldissue-text-interpretation-v1",
+      "inputModality": "text",
+      "result": {
+        "category": "INFRASTRUCTURE",
+        "severity": "LOW",
+        "rationale": "A broken bench with a missing seat slat poses a minor inconvenience and a low risk of injury. It is primarily an issue of maintenance and usability.",
+        "evidence": [
+          "A broken bench",
+          "one missing wooden seat slat",
+          "No repair has been observed"
+        ]
+      },
+      "latencyMs": 14123,
+      "inputTokens": 202,
+      "outputTokens": 87,
+      "costUsd": null,
+      "createdAt": "2026-10-08T16:19:06.973Z"
+    }
+  ]
+}

@@ -1,4 +1,8 @@
 import { readFile } from "node:fs/promises";
+import { comparisonModels, type ModelComparisonService } from "./backboard.js";
+import type { SemanticSearch } from "./semantic.js";
+import { evaluations } from "./model-lab.js";
+import { loadWebBundle } from "./web-bundle.js";
 import {
   landingPageHtml,
   landingPageScript,
@@ -71,8 +75,14 @@ interface Dependencies {
   };
   ready?: () => Promise<boolean>;
   audio?: (id: string) => Promise<unknown>;
+  webDirectory?: string;
+  semantic?: SemanticSearch;
+  modelComparison?: ModelComparisonService;
+  consumeSearch?: () => Promise<void>;
+  integrations?: { id: string; name: string; status: string; detail: string }[];
 }
 export function createApp(deps: Dependencies) {
+  const web = deps.webDirectory ? loadWebBundle(deps.webDirectory) : undefined;
   const app = new Hono<{ Variables: { requestId: string } }>();
   app.use(
     "*",
@@ -128,9 +138,13 @@ export function createApp(deps: Dependencies) {
             "/app",
             "/health",
             "/ready",
+            "/about",
+            "/methodology",
+            "/privacy",
           ].includes(c.req.path)) ||
         (["GET", "HEAD"].includes(c.req.method) &&
           (c.req.path.startsWith("/app/") ||
+            !!web?.assets.has(c.req.path) ||
             (Object.hasOwn(assets, c.req.path.replace(/^\/assets\//, "")) &&
               c.req.path.startsWith("/assets/"))))
       )
@@ -305,6 +319,29 @@ export function createApp(deps: Dependencies) {
       );
     }
   }
+  if (web) {
+    for (const path of [
+      "/",
+      "/app",
+      "/app/*",
+      "/about",
+      "/methodology",
+      "/privacy",
+    ])
+      app.get(path, (c) => {
+        c.header("Content-Security-Policy", web.csp);
+        c.header("Cache-Control", "no-cache");
+        return c.html(web.html);
+      });
+    // Only the exact build manifest is public; never serve arbitrary filesystem paths.
+    app.get("/assets/*", (c) => {
+      const asset = web.assets.get(c.req.path);
+      if (!asset) return c.notFound();
+      c.header("Content-Type", asset.mime);
+      c.header("Cache-Control", "public, max-age=31536000, immutable");
+      return c.body(new Uint8Array(asset.bytes));
+    });
+  }
   // The landing/demo page and its scripts are static and contain no secrets, so they
   // stay public; every API call they make still passes the access gateway.
   app.get("/", (c) => {
@@ -368,6 +405,68 @@ export function createApp(deps: Dependencies) {
     } catch {}
     return c.json({ status: ok ? "ready" : "not_ready" }, ok ? 200 : 503);
   });
+  app.get("/v1/search/semantic", async (c) => {
+    const q = z
+      .object({
+        q: z.string().trim().min(2).max(300),
+        limit: numeric(1, 20).pipe(z.number().int()).default(10),
+        category: categorySchema.optional(),
+        status: statusSchema.optional(),
+        latitude: numeric(-90, 90).optional(),
+        longitude: numeric(-180, 180).optional(),
+        radius_meters: numeric(1, 50000).optional(),
+      })
+      .strict()
+      .refine(
+        (v) =>
+          [v.latitude, v.longitude, v.radius_meters].every(
+            (x) => x === undefined,
+          ) ||
+          [v.latitude, v.longitude, v.radius_meters].every(
+            (x) => x !== undefined,
+          ),
+      )
+      .parse(c.req.query());
+    if (!deps.semantic)
+      throw new AppError(
+        "SEMANTIC_SEARCH_UNAVAILABLE",
+        503,
+        "Semantic search is not configured.",
+      );
+    await deps.consumeSearch?.();
+    return c.json(await deps.semantic.search(q));
+  });
+  app.post("/v1/model-lab/compare", async (c) => {
+    const input = z
+      .object({
+        observationId: z.uuid(),
+        models: z
+          .array(z.enum(comparisonModels))
+          .length(2)
+          .refine((v) => new Set(v).size === 2),
+        consentToExternalProcessing: z.literal(true),
+      })
+      .strict()
+      .parse(await json(c.req.raw));
+    if (!deps.modelComparison)
+      throw new AppError(
+        "BACKBOARD_UNAVAILABLE",
+        503,
+        "Model comparison is not configured.",
+      );
+    return c.json(
+      await deps.modelComparison.compare(input.observationId, input.models),
+    );
+  });
+  app.get("/v1/model-lab/evaluations", (c) => c.json({ evaluations }));
+  app.get("/v1/integrations/status", async (c) => {
+    let coreReady = false;
+    try {
+      await deps.repository.pool.query("SELECT 1 FROM issues LIMIT 1");
+      coreReady = deps.ready ? await deps.ready() : true;
+    } catch {}
+    return c.json({ coreReady, integrations: deps.integrations ?? [] });
+  });
   app.post("/v1/issues", async (c) => {
     const { media, fields } = await upload(c.req.raw);
     const input = createIssueSchema.parse(fields);
@@ -380,6 +479,25 @@ export function createApp(deps: Dependencies) {
       );
     const result = await deps.service.create(input, media, key);
     return c.json(result, result.replayed ? 200 : 201);
+  });
+  app.get("/v1/walks/suggestions", async (c) => {
+    const q = z
+      .object({
+        latitude: numeric(-90, 90),
+        longitude: numeric(-180, 180),
+        radius_meters: numeric(1, 50000).default(2000),
+        limit: numeric(1, 5).pipe(z.number().int()).default(5),
+      })
+      .strict()
+      .parse(c.req.query());
+    return c.json(
+      await deps.repository.walkSuggestions(
+        q.latitude,
+        q.longitude,
+        q.radius_meters,
+        q.limit,
+      ),
+    );
   });
   app.get("/v1/issues", async (c) => {
     const q = querySchema.parse(c.req.query());
@@ -494,11 +612,27 @@ export function createApp(deps: Dependencies) {
   );
   app.post("/v1/issues/:id/resolve", async (c) => {
     const body = z
-      .object({ note: z.string().max(5000).default("") })
+      .object({
+        note: z.string().max(5000).default(""),
+        basis: z
+          .enum(["latest_observation", "manual_confirmation"])
+          .default("manual_confirmation"),
+        observationId: z.uuid().optional(),
+      })
       .strict()
+      .refine(
+        (v) =>
+          v.basis === "latest_observation"
+            ? !!v.observationId
+            : !v.observationId,
+        "Observation reference must match resolution basis",
+      )
       .parse(await json(c.req.raw, true));
     return c.json(
-      await deps.service.resolve(issueId(c.req.param("id")), body.note),
+      await deps.service.resolve(issueId(c.req.param("id")), body.note, {
+        basis: body.basis,
+        observationId: body.observationId,
+      }),
     );
   });
   app.post("/v1/issues/:id/revisit-review", async (c) => {

@@ -26,15 +26,14 @@ Do not apply the Blueprint until all of these are satisfied:
    provider version, **not** a cryptographic checkpoint pin. Recheck metadata
    when upgrading. Free-tier content is subject to Google's data-use terms;
    the live smoke test used a public CC0 photograph.
-4. Genuine labeled revisit history and a provisioned TabPFN runtime.
+4. Optional only: genuine labeled revisit history and a provisioned TabPFN runtime.
    **This last gate is not satisfied by the lightweight free image.** It omits
    PyTorch/TabPFN and model weights. A paid, sufficiently sized private worker
    with the optional TabPFN dependency and mounted trusted weights/data, or an
-   explicitly implemented remote TabPFN provider, is needed before full readiness.
+   explicitly implemented remote TabPFN provider, is needed before enabling the optional prediction capability.
    No synthetic labels or heuristic production predictions are substituted.
 
-The Blueprint intentionally uses `/ready`, which requires **both** Gemma and
-TabPFN plus database access. Missing providers return 503 and block deployment.
+The Blueprint uses `/ready`, which requires Gemma and database access. Missing core providers return 503. TabPFN is optional and does not gate core readiness.
 Do not change the health check to `/health` to present an incomplete backend as
 ready. The Blueprint is a reviewed starting configuration, not a claim that
 the free tier supports the full local TabPFN stack.
@@ -47,10 +46,10 @@ The production Blueprint above stays gated. For a short-lived hackathon demo,
 | | Production (`render.yaml`) | Judge demo (`render.demo.yaml`) |
 | --- | --- | --- |
 | Vision | Real Gemma | Real Gemma (mocks are still refused) |
-| TabPFN | Required for `/ready` | Not configured; revisit predictions return `available=false` |
+| TabPFN | Optional experimental capability | Not configured; revisit predictions return `available=false` |
 | Database | External PostGIS/pgvector, verified TLS | Free Render Postgres 17 on the private network; migrations run at start |
 | Media | S3-compatible bucket | PostgreSQL byte storage, retained across web restarts; 200 MiB capacity cap (or use S3) |
-| Health check | `/ready` | `/health` (liveness only), because `/ready` needs TabPFN |
+| Health check | `/ready` | `/ready` for core readiness; `/health` is liveness only |
 | Access | Shared bearer token | Same shared bearer token, pasted into the demo page |
 
 What a judge gets: the public landing page at `/` and a separate workspace at
@@ -58,7 +57,7 @@ What a judge gets: the public landing page at `/` and a separate workspace at
 map, persistent comparison history, manual resolution and reopening. Photos
 survive web service restarts because they are in the database. The database
 itself expires after 30 days: this is a time-limited demo, not archival storage.
-TabPFN predictions and full production readiness remain unavailable.
+TabPFN predictions remain unavailable until genuine history, weights and runtime are validated. Core readiness is independent.
 
 Steps:
 
