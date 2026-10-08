@@ -47,6 +47,7 @@ COPY --chown=node:node package.json ./package.json
 COPY --chown=node:node apps/api/package.json ./apps/api/package.json
 COPY --chown=node:node packages/shared/package.json ./packages/shared/package.json
 COPY --from=build --chown=node:node /app/apps/api/dist ./apps/api/dist
+COPY --from=build --chown=node:node /app/apps/api/public ./apps/api/public
 COPY --from=build --chown=node:node /app/packages/shared/dist ./packages/shared/dist
 COPY --chown=node:node db ./db
 RUN mkdir -p /app/.media && chown node:node /app/.media

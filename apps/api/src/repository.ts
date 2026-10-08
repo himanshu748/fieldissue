@@ -87,6 +87,12 @@ export class IssueRepository {
         : null,
     };
   }
+  async savePlaceContext(id: string, context: unknown) {
+    await this.pool.query("UPDATE issues SET place_context=$2 WHERE id=$1", [
+      id,
+      JSON.stringify(context),
+    ]);
+  }
   async create(
     input: CreateIssueInput,
     media: StoredMedia,
@@ -156,7 +162,7 @@ export class IssueRepository {
   ) {
     return (
       await c.query(
-        "INSERT INTO observations(issue_id,note,media_url,storage_key,mime_type,latitude,longitude,captured_at,ai_analysis) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *",
+        "INSERT INTO observations(issue_id,note,media_url,storage_key,mime_type,latitude,longitude,captured_at,ai_analysis,location_source,capture_time_source) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *",
         [
           id,
           input.note,
@@ -167,18 +173,50 @@ export class IssueRepository {
           input.longitude,
           input.capturedAt ?? new Date().toISOString(),
           JSON.stringify(analysis),
+          input.locationSource ?? "unspecified",
+          input.captureTimeSource ?? (input.capturedAt ? "user" : "upload"),
         ],
       )
     ).rows[0];
+  }
+  async findObservationRequest(
+    issueId: string,
+    key: string,
+    hash: string,
+    client: Pool | PoolClient = this.pool,
+  ): Promise<(Row & { replayed: boolean }) | null> {
+    const r = await client.query(
+      "SELECT r.request_hash,o.* FROM observation_requests r JOIN observations o ON o.id=r.observation_id WHERE r.issue_id=$1 AND r.key=$2",
+      [issueId, key],
+    );
+    if (!r.rows[0]) return null;
+    if (r.rows[0].request_hash !== hash)
+      throw new AppError(
+        "IDEMPOTENCY_CONFLICT",
+        409,
+        "This revisit key belongs to different evidence",
+      );
+    const { request_hash, ...observation } = r.rows[0];
+    return { ...camel(observation), replayed: true };
   }
   async addObservation(
     id: string,
     input: ObservationInput,
     media: StoredMedia,
     analysis: Analysis,
-  ) {
+    idempotency?: { key: string; hash: string },
+  ): Promise<Row & { replayed: boolean }> {
     return this.transaction(async (c) => {
       const issue = await this.issue(c, id, true);
+      if (idempotency) {
+        const existing = await this.findObservationRequest(
+          issue.id,
+          idempotency.key,
+          idempotency.hash,
+          c,
+        );
+        if (existing) return existing;
+      }
       if (issue.status === "REJECTED")
         throw new AppError(
           "INVALID_STATUS_TRANSITION",
@@ -199,7 +237,12 @@ export class IssueRepository {
       await this.event(c, issue.id, "OBSERVATION_ADDED", {
         observationId: o.id,
       });
-      return camel(o);
+      if (idempotency)
+        await c.query(
+          "INSERT INTO observation_requests(issue_id,key,request_hash,observation_id) VALUES($1,$2,$3,$4)",
+          [issue.id, idempotency.key, idempotency.hash, o.id],
+        );
+      return { ...camel(o), replayed: false };
     });
   }
   async observations(id: string) {
@@ -323,6 +366,8 @@ export class IssueRepository {
         values.push(value);
         return `${columns[key]}=$${values.length}`;
       });
+      if (patch.status && patch.status !== "RESOLVED")
+        assignments.push("resolved_at=NULL");
       if (patch.status === "RESOLVED")
         assignments.push("resolved_at=COALESCE(resolved_at,clock_timestamp())");
       await c.query(
@@ -370,6 +415,7 @@ export class IssueRepository {
     nearLat?: number;
     nearLon?: number;
     radius?: number;
+    search?: string;
   }) {
     const params: unknown[] = [];
     const where: string[] = [];
@@ -379,6 +425,12 @@ export class IssueRepository {
     };
     for (const k of ["status", "category", "severity"] as const)
       if (filters[k]) where.push(`${k}=${bind(filters[k])}`);
+    if (filters.search) {
+      const term = bind(filters.search);
+      where.push(
+        `(strpos(lower(title),lower(${term}))>0 OR strpos(lower(public_id),lower(${term}))>0)`,
+      );
+    }
     if (filters.cursor)
       where.push(
         `(created_at,id)<(${bind(filters.cursor.createdAt)}::timestamptz,${bind(filters.cursor.id)}::uuid)`,

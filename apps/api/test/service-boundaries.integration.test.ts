@@ -1,3 +1,5 @@
+import { PostgresStorageProvider } from "../src/postgres-storage.js";
+import { dailyAllowance } from "../src/request-guard.js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { Pool } from "pg";
 import { mkdtemp, rm, readdir } from "node:fs/promises";
@@ -93,10 +95,21 @@ describeDb("provider and transaction boundaries", () => {
         throw new Error("no predictor");
       },
     };
-    const service = new IssueService(repository, storage, provider as never);
+    let quotaExhausted = false;
+    const service = new IssueService(
+      repository,
+      storage,
+      provider as never,
+      undefined,
+      async () => {
+        if (quotaExhausted) throw new Error("quota exhausted");
+      },
+      false,
+    );
     const first = await service.create(input, media, "boundary-replay");
     ids.push(first.id);
     unavailable = true;
+    quotaExhausted = true;
     const second = await service.create(input, media, "boundary-replay");
     expect(second.id).toBe(first.id);
     expect(second.replayed).toBe(true);
@@ -294,5 +307,134 @@ describeDb("provider and transaction boundaries", () => {
     expect(created.filter((r) => r.replayed)).toHaveLength(1);
     expect((await readdir(directory)).length).toBe(before + 1);
     expect(created[0].observations).toHaveLength(1);
+  });
+  it("keeps media across instances and atomically enforces capacity", async () => {
+    const durable = new PostgresStorageProvider(
+      pool,
+      "http://localhost/media",
+      media.bytes.length + 1,
+    );
+    const outcomes = await Promise.allSettled([
+      durable.put(media),
+      durable.put(media),
+    ]);
+    expect(outcomes.filter((x) => x.status === "fulfilled")).toHaveLength(1);
+    const saved = outcomes.find(
+      (x) => x.status === "fulfilled",
+    ) as PromiseFulfilledResult<Awaited<ReturnType<typeof durable.put>>>;
+    try {
+      expect(
+        (
+          await new PostgresStorageProvider(
+            pool,
+            "http://localhost/media",
+          ).read(saved.value.storageKey)
+        ).bytes,
+      ).toEqual(media.bytes);
+      expect(
+        (outcomes.find((x) => x.status === "rejected") as PromiseRejectedResult)
+          .reason.code,
+      ).toBe("STORAGE_CAPACITY");
+    } finally {
+      await durable.delete(saved.value.storageKey);
+    }
+  });
+  it("persists allowance and denies concurrent overage", async () => {
+    await pool.query("DELETE FROM provider_allowances");
+    const calls = await Promise.allSettled([
+      dailyAllowance(pool, 4)(4),
+      dailyAllowance(pool, 4)(4),
+    ]);
+    expect(calls.filter((x) => x.status === "fulfilled")).toHaveLength(1);
+    await expect(dailyAllowance(pool, 4)(1)).rejects.toMatchObject({
+      code: "DAILY_LIMIT",
+    });
+    await pool.query("DELETE FROM provider_allowances");
+  });
+  it("replays revisits without providers and retains diffs across reopening", async () => {
+    let count = 0;
+    const provider = {
+      analyze: async () => {
+        count++;
+        return analysis;
+      },
+      compare: async () => ({
+        summary: "Fixture comparison",
+        removed: ["broken slat"],
+        added: ["repaired slat"],
+        unchanged: ["frame"],
+        recommendedStatus: "RESOLVED",
+        confidence: 0,
+        model: "development-fixture",
+        modelVersion: "test",
+      }),
+      predict: async () => {
+        throw new Error("unavailable");
+      },
+    };
+    let quotaExhausted = false;
+    const service = new IssueService(
+      repository,
+      storage,
+      provider as never,
+      undefined,
+      async () => {
+        if (quotaExhausted) throw new Error("quota exhausted");
+      },
+      false,
+    );
+    const first = await service.create(
+      { ...input, capturedAt: "2026-10-01T00:00:00Z" },
+      media,
+    );
+    ids.push(first.id);
+    const next = {
+      note: "fixture revisit",
+      latitude: 12,
+      longitude: 77,
+      capturedAt: "2026-10-02T00:00:00Z",
+    };
+    const saved = await service.addObservation(
+      first.id,
+      next,
+      media,
+      "same-revisit",
+    );
+    const calls = count;
+    quotaExhausted = true;
+    expect(
+      await service.diff(
+        first.id,
+        first.observations[0].id,
+        saved.observation.id,
+      ),
+    ).toMatchObject({ id: saved.realWorldDiff!.id });
+    provider.analyze = async () => {
+      throw new Error("provider down");
+    };
+    const replay = await service.addObservation(
+      first.id,
+      next,
+      media,
+      "same-revisit",
+    );
+    expect(replay.observation.id).toBe(saved.observation.id);
+    expect(replay.realWorldDiff?.id).toBe(saved.realWorldDiff?.id);
+    expect(count).toBe(calls);
+    await expect(
+      service.addObservation(
+        first.id,
+        { ...next, note: "different" },
+        media,
+        "same-revisit",
+      ),
+    ).rejects.toMatchObject({ code: "IDEMPOTENCY_CONFLICT" });
+    await repository.patch(first.id, { status: "RESOLVED" });
+    expect((await repository.diffs(first.id)).items).toHaveLength(1);
+    await repository.patch(first.id, { status: "OPEN" }, "Repair failed again");
+    const reopened = await repository.get(first.id);
+    expect(reopened.status).toBe("OPEN");
+    expect(reopened.resolvedAt).toBeNull();
+    expect((await repository.observations(first.id)).items).toHaveLength(2);
   });
 });

@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import type { PoolConfig } from "pg";
 import { config as loadEnv } from "dotenv";
 import { resolve } from "node:path";
@@ -31,6 +32,13 @@ export function databaseOptions(
     connectionTimeoutMillis: 5000,
     idleTimeoutMillis: 30000,
     statement_timeout: 10000,
-    ssl: tls ? { rejectUnauthorized: true } : false,
+    ssl: tls
+      ? {
+          rejectUnauthorized: true,
+          ...(typeof env.DATABASE_CA_FILE === "string" && env.DATABASE_CA_FILE
+            ? { ca: readFileSync(env.DATABASE_CA_FILE, "utf8") }
+            : {}),
+        }
+      : false,
   };
 }

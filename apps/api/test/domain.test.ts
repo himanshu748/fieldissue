@@ -6,9 +6,9 @@ import {
 } from "@fieldissue/shared";
 
 describe("deterministic issue state", () => {
-  it("allows explicit resolution but prevents terminal status changes", () => {
+  it("allows explicit resolution and reopening but prevents invalid status changes", () => {
     expect(canTransition("OPEN", "RESOLVED")).toBe(true);
-    expect(canTransition("RESOLVED", "OPEN")).toBe(false);
+    expect(canTransition("RESOLVED", "OPEN")).toBe(true);
     expect(canTransition("REJECTED", "IN_PROGRESS")).toBe(false);
     expect(canTransition("IN_PROGRESS", "ACKNOWLEDGED")).toBe(false);
   });

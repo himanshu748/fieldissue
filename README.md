@@ -8,7 +8,7 @@ Built for the DEV **Hacktoberfest Open-Source AI Challenge, Week 1: Touch Grass*
 
 | What | Link |
 | --- | --- |
-| Try it in a browser | Open `/` on any running FieldIssue API (local: <http://127.0.0.1:3000/>). Walkthrough and video shot list: [DEMO.md](DEMO.md) |
+| Try it in a browser | Open `/` for the landing page and `/app` for the separate workspace on any running FieldIssue API (local: <http://127.0.0.1:3000/>). Walkthrough and video shot list: [DEMO.md](DEMO.md) |
 | Hosted demo | _not deployed yet; one-click judge profile in [`render.demo.yaml`](render.demo.yaml), see [docs/render-deployment.md](docs/render-deployment.md#judge-demo-profile-renderdemoyaml)_ |
 | DEV post | _add after publishing_ |
 | Demo video | _add link_ |
@@ -37,7 +37,7 @@ Other integrations: SerpApi place context (verified), Sentry error and evaluatio
 cp .env.example .env
 make dev                                   # Docker: API, intelligence service, PostGIS; migrates and seeds 7 demo issues
 curl http://127.0.0.1:3000/health
-# then open http://127.0.0.1:3000/ for the demo page (report → revisit → compare → resolve)
+# then open http://127.0.0.1:3000/ then `/app` for report → revisit → compare → resolve
 ```
 
 In mock mode the page shows a banner: analysis and comparison come from your notes, not the photo, with confidence 0.
@@ -47,7 +47,7 @@ No Docker? See [Native development](#native-development-and-docker-free-verifica
 ## Hackathon disclosures
 
 - **Window:** first commit 6 October 2026; all work is inside the challenge window. **Commits after the 11 October 23:59 PDT deadline:** none so far. Any later commit will be listed here, as the challenge rules require.
-- **AI tools:** built with AI coding assistance (Codex sessions, checkpointed with the Entire CLI per [docs/zero-cost-stack.md](docs/zero-cost-stack.md)). The browser demo page, the Render judge-demo profile and DEMO.md (8 October) were drafted with an AI assistant (Hark) and checked with the test suite and a headless-browser run. _Author: confirm or complete this list._
+- **AI tools:** the October 8 redesign and reliability fixes used Codex; Claude Opus 5.5 drafted the landing page and independently reviewed the changes. The marketing park illustration was generated with Codex and is visibly labeled as illustration, never field evidence. Built with AI coding assistance (Codex sessions, checkpointed with the Entire CLI per [docs/zero-cost-stack.md](docs/zero-cost-stack.md)). The browser demo page, the Render judge-demo profile and DEMO.md (8 October) were drafted with an AI assistant (Hark) and checked with the test suite and a headless-browser run. _Author: confirm or complete this list._
 - **Demo data** is fictional and labelled `DEMO FIXTURE` in every image.
 - **License:** MIT, see [LICENSE](LICENSE).
 

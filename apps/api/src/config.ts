@@ -13,6 +13,22 @@ export const configSchema = z
     DATABASE_SSL: z.enum(["true", "false"]).default("false"),
     AI_MOCK_MODE: z.enum(["true", "false"]).default("false"),
     INTERNAL_SERVICE_TOKEN: z.string().min(16),
+    DATABASE_CA_FILE: z.string().optional(),
+    MEDIA_DATABASE_MAX_BYTES: z.coerce
+      .number()
+      .int()
+      .min(1048576)
+      .max(1073741824)
+      .default(209715200),
+    PROVIDER_DAILY_UNITS: z.coerce.number().int().min(1).max(10000).default(60),
+    WRITE_REQUESTS_PER_MINUTE: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(1000)
+      .default(30),
+    PROVIDER_CONCURRENCY: z.coerce.number().int().min(1).max(10).default(2),
+    DATA_RETENTION_NOTICE: z.string().max(1000).optional(),
     API_ACCESS_TOKEN: z.string().min(32).optional(),
     INTELLIGENCE_URL: z.string().url().default("http://127.0.0.1:8000"),
     PROVIDER_TIMEOUT_MS: z.coerce
@@ -27,7 +43,7 @@ export const configSchema = z
       .min(1024)
       .max(10485760)
       .default(10485760),
-    STORAGE_PROVIDER: z.enum(["local", "s3"]).default("local"),
+    STORAGE_PROVIDER: z.enum(["local", "s3", "postgres"]).default("local"),
     LOCAL_STORAGE_PATH: z.string().default(".media"),
     MEDIA_BASE_URL: z.string().url().default("http://localhost:3000/media"),
     S3_ENDPOINT: z.string().url().optional(),
@@ -44,6 +60,19 @@ export const configSchema = z
   })
   .passthrough()
   .superRefine((v, c) => {
+    if (
+      v.NODE_ENV === "production" &&
+      (!v.API_ACCESS_TOKEN || v.API_ACCESS_TOKEN === v.INTERNAL_SERVICE_TOKEN)
+    )
+      c.addIssue({
+        code: "custom",
+        message: "Production requires a distinct API access token",
+      });
+    if (v.NODE_ENV === "production" && v.STORAGE_PROVIDER === "local")
+      c.addIssue({
+        code: "custom",
+        message: "Production requires durable postgres or s3 media storage",
+      });
     if (v.NODE_ENV === "production" && v.AI_MOCK_MODE === "true")
       c.addIssue({
         code: "custom",

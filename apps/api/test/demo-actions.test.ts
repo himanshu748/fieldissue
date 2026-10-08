@@ -104,6 +104,7 @@ function fixture() {
     },
     File: class {},
     FormData: Form,
+    URLSearchParams,
     Date,
     Math,
     fetch: async (path: string, options: any) => {
@@ -129,7 +130,8 @@ function fixture() {
               false,
             )
           : response({ events: [] });
-      if (path.includes("?status="))
+      if (path.endsWith("/diffs")) return response({ items: [] });
+      if (path.startsWith("/v1/issues?"))
         return response({ items: [issue("a"), issue("b")] });
       return response(issue(path.split("/").at(-1)));
     },
@@ -232,7 +234,7 @@ it("retires a successful revisit before refresh and preserves its comparison res
   expect(f.posts()).toHaveLength(1);
 });
 
-it("never replays an uncertain non-idempotent revisit", async () => {
+it("replays an uncertain revisit with its identical idempotency key", async () => {
   const f = fixture();
   await f.choose("a");
   f.photo("photo2");
@@ -240,8 +242,11 @@ it("never replays an uncertain non-idempotent revisit", async () => {
   await f.click("addRevisit");
   f.failPost(false);
   await f.click("addRevisit");
-  expect(f.posts()).toHaveLength(1);
-  expect(f.$("revisitError").textContent).toMatch(/unknown|not confirmed/i);
+  expect(f.posts()).toHaveLength(2);
+  expect(f.posts()[1].options.headers["Idempotency-Key"]).toBe(
+    f.posts()[0].options.headers["Idempotency-Key"],
+  );
+  expect(f.posts()[1].options.body).toBe(f.posts()[0].options.body);
 });
 
 it("captures revisit destination and note before image decoding and ignores stale completion", async () => {
@@ -512,4 +517,25 @@ it("ignores older refresh errors after a successful newer refresh", async () => 
   old.resolve(f.response({ error: { message: "stale failure" } }, false));
   await refreshing;
   expect(f.$("refreshError").hidden).toBe(true);
+});
+
+it("allows corrected input after a definitive revisit rejection", async () => {
+  const f = fixture();
+  await f.choose("a");
+  f.photo("photo2");
+  f.$("note2").value = "rejected note";
+  f.hookPost(() => ({
+    ok: false,
+    status: 400,
+    json: async () => ({ error: { message: "Invalid capture time" } }),
+  }));
+  await f.click("addRevisit");
+  f.$("note2").value = "corrected note";
+  f.hookPost(undefined);
+  await f.click("addRevisit");
+  expect(f.posts()).toHaveLength(2);
+  expect(f.posts()[1].options.headers["Idempotency-Key"]).not.toBe(
+    f.posts()[0].options.headers["Idempotency-Key"],
+  );
+  expect(f.posts()[1].options.body.values.get("note")).toBe("corrected note");
 });

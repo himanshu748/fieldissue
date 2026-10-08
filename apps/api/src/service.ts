@@ -20,6 +20,8 @@ export class IssueService {
     private readonly storage: StorageProvider,
     private readonly intelligence: IntelligenceProvider,
     private readonly place?: PlaceContextProvider,
+    private readonly consume: (units: number) => Promise<void> = async () => {},
+    private readonly predictionEnabled = true,
   ) {}
   private evidence(media: Media, note: string): EvidenceInput {
     return {
@@ -45,8 +47,10 @@ export class IssueService {
       let revisitMetadata: Record<string, unknown> | undefined;
       if (!issueId) {
         const result = await runCreateWorkflow(input, {
-          analyze: () =>
-            this.intelligence.analyze(this.evidence(media, input.note)),
+          analyze: async () => {
+            await this.consume(1);
+            return this.intelligence.analyze(this.evidence(media, input.note));
+          },
           nearby: () => this.repository.nearby(input.latitude, input.longitude),
           persist: async (_input, analysis) => {
             const stored = await this.storage.put(media);
@@ -73,13 +77,18 @@ export class IssueService {
       }
       const placeContext =
         !replayed && this.place
-          ? await this.place
-              .context(input.latitude, input.longitude)
+          ? await this.consume(1)
+              .then(() => this.place!.context(input.latitude, input.longitude))
               .catch(() => null)
           : null;
+      if (placeContext)
+        await this.repository
+          .savePlaceContext(issueId, placeContext)
+          .catch(() => {});
+      const saved = await this.repository.get(issueId);
       return {
-        ...(await this.repository.get(issueId)),
-        placeContext,
+        ...saved,
+        placeContext: placeContext ?? saved.placeContext,
         nearbyIssues: (
           await this.repository.nearby(input.latitude, input.longitude)
         ).filter((nearby) => nearby.id !== issueId),
@@ -92,25 +101,58 @@ export class IssueService {
     }
   }
 
-  async addObservation(id: string, input: ObservationInput, media: Media) {
+  async addObservation(
+    id: string,
+    input: ObservationInput,
+    media: Media,
+    key?: string,
+  ) {
     const issue = await this.repository.get(id);
-    const analysis = validatedAnalysis(
-      await this.intelligence.analyze(this.evidence(media, input.note)),
-    );
-    const stored = await this.storage.put(media);
-    let observation;
-    try {
-      observation = await this.repository.addObservation(
-        id,
-        input,
-        stored,
-        analysis,
+    const hash = createHash("sha256")
+      .update(JSON.stringify(input))
+      .update(media.mime)
+      .update(media.bytes)
+      .digest("hex");
+    let observation = key
+      ? await this.repository.findObservationRequest(issue.id, key, hash)
+      : null;
+    if (!observation) {
+      await this.consume(1);
+      const analysis = validatedAnalysis(
+        await this.intelligence.analyze(this.evidence(media, input.note)),
       );
-    } catch (error) {
-      await this.storage.delete(stored.storageKey).catch(() => {});
-      throw error;
+      const stored = await this.storage.put(media);
+      try {
+        observation = await this.repository.addObservation(
+          issue.id,
+          input,
+          stored,
+          analysis,
+          key ? { key, hash } : undefined,
+        );
+      } catch (error) {
+        await this.storage.delete(stored.storageKey).catch(() => {});
+        throw error;
+      }
+      if (observation.replayed)
+        await this.storage.delete(stored.storageKey).catch(() => {});
     }
-    const previous = issue.observations.at(-1);
+    // Read the committed order, not a stale snapshot from before model inference.
+    const ordered = (await this.repository.observations(issue.id)).items;
+    const index = ordered.findIndex((o) => o.id === observation.id);
+    const previous = ordered[index - 1];
+    if (observation.replayed) {
+      const cached = (await this.repository.diffs(issue.id)).items.find(
+        (d) => d.afterObservationId === observation.id,
+      );
+      return {
+        observation,
+        realWorldDiff: cached ?? null,
+        recommendedStatus: cached?.recommendedStatus ?? null,
+        replayed: true,
+        diffUnavailable: !cached && !!previous,
+      };
+    }
     if (previous) {
       try {
         const diff = await this.diff(issue.id, previous.id, observation.id);
@@ -149,6 +191,7 @@ export class IssueService {
         compare: async () => {
           const beforeMedia = await this.storage.read(pair.before.storage_key),
             afterMedia = await this.storage.read(pair.after.storage_key);
+          await this.consume(1);
           return this.intelligence.compare({
             before: {
               ...this.evidence(beforeMedia, pair.before.note),
@@ -168,9 +211,12 @@ export class IssueService {
     return { ...result.diff, revisitMetadata: result.revisitMetadata };
   }
   private async revisitMetadata(id: string): Promise<Record<string, unknown>> {
+    if (!this.predictionEnabled)
+      return { available: false, error: "PREDICTION_UNAVAILABLE" };
     let features: Record<string, string | number> | undefined;
     try {
       features = await this.repository.features(id);
+      await this.consume(1);
       const prediction = await this.intelligence.predict(features);
       await this.repository.savePrediction(id, features, prediction);
       return { available: true, features, prediction };
@@ -193,6 +239,12 @@ export class IssueService {
     );
   }
   async predict(id: string) {
+    if (!this.predictionEnabled)
+      throw new AppError(
+        "PREDICTION_UNAVAILABLE",
+        503,
+        "Revisit prediction needs genuine labeled history and configured model weights.",
+      );
     const issue = await this.repository.get(id);
     if (["RESOLVED", "REJECTED"].includes(issue.status))
       throw new AppError(
@@ -201,6 +253,7 @@ export class IssueService {
         "Only active issues can be prioritized",
       );
     const features = await this.repository.features(issue.id);
+    await this.consume(1);
     const output = await this.intelligence.predict(features);
     await this.repository.savePrediction(issue.id, features, output);
     return output;

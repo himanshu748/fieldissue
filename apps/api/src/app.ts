@@ -1,3 +1,10 @@
+import { readFile } from "node:fs/promises";
+import {
+  landingPageHtml,
+  landingPageScript,
+  landingPageCsp,
+} from "./landing-page.js";
+import type { RequestGuard } from "./request-guard.js";
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { secureHeaders } from "hono/secure-headers";
@@ -17,12 +24,7 @@ import type { IssueRepository } from "./repository.js";
 import { validateImage, type StorageProvider, type Media } from "./storage.js";
 import { AppError } from "./errors.js";
 import { trace, reportFailure } from "./telemetry.js";
-import {
-  demoPageCsp,
-  demoPageHtml,
-  demoPageScript,
-  landingScript,
-} from "./demo-page.js";
+import { demoPageCsp, demoPageHtml, demoPageScript } from "./demo-page.js";
 const logger = pino({ level: process.env.LOG_LEVEL ?? "info" });
 const numeric = (min: number, max: number) =>
   z
@@ -38,6 +40,7 @@ const querySchema = z
     severity: severitySchema.optional(),
     limit: numeric(1, 100).pipe(z.number().int()).default(20),
     cursor: z.string().max(500).optional(),
+    search: z.string().trim().max(120).optional(),
     near_lat: numeric(-90, 90).optional(),
     near_lon: numeric(-180, 180).optional(),
     radius_meters: numeric(1, 50000).optional(),
@@ -58,12 +61,23 @@ interface Dependencies {
   storage: StorageProvider;
   maxUploadBytes: number;
   accessToken?: string;
+  guard?: RequestGuard;
+  capabilities?: {
+    accessRequired: boolean;
+    storage: string;
+    retentionNotice: string;
+    audio: boolean;
+    mock: boolean;
+  };
   ready?: () => Promise<boolean>;
   audio?: (id: string) => Promise<unknown>;
 }
 export function createApp(deps: Dependencies) {
   const app = new Hono<{ Variables: { requestId: string } }>();
-  app.use("*", secureHeaders());
+  app.use(
+    "*",
+    secureHeaders({ referrerPolicy: "strict-origin-when-cross-origin" }),
+  );
   app.use("*", async (c, next) => {
     const candidate = c.req.header("X-Request-ID");
     const id =
@@ -92,22 +106,33 @@ export function createApp(deps: Dependencies) {
       "request",
     );
   });
+  const assets: Record<string, [string, string]> = {
+    "field-walk.png": ["field-walk.png", "image/png"],
+    "leaflet.js": ["leaflet.js", "text/javascript; charset=utf-8"],
+    "leaflet.css": ["leaflet.css", "text/css; charset=utf-8"],
+  };
   // Deployment gateway: protect reports, media and inference before parsing bodies.
   // This is shared demo access, not end-user identity or tenant authorization.
   app.use("*", async (c, next) => {
     if (
       deps.accessToken &&
       !(
-        c.req.method === "GET" &&
-        [
-          "/",
-          "/demo",
-          "/demo.js",
-          "/landing.js",
-          "/favicon.ico",
-          "/health",
-          "/ready",
-        ].includes(c.req.path)
+        (["GET", "HEAD"].includes(c.req.method) &&
+          [
+            "/",
+            "/demo",
+            "/demo.js",
+            "/landing.js",
+            "/favicon.ico",
+            "/app-config",
+            "/app",
+            "/health",
+            "/ready",
+          ].includes(c.req.path)) ||
+        (["GET", "HEAD"].includes(c.req.method) &&
+          (c.req.path.startsWith("/app/") ||
+            (Object.hasOwn(assets, c.req.path.replace(/^\/assets\//, "")) &&
+              c.req.path.startsWith("/assets/"))))
       )
     ) {
       const expected = Buffer.from(`Bearer ${deps.accessToken}`);
@@ -132,6 +157,21 @@ export function createApp(deps: Dependencies) {
       c.header("Cache-Control", "private, no-store");
     }
     await next();
+  });
+  app.use("/v1/*", async (c, next) => {
+    if (!deps.guard || !["POST", "PATCH", "DELETE"].includes(c.req.method))
+      return next();
+    let release: (() => void) | undefined;
+    try {
+      release = await deps.guard.enter(0);
+      await next();
+    } catch (error) {
+      if (error instanceof AppError && error.status === 429)
+        c.header("Retry-After", "60");
+      throw error;
+    } finally {
+      release?.();
+    }
   });
   app.use(
     "*",
@@ -268,9 +308,9 @@ export function createApp(deps: Dependencies) {
   // The landing/demo page and its scripts are static and contain no secrets, so they
   // stay public; every API call they make still passes the access gateway.
   app.get("/", (c) => {
-    c.header("Content-Security-Policy", demoPageCsp);
+    c.header("Content-Security-Policy", landingPageCsp);
     c.header("Cache-Control", "no-cache");
-    return c.html(demoPageHtml);
+    return c.html(landingPageHtml);
   });
   app.get("/demo.js", (c) => {
     c.header("Content-Type", "text/javascript; charset=utf-8");
@@ -280,10 +320,42 @@ export function createApp(deps: Dependencies) {
   app.get("/landing.js", (c) => {
     c.header("Content-Type", "text/javascript; charset=utf-8");
     c.header("Cache-Control", "no-cache");
-    return c.body(landingScript);
+    return c.body(landingPageScript);
   });
   // The demo lives in the landing page's #try section; keep a short link.
-  app.get("/demo", (c) => c.redirect("/#try", 302));
+  app.get("/demo", (c) => c.redirect("/app", 302));
+  for (const route of ["/app", "/app/report", "/app/issues/:id"])
+    app.get(route, (c) => {
+      c.header("Content-Security-Policy", demoPageCsp);
+      c.header("Referrer-Policy", "strict-origin-when-cross-origin");
+      c.header("Cache-Control", "no-cache");
+      return c.html(demoPageHtml);
+    });
+  app.get("/app-config", (c) =>
+    c.json(
+      deps.capabilities ?? {
+        accessRequired: !!deps.accessToken,
+        storage: "unknown",
+        retentionNotice: "",
+        audio: !!deps.audio,
+        mock: false,
+      },
+    ),
+  );
+  app.get("/assets/:name", async (c) => {
+    const asset = assets[c.req.param("name")];
+    if (!asset || !Object.hasOwn(assets, c.req.param("name")))
+      return c.notFound();
+    c.header("Content-Type", asset[1]);
+    c.header("Cache-Control", "public, max-age=3600");
+    return c.body(
+      new Uint8Array(
+        await readFile(
+          new URL(`../public/assets/${asset[0]}`, import.meta.url),
+        ),
+      ),
+    );
+  });
   app.get("/favicon.ico", (c) => c.body(null, 204));
   app.get("/health", (c) =>
     c.json({ status: "ok", service: "fieldissue-api" }),
@@ -323,6 +395,7 @@ export function createApp(deps: Dependencies) {
     }
     return c.json(
       await deps.repository.list({
+        search: q.search,
         status: q.status,
         category: q.category,
         severity: q.severity,
@@ -371,12 +444,30 @@ export function createApp(deps: Dependencies) {
     const { media, fields } = await upload(c.req.raw);
     delete fields.title;
     const issue = await deps.repository.get(id);
+    if ((fields.latitude === undefined) !== (fields.longitude === undefined))
+      throw new AppError(
+        "INVALID_LOCATION",
+        400,
+        "Send both latitude and longitude, or neither",
+      );
     const input = observationInputSchema.parse({
       ...fields,
+      locationSource:
+        fields.latitude === undefined
+          ? "inherited"
+          : (fields.locationSource ?? "manual"),
       latitude: fields.latitude ?? issue.latitude,
       longitude: fields.longitude ?? issue.longitude,
     });
-    return c.json(await deps.service.addObservation(id, input, media), 201);
+    const key = c.req.header("Idempotency-Key");
+    if (key && !/^[a-zA-Z0-9:_-]{1,128}$/.test(key))
+      throw new AppError(
+        "INVALID_IDEMPOTENCY_KEY",
+        400,
+        "Invalid idempotency key",
+      );
+    const result = await deps.service.addObservation(id, input, media, key);
+    return c.json(result, result.replayed ? 200 : 201);
   });
   app.get("/v1/issues/:id/observations", async (c) =>
     c.json(await deps.repository.observations(issueId(c.req.param("id")))),

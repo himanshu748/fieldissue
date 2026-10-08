@@ -29,7 +29,7 @@ const demo = {
   FIELDISSUE_DEMO_PROFILE: "true",
   DATABASE_URL: "postgresql://u:p@dpg-abc123-a:5432/fieldissue",
   DATABASE_SSL: "false",
-  STORAGE_PROVIDER: "local",
+  STORAGE_PROVIDER: "postgres",
   RENDER_EXTERNAL_URL: "https://fieldissue-demo.onrender.com/",
 };
 
@@ -53,7 +53,7 @@ it("allows the judge demo profile only with real Gemma", () => {
   const { env, demo: isDemo, migrateFirst } = renderEnvironment(demo);
   expect(isDemo).toBe(true);
   expect(migrateFirst).toBe(true);
-  expect(env.LOCAL_STORAGE_PATH).toBe("/tmp/fieldissue-media");
+  expect(env.STORAGE_PROVIDER).toBe("postgres");
   expect(env.MEDIA_BASE_URL).toBe("https://fieldissue-demo.onrender.com/media");
   for (const change of [
     { AI_MOCK_MODE: "true" },
@@ -62,6 +62,7 @@ it("allows the judge demo profile only with real Gemma", () => {
     { GEMMA_MODEL: "" },
     { API_ACCESS_TOKEN: "" },
     { STORAGE_PROVIDER: "memory" },
+    { STORAGE_PROVIDER: "local" },
     { STORAGE_PROVIDER: "s3" },
     // Plain TCP only on Render's private network (single-label host).
     { DATABASE_URL: "postgresql://u:p@db.example.com:5432/x" },

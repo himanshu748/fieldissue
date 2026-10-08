@@ -1,17 +1,18 @@
 # FieldIssue demo walkthrough
 
-A judge can try FieldIssue in a browser: the API serves one static page at `/`
-that drives the same public endpoints as any HTTP client. Report an issue with
+A judge can try FieldIssue in a browser: `/` introduces the project and `/app`
+is the separate field workspace, backed by the public API. Report an issue with
 a photo, revisit it with a new photo, read the before/after comparison, then
 resolve it yourself.
 
 ## Try it
 
-**Hosted:** _add the URL and the demo access token here after deploying with
+**Hosted:** _add the verified URL here after deploying with
 [`render.demo.yaml`](render.demo.yaml) (see
 [docs/render-deployment.md](docs/render-deployment.md#judge-demo-profile-renderdemoyaml))._
-The free service sleeps when idle and takes about a minute to wake. Photos are
-kept only until the service restarts.
+The free service sleeps when idle and takes about a minute to wake. Photos and comparisons survive web restarts in PostgreSQL. The free database
+expires 30 days after provisioning; the workspace shows this retention limit.
+Share the access token privately with judges, never in this repository.
 
 **Locally, no API keys (fixture mode):**
 
@@ -37,10 +38,12 @@ and confidence is 0. The photo is stored but not interpreted. Set
 | 2. Revisit and compare | `POST /v1/issues/:id/observations`, which runs the comparison against the previous observation | Removed / added / unchanged conditions, a summary, and the model's recommended status. The issue stays in its current status. |
 | 3. Resolve | `POST /v1/issues/:id/resolve` | Status `RESOLVED`; `STATUS_CHANGED` and `ISSUE_RESOLVED` events with your note in the timeline. |
 | Timeline | `GET /v1/issues/:id/timeline` | Every event in order: created, classification, observation, diff, status, resolution. |
-| Open issues | `GET /v1/issues?status=OPEN` | Pick any open issue (including the fictional seeded ones, `FI-9000xx`) to revisit it. |
+| Issue directory | `GET /v1/issues` with filters, search and cursor | Find active or closed issues and open their permanent `/app/issues/FI-…` links. |
+| Saved comparisons | `GET /v1/issues/:id/diffs` | Evidence stays visible after reload, resolution and reopening. |
+| Reopen | `PATCH /v1/issues/:id` | A resolved issue becomes open with a status event; previous evidence is retained. |
 
 Things the page deliberately does not do: it never resolves an issue on the
-model's say-so, and it has no accounts, map view or revisit prediction
+model's say-so, and it has no individual accounts or configured revisit prediction
 (TabPFN needs real labelled history first).
 
 ## ~2-minute video shot list

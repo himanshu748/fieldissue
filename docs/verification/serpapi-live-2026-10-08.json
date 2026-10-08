@@ -1,0 +1,16 @@
+{
+  "checkedAt": "2026-10-08T06:43:13.724Z",
+  "provider": "SerpApi",
+  "accountPlan": "Free Plan",
+  "monthlyPriceUsd": 0,
+  "searchesRemainingBefore": 233,
+  "publicLocation": "Cubbon Park, Bengaluru",
+  "durationMs": 1393,
+  "maximumDistanceMeters": 2000,
+  "result": {
+    "name": "Sir Mark Cubbon Statue",
+    "address": "XHGV+GPG, Ambedkar Veedhi, Sampangi Rama Nagar, Bengaluru, Karnataka 560001, India",
+    "source": "SerpApi",
+    "providerPlaceId": "ChIJszABzHEWrjsRuuyEFE1AhWI"
+  }
+}

@@ -1,15 +1,15 @@
 import { spawn, spawnSync } from "node:child_process";
 import { renderEnvironment } from "./render-config.mjs";
 
-// Refuse accidental mock deployments, ephemeral uploads outside the explicit
-// demo profile, or an open public API. See scripts/render-config.mjs.
+// Refuse mock deployments, ephemeral uploads, or an open public API.
+// See scripts/render-config.mjs.
 const { env, demo, migrateFirst } = renderEnvironment(process.env);
 Object.assign(process.env, env);
 process.env.INTELLIGENCE_URL = "http://127.0.0.1:8000";
 if (demo)
   console.log(
     "FieldIssue judge demo profile: real Gemma, no TabPFN, " +
-      (process.env.STORAGE_PROVIDER === "local" ? "ephemeral local media" : "S3 media"),
+      (process.env.STORAGE_PROVIDER === "postgres" ? "durable PostgreSQL media" : "S3 media"),
   );
 if (migrateFirst) {
   const migration = spawnSync(process.execPath, ["apps/api/dist/migrate.js"], {

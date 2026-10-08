@@ -3,11 +3,11 @@
 // - production (default): S3 media, certificate-verified database TLS, and the
 //   /ready health check that requires Gemma, TabPFN and the database.
 // - judge demo (FIELDISSUE_DEMO_PROFILE=true): real Gemma only, never mocks.
-//   Media may live on the instance's ephemeral disk, the database may be a
+//   Media must use durable PostgreSQL or S3 storage, the database may be a
 //   Render private-network Postgres, and migrations run at start. TabPFN stays
 //   unconfigured, so revisit predictions report available=false. See
 //   docs/render-deployment.md before using it.
-import { isAbsolute } from "node:path";
+
 
 export function renderEnvironment(source) {
   const env = { ...source };
@@ -53,14 +53,8 @@ export function renderEnvironment(source) {
   }
   if (env.DATABASE_SSL !== "true" && (env.DATABASE_SSL !== "false" || host.includes(".")))
     throw new Error("Demo profile: use DATABASE_SSL=true unless the database is on Render's private network");
-  if (!["local", "s3"].includes(env.STORAGE_PROVIDER))
-    throw new Error("Demo profile: STORAGE_PROVIDER must be local or s3");
-  if (env.STORAGE_PROVIDER === "local") {
-    // The image runs as a non-root user; only /tmp is writable, and it is lost
-    // whenever the free instance restarts or spins down.
-    if (!env.LOCAL_STORAGE_PATH || !isAbsolute(env.LOCAL_STORAGE_PATH))
-      env.LOCAL_STORAGE_PATH = "/tmp/fieldissue-media";
-  }
+  if (!["postgres", "s3"].includes(env.STORAGE_PROVIDER))
+    throw new Error("Demo profile: STORAGE_PROVIDER must be postgres or s3 (durable evidence required)");
   if (!env.MEDIA_BASE_URL?.trim()) {
     if (!env.RENDER_EXTERNAL_URL?.trim())
       throw new Error("Missing deployment setting: MEDIA_BASE_URL");

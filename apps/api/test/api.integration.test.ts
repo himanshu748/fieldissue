@@ -207,7 +207,7 @@ describeDb("real PostgreSQL API integration", () => {
     const patch = await app.request(`/v1/issues/${issueId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: "OPEN" }),
+      body: JSON.stringify({ status: "IN_PROGRESS" }),
     });
     expect(patch.status).toBe(409);
     const events = (

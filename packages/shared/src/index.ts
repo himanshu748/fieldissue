@@ -65,6 +65,10 @@ export const observationInputSchema = z
     latitude: coordinate(-90, 90),
     longitude: coordinate(-180, 180),
     capturedAt: z.iso.datetime({ offset: true }).optional(),
+    locationSource: z
+      .enum(["device", "manual", "inherited", "unspecified"])
+      .optional(),
+    captureTimeSource: z.enum(["user", "upload", "unspecified"]).optional(),
   })
   .strict();
 export const createIssueSchema = observationInputSchema.extend({

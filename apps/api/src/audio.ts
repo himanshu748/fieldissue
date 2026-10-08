@@ -135,6 +135,7 @@ export class AudioSummaryService {
     private readonly repository: IssueRepository,
     private readonly storage: StorageProvider,
     private readonly speech: SpeechProvider,
+    private readonly consume: (units: number) => Promise<void> = async () => {},
   ) {}
   async generate(id: string) {
     const issue = await this.repository.get(id);
@@ -167,6 +168,7 @@ export class AudioSummaryService {
             storageKey: cached.storage_key,
             cached: true,
           };
+        await this.consume(1);
         const media = await this.speech.generate(text);
         const stored = await this.storage.put(media);
         cleanup = stored.storageKey;

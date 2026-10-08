@@ -49,14 +49,16 @@ The production Blueprint above stays gated. For a short-lived hackathon demo,
 | Vision | Real Gemma | Real Gemma (mocks are still refused) |
 | TabPFN | Required for `/ready` | Not configured; revisit predictions return `available=false` |
 | Database | External PostGIS/pgvector, verified TLS | Free Render Postgres 17 on the private network; migrations run at start |
-| Media | S3-compatible bucket | Instance disk under `/tmp`, **lost on restart or spin-down** (or set `STORAGE_PROVIDER=s3` and the S3 variables) |
+| Media | S3-compatible bucket | PostgreSQL byte storage, retained across web restarts; 200 MiB capacity cap (or use S3) |
 | Health check | `/ready` | `/health` (liveness only), because `/ready` needs TabPFN |
 | Access | Shared bearer token | Same shared bearer token, pasted into the demo page |
 
-What a judge gets: the demo page at `/` (report with a photo, real Gemma
-description, revisit photo, before/after comparison, manual resolve, timeline).
-What it does not give: durable photos, revisit predictions, or production
-readiness. Say this wherever you share the link.
+What a judge gets: the public landing page at `/` and a separate workspace at
+`/app`, with report capture, real Gemma comparisons, saved issue links, filters,
+map, persistent comparison history, manual resolution and reopening. Photos
+survive web service restarts because they are in the database. The database
+itself expires after 30 days: this is a time-limited demo, not archival storage.
+TabPFN predictions and full production readiness remain unavailable.
 
 Steps:
 
@@ -69,10 +71,10 @@ Steps:
    (free Postgres) and the `fieldissue-demo` free web service.
 4. When prompted, paste `GEMMA_API_KEY`. Leave everything else as generated.
 5. After the deploy: open the service → **Environment** → copy `API_ACCESS_TOKEN`.
-   Open `https://<service>.onrender.com/`, paste the token, and run the full
+   Open `https://<service>.onrender.com/app`, paste the token, and run the full
    flow once with a real photo. `/health` passing proves only that the process
    is up; this manual run is the real check.
-6. Share the URL and the token with judges (for example in the DEV post).
+6. Share the URL publicly and provide the shared access token privately to judges.
    Anyone with the token can upload, so rotate or delete the service after
    judging.
 
@@ -83,16 +85,16 @@ after creation; only one free database per workspace. PostGIS and pgvector are
 enabled with `CREATE EXTENSION`, which the first migration does
 ([Render Postgres extensions](https://render.com/docs/postgresql-extensions)).
 
-The demo profile has been exercised locally only: `scripts/render-start.mjs`
+Before the October 8 durability update, the demo profile was exercised locally: `scripts/render-start.mjs`
 with `FIELDISSUE_DEMO_PROFILE=true` against a fresh PostGIS database and a local
-OpenAI-compatible stub in place of Gemma (plumbing, not model quality). It has
-not been deployed to Render from this repository yet.
+OpenAI-compatible stub in place of Gemma (plumbing, not model quality). See the latest dated verification record for hosted deployment status.
 
 ## Access and secrets
 
 Render generates separate `API_ACCESS_TOKEN` and `INTERNAL_SERVICE_TOKEN` values.
 Every public API and media request needs `Authorization: Bearer <API_ACCESS_TOKEN>`;
-only GET `/health` and `/ready` are unauthenticated. Protected responses and media
+the landing/workspace shell, static assets, safe `/app-config`, `/health` and
+`/ready` are public. Issue data and media remain protected. Protected responses and media
 use private/no-store caching. This is a shared demo gateway, not user accounts,
 tenant isolation, or reporter authentication. Keep the token server-side and
 out of public frontend bundles and URLs.
@@ -122,3 +124,19 @@ Official references:
 [Gemma API and images](https://ai.google.dev/gemma/docs/core/gemma_on_gemini_api),
 [Google API pricing](https://ai.google.dev/gemini-api/docs/pricing), and
 [Week 1 challenge](https://dev.to/challenges/hacktoberfest-week1-2026-10-05).
+
+## Capacity and provider limits
+
+The production entrypoint bounds writes globally to 30 starts per minute and
+two concurrent operations. PostgreSQL atomically records at most 60 provider
+operations per UTC day across restarts. Each actual analysis, comparison,
+place lookup, prediction or new audio generation reserves one unit immediately
+before the call; committed idempotent replays and cached results reserve none.
+Failed provider attempts consume units. This is an application safety limit,
+not a dollar budget: configure only verified free accounts or credit-only
+accounts without top-up, and leave provider retries disabled in the free profile.
+
+PostgreSQL media storage rejects additions beyond 200 MiB without deleting
+existing evidence. Free database expiry still removes all records and media.
+`DATABASE_CA_FILE` can supply an official provider CA when system trust is not
+sufficient; certificate verification is never disabled.

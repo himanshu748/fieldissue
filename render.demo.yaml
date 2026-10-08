@@ -1,7 +1,7 @@
 # Judge demo profile: one free web service plus one free Render Postgres.
 # Real Gemma vision only (no mocks). TabPFN is not configured, so revisit
-# predictions report available=false. Media is stored on the instance's
-# ephemeral disk and is lost when the free service restarts or spins down;
+# predictions report available=false. Media is stored in the PostgreSQL
+# database, with a bounded media capacity; web service restarts retain photos;
 # issue records stay in Postgres. The free database expires 30 days after
 # creation. Read docs/render-deployment.md ("Judge demo profile") first.
 # Use it from the Render dashboard: New > Blueprint, Blueprint Path = render.demo.yaml.
@@ -46,9 +46,13 @@ services:
       - key: DATABASE_SSL
         value: "false"
       - key: STORAGE_PROVIDER
-        value: local
-      - key: LOCAL_STORAGE_PATH
-        value: /tmp/fieldissue-media
+        value: postgres
+      - key: MEDIA_DATABASE_MAX_BYTES
+        value: "209715200"
+      - key: PROVIDER_DAILY_UNITS
+        value: "60"
+      - key: DATA_RETENTION_NOTICE
+        value: "This judge demo database expires 30 days after provisioning. Export important evidence before it expires."
       - key: MAX_UPLOAD_BYTES
         value: "5242880"
       - key: GEMMA_BASE_URL
@@ -65,3 +69,13 @@ services:
         value: "95"
       - key: AI_MAX_RETRIES
         value: "0"
+
+      # Optional free-tier integrations. Leave blank until configured.
+      - key: SERPAPI_API_KEY
+        sync: false
+      - key: ELEVENLABS_API_KEY
+        sync: false
+      - key: ELEVENLABS_VOICE_ID
+        sync: false
+      - key: SENTRY_DSN
+        sync: false
