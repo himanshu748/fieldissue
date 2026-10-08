@@ -174,6 +174,17 @@ export class IssueService {
   }
   async diff(id: string, before: string, after: string) {
     const pair = await this.repository.pair(id, before, after);
+    const beforeMedia = await this.storage.read(pair.before.storage_key);
+    const afterMedia = await this.storage.read(pair.after.storage_key);
+    // Identical bytes cannot establish a new field observation. Do this before
+    // consulting old model output so earlier hallucinated comparisons can be corrected.
+    if (beforeMedia.bytes.equals(afterMedia.bytes)) {
+      return this.repository.saveIdentityComparison(
+        pair.issueId,
+        before,
+        after,
+      );
+    }
     const cached = (await this.repository.diffs(pair.issueId)).items.find(
       (x) => x.beforeObservationId === before && x.afterObservationId === after,
     );
@@ -189,8 +200,6 @@ export class IssueService {
           await this.repository.get(pair.issueId);
         },
         compare: async () => {
-          const beforeMedia = await this.storage.read(pair.before.storage_key),
-            afterMedia = await this.storage.read(pair.after.storage_key);
           await this.consume(1);
           return this.intelligence.compare({
             before: {

@@ -28,6 +28,7 @@ export const configSchema = z
       .max(1000)
       .default(30),
     PROVIDER_CONCURRENCY: z.coerce.number().int().min(1).max(10).default(2),
+    DATA_RETENTION_DAYS: z.coerce.number().int().min(0).max(3650).default(0),
     DATA_RETENTION_NOTICE: z.string().max(1000).optional(),
     API_ACCESS_TOKEN: z.string().min(32).optional(),
     INTELLIGENCE_URL: z.string().url().default("http://127.0.0.1:8000"),

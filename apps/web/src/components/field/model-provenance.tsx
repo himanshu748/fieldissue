@@ -17,6 +17,7 @@ export function ModelProvenance({
   at?: string;
 }) {
   if (!model) return <p className="text-sm text-muted-foreground">No model provenance was recorded.</p>;
+  if (model === "fieldissue-image-identity") return <p className="text-sm text-muted-foreground">Verified by exact file comparison ({modelVersion}). No AI inference was used for this comparison.</p>;
   return (
     <div className="flex flex-col gap-3">
       <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 font-mono text-xs">

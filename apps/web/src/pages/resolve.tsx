@@ -51,6 +51,7 @@ export function ResolvePage() {
   const data = issue.data;
   const latest = data.observations.at(-1);
   const latestDiff = diffs.data?.items.filter((d) => d.afterObservationId === latest?.id).at(-1);
+  const repeatedPhoto = latestDiff?.model === "fieldissue-image-identity";
   const hasRevisit = data.observations.length > 1;
 
   if (data.status === "RESOLVED" || data.status === "REJECTED")
@@ -103,7 +104,7 @@ export function ResolvePage() {
         <h2 className="eyebrow">Latest observation</h2>
         <ObservationImage storageKey={latest?.storageKey} alt="Latest observation" className="aspect-[4/3] border border-ink" />
         {latest ? <p className="font-mono text-xs text-muted-foreground">Captured {formatDateTime(latest.capturedAt)}</p> : null}
-        {latestDiff ? (
+        {latestDiff && !repeatedPhoto ? (
           <p className="text-sm text-muted-foreground">
             The latest comparison suggested <strong className="text-ink">{label(latestDiff.recommendedStatus)}</strong>. That is
             advisory; your decision is what counts.
@@ -111,11 +112,12 @@ export function ResolvePage() {
         ) : null}
       </section>
 
+      {repeatedPhoto ? <Alert><InfoIcon /><AlertTitle>The latest photo repeats earlier evidence</AlertTitle><AlertDescription>Take a fresh photo before confirming from visual evidence, or explicitly choose manual confirmation without new evidence.</AlertDescription></Alert> : null}
       <FieldSet>
         <FieldLegend className="eyebrow">Resolution basis</FieldLegend>
         <RadioGroup value={basis} onValueChange={(v) => setBasis(v as Basis)}>
           <Field orientation="horizontal" className="items-start border border-border bg-surface p-4">
-            <RadioGroupItem value="latest_observation" id="basis-latest" disabled={!latest} className="mt-0.5" />
+            <RadioGroupItem value="latest_observation" id="basis-latest" disabled={!latest || repeatedPhoto} className="mt-0.5" />
             <FieldContent>
               <FieldLabel htmlFor="basis-latest">Verified from the latest observation</FieldLabel>
               <FieldDescription>
@@ -163,7 +165,7 @@ export function ResolvePage() {
 
       <AlertDialog>
         <AlertDialogTrigger asChild>
-          <Button size="lg" className="h-14 text-base" disabled={busy}>
+          <Button size="lg" className="h-14 text-base" disabled={busy || (basis === "latest_observation" && repeatedPhoto)}>
             {busy ? <Spinner data-icon="inline-start" /> : <CheckCircle2Icon data-icon="inline-start" />}
             Confirm resolution
           </Button>

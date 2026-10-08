@@ -1,3 +1,4 @@
+import { useCaptureDraft } from "@/hooks/use-capture-draft";
 import { CaptureTime, captureTimeValid } from "@/components/field/capture-time";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router";
@@ -21,15 +22,17 @@ type Phase = { kind: "idle" } | { kind: "sending"; step: UploadPhase; fraction?:
 export function ReportPage() {
   const navigate = useNavigate();
   const { config } = useAppConfig();
-  const [photo, setPhoto] = useState<PreparedImage | null>(null);
-  const [location, setLocation] = useState<Located | null>(recallLocation);
-  const [note, setNote] = useState("");
-  const [capturedAt, setCapturedAt] = useState("");
+  const { draft, setDraft, clear: clearDraft, notice: draftNotice, persist } = useCaptureDraft("report", { photo: null, location: recallLocation(), locationMode: "inherit", note: "", capturedAt: "" });
+  const { photo, location, note, capturedAt } = draft;
+  const setPhoto = (photo: PreparedImage | null) => setDraft(d => ({ ...d, photo }));
+  const setLocation = (location: Located | null) => setDraft(d => ({ ...d, location }));
+  const setNote = (note: string) => setDraft(d => ({ ...d, note }));
+  const setCapturedAt = (capturedAt: string) => setDraft(d => ({ ...d, capturedAt }));
   const [consent, setConsent] = useState(false);
   const [phase, setPhase] = useState<Phase>({ kind: "idle" });
   // One idempotency key per exact set of inputs: a retry after a dropped
   // connection replays the same request instead of creating a duplicate.
-  const attempt = useRef<{ key: string; signature: string; photo: PreparedImage } | null>(null);
+  const attempt = useRef<{ key: string; signature: string; photo: PreparedImage } | null>(draft.attempt && photo ? { ...draft.attempt, photo } : null);
   const sending = phase.kind === "sending";
 
   const signature = useMemo(
@@ -54,6 +57,10 @@ export function ReportPage() {
   async function send() {
     if (!photo || !location || !consent || !captureTimeValid(capturedAt) || sending) return;
     if (attempt.current?.signature !== signature || attempt.current?.photo !== photo) attempt.current = { key: newKey("create"), signature, photo };
+    setPhase({ kind: "sending", step: "uploading", fraction: 0 });
+    const nextDraft = { ...draft, attempt: { key: attempt.current!.key, signature } };
+    setDraft(nextDraft);
+    await persist(nextDraft);
     const form = new FormData();
     form.set("image", photo.blob, "observation.jpg");
     form.set("latitude", String(location.latitude));
@@ -66,12 +73,13 @@ export function ReportPage() {
       const result = await api.createIssue(form, attempt.current.key, (step, fraction) =>
         setPhase({ kind: "sending", step, fraction }),
       );
+      clearDraft();
       attempt.current = null;
       navigate(`/app/report/review?issue=${encodeURIComponent(result.publicId)}`, {
         state: { nearbyIssues: result.nearbyIssues ?? [], replayed: !!result.replayed },
       });
     } catch (error) {
-      if (error instanceof ApiError && error.code === "IDEMPOTENCY_CONFLICT") attempt.current = null;
+      if (error instanceof ApiError && error.code === "IDEMPOTENCY_CONFLICT") { attempt.current = null; setDraft(d => ({ ...d, attempt: undefined })); }
       setPhase({ kind: "failed", error: error as Error });
     }
   }
@@ -108,6 +116,8 @@ export function ReportPage() {
           and contact local emergency or municipal services.
         </AlertDescription>
       </Alert>
+
+      <p role="status" className="text-sm text-muted-foreground">{draftNotice}</p>
 
       <FieldSet disabled={sending}>
         <FieldLegend className="eyebrow">Photo</FieldLegend>

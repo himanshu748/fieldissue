@@ -23,6 +23,7 @@ function describe(event: IssueEvent): { title: string; detail?: string; tone: "o
         tone: p.to === "RESOLVED" ? "grass" : "ink",
       };
     case "DIFF_GENERATED":
+      if (p.method === "image_identity") return { tone: "muted", title: "Repeated photo detected", detail: p.correction ? "The previous model comparison was withdrawn; its original output remains in the audit record." : "Exact file comparison found no new visual evidence. Status not changed." };
       return {
         title: "Observations compared by the model",
         detail: p.recommendedStatus ? `Model suggested ${label(String(p.recommendedStatus))}. Status not changed.` : undefined,

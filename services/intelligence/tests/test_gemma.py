@@ -159,7 +159,7 @@ async def test_real_compare_has_two_images_and_observation_evidence():
         note="before",
         evidence=AnalyzeResult(**ANALYSIS),
     )
-    after = before.model_copy(update={"note": "after"})
+    after = before.model_copy(update={"note": "after", "image_base64": base64.b64encode(PNG + b"different").decode()})
 
     def handler(request):
         content = json.loads(request.content)["messages"][1]["content"]
@@ -258,3 +258,22 @@ async def test_readiness_verifies_served_gemma_model():
     async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
         with pytest.raises(Error, match="gemma_model_not_available"):
             await Provider(settings(), client).ready()
+
+
+@pytest.mark.asyncio
+async def test_identical_photos_do_not_call_model_or_inherit_conflicting_claims():
+    from fieldissue_intelligence.schemas import ObservationInput, AnalyzeResult
+    _, Provider, _ = modules()
+
+    def unexpected(_):
+        pytest.fail("Identical images must not invoke paid inference")
+
+    before = ObservationInput(image_base64=base64.b64encode(PNG).decode(), mime_type="image/png",
+                              note="broken", evidence=AnalyzeResult(**ANALYSIS))
+    after = before.model_copy(update={"note": "repaired"})
+    async with httpx.AsyncClient(transport=httpx.MockTransport(unexpected)) as client:
+        result = await Provider(settings(), client).compare_observations(before, after)
+    assert result.model == "fieldissue-image-identity"
+    assert result.added == result.removed == result.unchanged == []
+    assert result.recommendedStatus == "OPEN"
+    assert "same photo" in result.summary

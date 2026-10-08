@@ -1,3 +1,4 @@
+import { useAppConfig } from "@/hooks/use-app-config";
 import type { ReactNode } from "react";
 import { Link } from "react-router";
 import { Reveal } from "@/components/landing/reveal";
@@ -87,6 +88,7 @@ export function MethodologyPage() {
 }
 
 export function PrivacyPage() {
+  const { config } = useAppConfig();
   return (
     <Page
       eyebrow="Privacy and safety"
@@ -124,7 +126,12 @@ export function PrivacyPage() {
           temporary in-memory links that are released when you leave the page.
         </p>
       </Section>
-      <Section n="06" title="Safety">
+      <Section n="06" title="Drafts, removal and retention">
+        <p>Unsubmitted drafts stay in this tab's session storage for up to 24 hours. Locking the workspace clears saved drafts, locations and the walk queue. Drafts are not uploaded automatically.</p>
+        <p>{config?.retentionNotice || "Ask the workspace owner about this deployment's retention policy."}</p>
+        <p>For removal, give the workspace owner the issue ID. Only the operator can remove the complete record and its photos, voice files and secondary search entry. Everyone sharing a demo token can view and edit reports, so do not use this workspace for sensitive locations. Exported share summaries exclude photos, notes, titles and street addresses, and round coordinates to 0.01 degrees (about 1 km). Exact coordinates remain inside the protected workspace.</p>
+      </Section>
+      <Section n="07" title="Safety">
         <p>
           <strong>Never put yourself at risk for a photo.</strong> Do not step into traffic, onto private property or near
           exposed electrical wiring or open manholes. For dangerous situations, keep your distance and contact local

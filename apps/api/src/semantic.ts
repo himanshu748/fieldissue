@@ -6,6 +6,43 @@ import { IssueRepository, camel } from "./repository.js";
 const vectorSchema = z.array(z.number().finite()).length(384);
 export const embeddingRevision = "751bff37182d3f1213fa05d7196b954e230abad9";
 export const embeddingModel = "sentence-transformers/all-MiniLM-L6-v2";
+const lifecycleReady = new WeakMap<Pool, Promise<unknown>>();
+async function ensureLifecycle(tiger: Pool) {
+  let ready = lifecycleReady.get(tiger);
+  if (!ready) {
+    ready = tiger
+      .query(
+        "CREATE TABLE IF NOT EXISTS fieldissue_index_tombstones (issue_id uuid PRIMARY KEY, removed_at timestamptz NOT NULL DEFAULT now())",
+      )
+      .catch((error) => {
+        lifecycleReady.delete(tiger);
+        throw error;
+      });
+    lifecycleReady.set(tiger, ready);
+  }
+  await ready;
+}
+export async function removeFromSemanticIndex(tiger: Pool, id: string) {
+  await ensureLifecycle(tiger);
+  const c = await tiger.connect();
+  try {
+    await c.query("BEGIN");
+    await c.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", [id]);
+    await c.query(
+      "INSERT INTO fieldissue_index_tombstones(issue_id) VALUES($1) ON CONFLICT DO NOTHING",
+      [id],
+    );
+    await c.query("DELETE FROM fieldissue_semantic_index WHERE issue_id=$1", [
+      id,
+    ]);
+    await c.query("COMMIT");
+  } catch (error) {
+    await c.query("ROLLBACK");
+    throw error;
+  } finally {
+    c.release();
+  }
+}
 export class SemanticSearch {
   private running = false;
   constructor(
@@ -41,25 +78,50 @@ export class SemanticSearch {
         .join(". ")
         .slice(0, 4000);
       const vector = vectorSchema.parse(await this.embed(document));
-      await this.tiger.query(
-        `INSERT INTO fieldissue_semantic_index(issue_id,title,document,category,status,latitude,longitude,embedding,model,source_version,model_revision)
+      await ensureLifecycle(this.tiger);
+      const c = await this.tiger.connect();
+      try {
+        await c.query("BEGIN");
+        await c.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", [
+          issue.id,
+        ]);
+        if (
+          (
+            await c.query(
+              "SELECT 1 FROM fieldissue_index_tombstones WHERE issue_id=$1",
+              [issue.id],
+            )
+          ).rowCount
+        ) {
+          await c.query("ROLLBACK");
+          return false;
+        }
+        await c.query(
+          `INSERT INTO fieldissue_semantic_index(issue_id,title,document,category,status,latitude,longitude,embedding,model,source_version,model_revision)
     VALUES($1,$2,$3,$4,$5,$6,$7,$8::vector,$9,$10,$11)
     ON CONFLICT(issue_id) DO UPDATE SET title=excluded.title,document=excluded.document,category=excluded.category,status=excluded.status,latitude=excluded.latitude,longitude=excluded.longitude,embedding=excluded.embedding,model=excluded.model,model_revision=excluded.model_revision,source_version=excluded.source_version,indexed_at=now()
     WHERE fieldissue_semantic_index.source_version<=excluded.source_version`,
-        [
-          issue.id,
-          issue.title,
-          document,
-          issue.category,
-          issue.status,
-          issue.latitude,
-          issue.longitude,
-          JSON.stringify(vector),
-          embeddingModel,
-          job.version,
-          embeddingRevision,
-        ],
-      );
+          [
+            issue.id,
+            issue.title,
+            document,
+            issue.category,
+            issue.status,
+            issue.latitude,
+            issue.longitude,
+            JSON.stringify(vector),
+            embeddingModel,
+            job.version,
+            embeddingRevision,
+          ],
+        );
+        await c.query("COMMIT");
+      } catch (error) {
+        await c.query("ROLLBACK");
+        throw error;
+      } finally {
+        c.release();
+      }
       await this.repository.pool.query(
         "UPDATE semantic_index_jobs SET completed_version=GREATEST(completed_version,$2),locked_until='-infinity',attempts=0,last_error=NULL WHERE issue_id=$1 AND lease_token=$3",
         [issue.id, job.version, token],

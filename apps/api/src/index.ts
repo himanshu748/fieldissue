@@ -1,3 +1,5 @@
+import { removeFromSemanticIndex } from "./semantic.js";
+import { DataLifecycle } from "./lifecycle.js";
 import { BackboardProvider, ModelComparisonService } from "./backboard.js";
 import { SemanticSearch, embeddingClient } from "./semantic.js";
 import { PostgresStorageProvider } from "./postgres-storage.js";
@@ -93,31 +95,48 @@ const speech =
 const audio = speech
   ? new AudioSummaryService(repository, storage, speech, consume)
   : undefined;
-const tiger =
-  config.SEMANTIC_SEARCH_ENABLED === "true" && config.TIGER_DATABASE_URL
-    ? new Pool({
-        connectionString: config.TIGER_DATABASE_URL,
-        ssl: { rejectUnauthorized: true },
-        max: 2,
-        connectionTimeoutMillis: 10000,
-        statement_timeout: 15000,
-      })
-    : undefined;
+const tiger = config.TIGER_DATABASE_URL
+  ? new Pool({
+      connectionString: config.TIGER_DATABASE_URL,
+      ssl: { rejectUnauthorized: true },
+      max: 2,
+      connectionTimeoutMillis: 10000,
+      statement_timeout: 15000,
+    })
+  : undefined;
 tiger?.on("error", () =>
   reportFailure("SEMANTIC_DATABASE_FAILURE", "database"),
 );
-const semantic = tiger
-  ? new SemanticSearch(
-      repository,
-      tiger,
-      embeddingClient(config.INTELLIGENCE_URL, config.INTERNAL_SERVICE_TOKEN),
-    )
-  : undefined;
+const semantic =
+  config.SEMANTIC_SEARCH_ENABLED === "true" && tiger
+    ? new SemanticSearch(
+        repository,
+        tiger,
+        embeddingClient(config.INTELLIGENCE_URL, config.INTERNAL_SERVICE_TOKEN),
+      )
+    : undefined;
 let indexTimer: NodeJS.Timeout | undefined;
 if (semantic) {
   indexTimer = setInterval(() => void semantic.processNext(), 30000);
   indexTimer.unref();
 }
+const lifecycle = new DataLifecycle(
+  repository,
+  storage,
+  tiger
+    ? async (id) => {
+        await removeFromSemanticIndex(tiger, id);
+      }
+    : undefined,
+);
+const retentionTimer = setInterval(
+  () =>
+    void lifecycle
+      .maintain(config.DATA_RETENTION_DAYS)
+      .catch(() => reportFailure("RETENTION_FAILURE", "database")),
+  60000,
+);
+retentionTimer.unref();
 const webDirectory = fileURLToPath(new URL("../../web/dist", import.meta.url));
 const app = createApp({
   modelComparison: config.BACKBOARD_API_KEY
@@ -220,7 +239,11 @@ const app = createApp({
   capabilities: {
     accessRequired: !!config.API_ACCESS_TOKEN,
     storage: config.STORAGE_PROVIDER,
-    retentionNotice: config.DATA_RETENTION_NOTICE ?? "",
+    retentionNotice:
+      config.DATA_RETENTION_DAYS > 0
+        ? `Reports expire after ${config.DATA_RETENTION_DAYS} days without an update. Photos, audio and the search index are queued for removal; provider backups follow their own retention policies.`
+        : (config.DATA_RETENTION_NOTICE ??
+          "Operator-managed retention. Contact the workspace owner with an issue ID for removal."),
     audio: !!audio,
     mock: config.AI_MOCK_MODE === "true",
   },
@@ -237,6 +260,7 @@ const shutdown = () => {
   if (stopping) return;
   stopping = true;
   if (indexTimer) clearInterval(indexTimer);
+  clearInterval(retentionTimer);
   const timeout = setTimeout(() => process.exit(1), 10000);
   timeout.unref();
   server.close(() => {

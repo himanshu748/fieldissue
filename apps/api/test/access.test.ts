@@ -23,6 +23,7 @@ it("rejects anonymous reads, uploads and private media before touching dependenc
   const { app, list, read } = fixture();
   for (const [path, method] of [
     ["/v1/issues", "GET"],
+    ["/v1/issues/FI-000001/share-summary", "GET"],
     ["/v1/issues", "POST"],
     ["/media/a.png", "GET"],
   ]) {

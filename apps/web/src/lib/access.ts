@@ -1,3 +1,4 @@
+import { clearCaptureDrafts } from "@/hooks/use-capture-draft";
 import { clearWalk } from "./walk";
 import { useSyncExternalStore } from "react";
 
@@ -41,6 +42,7 @@ export function setToken(value: string) {
 
 export function clearToken() {
   clearWalk();
+  clearCaptureDrafts();
   try { sessionStorage.removeItem("fieldissue-last-location"); sessionStorage.removeItem("fieldissue-map-consent"); } catch { /* Storage may be disabled. */ }
   setToken("");
 }

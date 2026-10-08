@@ -174,6 +174,13 @@ class GemmaEvidenceProvider:
                 model="development-fixture",
                 modelVersion="fixture-v1",
             )
+        if before.image_bytes() == after.image_bytes():
+            return CompareResult(
+                summary="The same photo was uploaded twice. No new visual evidence is available; "
+                "take a fresh photo to check whether the issue changed.",
+                removed=[], added=[], unchanged=[], recommendedStatus="OPEN", confidence=1.0,
+                model="fieldissue-image-identity", modelVersion="bytes-v1",
+            )
         context = {
             "before": {
                 "note": before.note,
@@ -191,6 +198,12 @@ class GemmaEvidenceProvider:
                     "type": "text",
                     "text": "Compare first (before) and second (after) images. Report supported removed, "
                     "added and unchanged conditions. Different angle/lighting is not proof of resolution. "
+                    "A difference in wording between prior analyses is NOT a physical change. "
+                    "Prior analyses may contain mistakes; compare the images directly. "
+                    "List a change only when the same feature is visible in BOTH images and "
+                    "its changed state is directly visible. Occluded or out-of-frame is not removed. "
+                    "If views are not comparable, leave added/removed empty, explain the limitation "
+                    "in the summary, and do not recommend resolution. "
                     "If no conditions were added or removed, return empty arrays [] for those fields. "
                     "Never put empty strings, null, 'none', or other placeholders in any list. "
                     "Write the summary in concise plain English. "

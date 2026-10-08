@@ -1,3 +1,4 @@
+import { useCaptureDraft } from "@/hooks/use-capture-draft";
 import { CaptureTime, captureTimeValid } from "@/components/field/capture-time";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useNavigate, useParams } from "react-router";
@@ -29,17 +30,23 @@ type Phase = { kind: "idle" } | { kind: "sending"; step: UploadPhase; fraction?:
 
 export function RevisitPage() {
   const { id = "" } = useParams();
+  return <RevisitForm key={id} id={id} />;
+}
+
+function RevisitForm({ id }: { id: string }) {
   const navigate = useNavigate();
   const { config } = useAppConfig();
   const issue = useResource((signal) => api.issue(id, signal), [id]);
-  const [photo, setPhoto] = useState<PreparedImage | null>(null);
-  const [locationMode, setLocationMode] = useState<"inherit" | "here">("inherit");
-  const [location, setLocation] = useState<Located | null>(null);
-  const [note, setNote] = useState("");
-  const [capturedAt, setCapturedAt] = useState("");
+  const { draft, setDraft, clear: clearDraft, notice: draftNotice, persist } = useCaptureDraft(`revisit:${id}`, { photo: null, location: null, locationMode: "inherit", note: "", capturedAt: "" });
+  const { photo, location, locationMode, note, capturedAt } = draft;
+  const setPhoto = (photo: PreparedImage | null) => setDraft(d => ({ ...d, photo }));
+  const setLocation = (location: Located | null) => setDraft(d => ({ ...d, location }));
+  const setNote = (note: string) => setDraft(d => ({ ...d, note }));
+  const setCapturedAt = (capturedAt: string) => setDraft(d => ({ ...d, capturedAt }));
+  const setLocationMode = (locationMode: "inherit" | "here") => setDraft(d => ({ ...d, locationMode }));
   const [consent, setConsent] = useState(false);
   const [phase, setPhase] = useState<Phase>({ kind: "idle" });
-  const attempt = useRef<{ key: string; signature: string; photo: PreparedImage } | null>(null);
+  const attempt = useRef<{ key: string; signature: string; photo: PreparedImage } | null>(draft.attempt && photo ? { ...draft.attempt, photo } : null);
   const sending = phase.kind === "sending";
 
   const signature = useMemo(
@@ -71,6 +78,10 @@ export function RevisitPage() {
   async function send() {
     if (!photo || !locationReady || !consent || !captureTimeValid(capturedAt) || sending) return;
     if (attempt.current?.signature !== signature || attempt.current?.photo !== photo) attempt.current = { key: newKey("revisit"), signature, photo };
+    setPhase({ kind: "sending", step: "uploading", fraction: 0 });
+    const nextDraft = { ...draft, attempt: { key: attempt.current!.key, signature } };
+    setDraft(nextDraft);
+    await persist(nextDraft);
     const form = new FormData();
     form.set("image", photo.blob, "revisit.jpg");
     if (locationMode === "here" && location) {
@@ -85,6 +96,7 @@ export function RevisitPage() {
       const result = await api.addObservation(data.publicId, form, attempt.current.key, (step, fraction) =>
         setPhase({ kind: "sending", step, fraction }),
       );
+      clearDraft();
       attempt.current = null;
       markVisited([data.id], result.observation.id);
       const before = previous?.id;
@@ -95,7 +107,7 @@ export function RevisitPage() {
         { state: { justSaved: true, diffUnavailable: !!result.diffUnavailable } },
       );
     } catch (error) {
-      if (error instanceof ApiError && error.code === "IDEMPOTENCY_CONFLICT") attempt.current = null;
+      if (error instanceof ApiError && error.code === "IDEMPOTENCY_CONFLICT") { attempt.current = null; setDraft(d => ({ ...d, attempt: undefined })); }
       setPhase({ kind: "failed", error: error as Error });
     }
   }
@@ -153,6 +165,8 @@ export function RevisitPage() {
         <AlertTitle>No photo is worth a risk</AlertTitle>
         <AlertDescription>If the spot is unsafe or blocked today, skip it. You can always come back.</AlertDescription>
       </Alert>
+
+      <p role="status" className="text-sm text-muted-foreground">{draftNotice}</p>
 
       <FieldSet disabled={sending}>
         <FieldLegend className="eyebrow">Take a new photo</FieldLegend>

@@ -17,3 +17,6 @@ CREATE TABLE IF NOT EXISTS fieldissue_semantic_index (
   keywords tsvector GENERATED ALWAYS AS (to_tsvector('english',document)) STORED
 );
 CREATE INDEX IF NOT EXISTS fieldissue_semantic_keywords ON fieldissue_semantic_index USING gin(keywords);
+
+-- Minimal tombstones prevent an in-flight embedding from resurrecting removed evidence.
+CREATE TABLE IF NOT EXISTS fieldissue_index_tombstones (issue_id uuid PRIMARY KEY, removed_at timestamptz NOT NULL DEFAULT now());

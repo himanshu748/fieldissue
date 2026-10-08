@@ -182,7 +182,8 @@ export function ComparePage() {
 
   const beforeLabel = `${index.get(beforeId) === 0 ? "Original" : `Revisit ${index.get(beforeId)}`} · ${formatDateTime(before.capturedAt)}`;
   const afterLabel = `${index.get(afterId) === 0 ? "Original" : `Revisit ${index.get(afterId)}`} · ${formatDateTime(after.capturedAt)}`;
-  const noChange = diff && !diff.added.length && !diff.removed.length;
+  const identical = diff?.model === "fieldissue-image-identity";
+  const noChange = diff && !identical && !diff.added.length && !diff.removed.length;
   const closed = data.status === "RESOLVED" || data.status === "REJECTED";
 
   return (
@@ -262,6 +263,7 @@ export function ComparePage() {
       {validPair && diff ? (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col gap-8">
           <p className="max-w-3xl font-heading text-xl leading-snug sm:text-2xl">{diff.summary}</p>
+          {identical ? <Alert><InfoIcon /><AlertTitle>A fresh photo is needed</AlertTitle><AlertDescription>This is an exact file match, not an AI assessment or proof of a new visit. The issue status has not changed.</AlertDescription></Alert> : null}
           {noChange ? (
             <Alert>
               <EqualIcon />
@@ -276,7 +278,7 @@ export function ComparePage() {
           </div>
           <section className="grid gap-6 border border-ink bg-surface p-5 md:grid-cols-[1fr_1.2fr]">
             <div>
-              <h2 className="eyebrow text-muted-foreground">AI recommendation</h2>
+              <h2 className="eyebrow text-muted-foreground">{identical ? "Status at comparison" : "AI recommendation"}</h2>
               <p className="mt-2 text-2xl font-bold">{label(diff.recommendedStatus)}</p>
               <p className="mt-2 text-sm text-muted-foreground">
                 A suggestion only. The issue is still <strong className="text-ink">{label(data.status)}</strong> until a person

@@ -1,3 +1,4 @@
+import { publicSummary } from "./public-summary.js";
 import { readFile } from "node:fs/promises";
 import { comparisonModels, type ModelComparisonService } from "./backboard.js";
 import type { SemanticSearch } from "./semantic.js";
@@ -604,6 +605,11 @@ export function createApp(deps: Dependencies) {
       201,
     );
   });
+  app.get("/v1/issues/:id/share-summary", async (c) =>
+    c.json(
+      publicSummary(await deps.repository.get(issueId(c.req.param("id")))),
+    ),
+  );
   app.get("/v1/issues/:id/diffs", async (c) =>
     c.json(await deps.repository.diffs(issueId(c.req.param("id")))),
   );

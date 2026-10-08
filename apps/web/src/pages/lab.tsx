@@ -107,6 +107,7 @@ function EvaluationCard({ evaluation }: { evaluation: Evaluation }) {
           </ul>
         </div>
       </CardContent>
+      {evaluation.id.includes("tinker") ? <CardFooter><a href="https://github.com/himanshu748/fieldissue/tree/main/services/intelligence/training" target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center gap-1.5 text-sm underline">Training scripts, dataset and evaluation instructions <ArrowUpRightIcon aria-hidden className="size-4" /></a></CardFooter> : null}
       {evaluation.evidenceUrl ? (
         <CardFooter>
           <a href={evaluation.evidenceUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center gap-1.5 text-sm underline">

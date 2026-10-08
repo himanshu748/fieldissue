@@ -1,3 +1,4 @@
+import { ShareSummary } from "@/components/field/share-summary";
 import { useState } from "react";
 import { Link, useParams } from "react-router";
 import {
@@ -273,7 +274,7 @@ export function IssueDetailPage() {
                   >
                     <span className="flex flex-wrap items-center justify-between gap-2">
                       <span className="font-mono text-xs text-muted-foreground">{formatDateTime(d.createdAt)}</span>
-                      <Badge variant="outline">Model suggested {label(d.recommendedStatus)}</Badge>
+                      <Badge variant="outline">{d.model === "fieldissue-image-identity" ? "Repeated photo — no new evidence" : `Model suggested ${label(d.recommendedStatus)}`}</Badge>
                     </span>
                     <span>{d.summary}</span>
                     <span className="font-mono text-xs text-muted-foreground">
@@ -363,6 +364,7 @@ export function IssueDetailPage() {
               Resolved {data.resolvedAt ? formatDate(data.resolvedAt) : ""}. Human-confirmed, not identity-verified.
             </p>
           ) : null}
+          <ShareSummary key={data.publicId} id={data.publicId} />
         </aside>
       </div>
     </article>

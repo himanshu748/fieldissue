@@ -17,3 +17,6 @@ training/checkpoints/
 training/reports/
 
 *.tsbuildinfo
+
+playwright-report/
+test-results/

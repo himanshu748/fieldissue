@@ -41,7 +41,7 @@ export class IssueRepository {
       c.release();
     }
   }
-  private async issue(c: Pool | PoolClient, id: string, lock = false) {
+  async issue(c: Pool | PoolClient, id: string, lock = false) {
     const r = await c.query(
       `SELECT * FROM issues WHERE ${id.startsWith("FI-") ? "public_id=$1" : "id=$1::uuid"} ${lock ? "FOR UPDATE" : ""}`,
       [id],
@@ -308,6 +308,51 @@ export class IssueRepository {
       );
     return { issueId: issue.id as string, before: b, after: a };
   }
+  async saveIdentityComparison(id: string, before: string, after: string) {
+    return this.transaction(async (c) => {
+      const issue = await this.issue(c, id, true);
+      const old = (
+        await c.query(
+          "SELECT * FROM evidence_diffs WHERE issue_id=$1 AND before_observation_id=$2 AND after_observation_id=$3 FOR UPDATE",
+          [id, before, after],
+        )
+      ).rows[0];
+      if (old?.model === "fieldissue-image-identity") return camel(old);
+      const result = (
+        await c.query(
+          `INSERT INTO evidence_diffs(issue_id,before_observation_id,after_observation_id,summary,removed,added,unchanged,recommended_status,confidence,model,model_version)
+         VALUES($1,$2,$3,$4,'[]','[]','[]',$5,1,'fieldissue-image-identity','bytes-v1')
+         ON CONFLICT(issue_id,before_observation_id,after_observation_id) DO UPDATE SET
+         summary=excluded.summary,removed='[]',added='[]',unchanged='[]',recommended_status=excluded.recommended_status,
+         confidence=1,model=excluded.model,model_version=excluded.model_version RETURNING *`,
+          [
+            id,
+            before,
+            after,
+            "The same photo was uploaded twice. No new visual evidence is available; take a fresh photo to check whether the issue changed.",
+            issue.status,
+          ],
+        )
+      ).rows[0];
+      await this.event(c, id, "DIFF_GENERATED", {
+        diffId: result.id,
+        method: "image_identity",
+        recommendedStatus: issue.status,
+        ...(old
+          ? {
+              correction:
+                "Identical uploaded files; prior model comparison withdrawn",
+              previousComparison: camel(old),
+            }
+          : {}),
+      });
+      await c.query(
+        "UPDATE issues SET updated_at=clock_timestamp() WHERE id=$1",
+        [id],
+      );
+      return camel(result);
+    });
+  }
   async saveDiff(
     id: string,
     before: string,
@@ -395,6 +440,20 @@ export class IssueRepository {
             "Select the latest observation before confirming resolution.",
           );
       }
+      if (
+        resolution?.basis === "latest_observation" &&
+        (
+          await c.query(
+            "SELECT 1 FROM evidence_diffs WHERE issue_id=$1 AND after_observation_id=$2 AND model='fieldissue-image-identity' LIMIT 1",
+            [current.id, resolution.observationId],
+          )
+        ).rowCount
+      )
+        throw new AppError(
+          "REPEATED_PHOTO",
+          409,
+          "A repeated photo is not new visual evidence. Add a fresh observation or explicitly choose manual confirmation.",
+        );
       if (patch.status && !canTransition(current.status, patch.status))
         throw new AppError(
           "INVALID_STATUS_TRANSITION",

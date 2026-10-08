@@ -17,9 +17,11 @@
     "lint": "npm run build -w @fieldissue/shared && npm run lint -w @fieldissue/api && prettier --check apps/api/src apps/api/test apps/api/vitest.config.ts packages/shared/src && npm run typecheck -w @fieldissue/web",
     "migrate": "npm run migrate -w @fieldissue/api",
     "seed": "npm run seed -w @fieldissue/api",
-    "format": "prettier --write apps/api/src apps/api/test apps/api/vitest.config.ts packages/shared/src"
+    "format": "prettier --write apps/api/src apps/api/test apps/api/vitest.config.ts packages/shared/src",
+    "test:e2e": "playwright test"
   },
   "devDependencies": {
+    "@playwright/test": "1.64.0",
     "prettier": "3.9.9"
   }
 }
