@@ -262,7 +262,7 @@ async def test_readiness_verifies_served_gemma_model():
 
 @pytest.mark.asyncio
 async def test_identical_photos_do_not_call_model_or_inherit_conflicting_claims():
-    from fieldissue_intelligence.schemas import ObservationInput, AnalyzeResult
+    from fieldissue_intelligence.schemas import AnalyzeResult, ObservationInput
     _, Provider, _ = modules()
 
     def unexpected(_):
