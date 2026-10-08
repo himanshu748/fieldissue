@@ -17,6 +17,12 @@ import type { IssueRepository } from "./repository.js";
 import { validateImage, type StorageProvider, type Media } from "./storage.js";
 import { AppError } from "./errors.js";
 import { trace, reportFailure } from "./telemetry.js";
+import {
+  demoPageCsp,
+  demoPageHtml,
+  demoPageScript,
+  landingScript,
+} from "./demo-page.js";
 const logger = pino({ level: process.env.LOG_LEVEL ?? "info" });
 const numeric = (min: number, max: number) =>
   z
@@ -91,7 +97,18 @@ export function createApp(deps: Dependencies) {
   app.use("*", async (c, next) => {
     if (
       deps.accessToken &&
-      !(c.req.method === "GET" && ["/health", "/ready"].includes(c.req.path))
+      !(
+        c.req.method === "GET" &&
+        [
+          "/",
+          "/demo",
+          "/demo.js",
+          "/landing.js",
+          "/favicon.ico",
+          "/health",
+          "/ready",
+        ].includes(c.req.path)
+      )
     ) {
       const expected = Buffer.from(`Bearer ${deps.accessToken}`);
       const supplied = Buffer.from(c.req.header("Authorization") ?? "");
@@ -248,6 +265,26 @@ export function createApp(deps: Dependencies) {
       );
     }
   }
+  // The landing/demo page and its scripts are static and contain no secrets, so they
+  // stay public; every API call they make still passes the access gateway.
+  app.get("/", (c) => {
+    c.header("Content-Security-Policy", demoPageCsp);
+    c.header("Cache-Control", "no-cache");
+    return c.html(demoPageHtml);
+  });
+  app.get("/demo.js", (c) => {
+    c.header("Content-Type", "text/javascript; charset=utf-8");
+    c.header("Cache-Control", "no-cache");
+    return c.body(demoPageScript);
+  });
+  app.get("/landing.js", (c) => {
+    c.header("Content-Type", "text/javascript; charset=utf-8");
+    c.header("Cache-Control", "no-cache");
+    return c.body(landingScript);
+  });
+  // The demo lives in the landing page's #try section; keep a short link.
+  app.get("/demo", (c) => c.redirect("/#try", 302));
+  app.get("/favicon.ico", (c) => c.body(null, 204));
   app.get("/health", (c) =>
     c.json({ status: "ok", service: "fieldissue-api" }),
   );

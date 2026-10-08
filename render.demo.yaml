@@ -1,0 +1,67 @@
+# Judge demo profile: one free web service plus one free Render Postgres.
+# Real Gemma vision only (no mocks). TabPFN is not configured, so revisit
+# predictions report available=false. Media is stored on the instance's
+# ephemeral disk and is lost when the free service restarts or spins down;
+# issue records stay in Postgres. The free database expires 30 days after
+# creation. Read docs/render-deployment.md ("Judge demo profile") first.
+# Use it from the Render dashboard: New > Blueprint, Blueprint Path = render.demo.yaml.
+databases:
+  - name: fieldissue-demo-db
+    plan: free
+    region: virginia
+    postgresMajorVersion: "17"
+    ipAllowList: []
+services:
+  - type: web
+    name: fieldissue-demo
+    runtime: docker
+    plan: free
+    region: virginia
+    branch: main
+    dockerfilePath: ./Dockerfile.render
+    dockerContext: .
+    autoDeployTrigger: checksPass
+    # /ready also requires TabPFN, which this profile deliberately omits.
+    # /health is liveness only; check a real upload after every deploy.
+    healthCheckPath: /health
+    envVars:
+      - key: FIELDISSUE_DEMO_PROFILE
+        value: "true"
+      - key: PORT
+        value: "10000"
+      - key: NODE_ENV
+        value: production
+      - key: ENVIRONMENT
+        value: production
+      - key: AI_MOCK_MODE
+        value: "false"
+      - key: API_ACCESS_TOKEN
+        generateValue: true
+      - key: INTERNAL_SERVICE_TOKEN
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: fieldissue-demo-db
+          property: connectionString
+      - key: DATABASE_SSL
+        value: "false"
+      - key: STORAGE_PROVIDER
+        value: local
+      - key: LOCAL_STORAGE_PATH
+        value: /tmp/fieldissue-media
+      - key: MAX_UPLOAD_BYTES
+        value: "5242880"
+      - key: GEMMA_BASE_URL
+        value: https://generativelanguage.googleapis.com/v1beta/openai
+      - key: GEMMA_MODEL
+        value: models/gemma-4-26b-a4b-it
+      - key: GEMMA_MODEL_VERSION
+        value: "001"
+      - key: GEMMA_API_KEY
+        sync: false
+      - key: AI_TIMEOUT_SECONDS
+        value: "90"
+      - key: AI_TOTAL_TIMEOUT_SECONDS
+        value: "95"
+      - key: AI_MAX_RETRIES
+        value: "0"

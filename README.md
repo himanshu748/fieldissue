@@ -1,8 +1,63 @@
-# FieldIssue backend
+# FieldIssue
 
-A backend for geotagged field observations, chronological evidence, explicit issue resolution, and before/after real-world diffs. This repository contains the TypeScript API, private Python intelligence service, database migrations, local tooling, and an opt-in training/evaluation demonstration. It contains no frontend. A validated Render deployment scaffold and its remaining gates are documented in [docs/render-deployment.md](docs/render-deployment.md).
+**Walk your street, photograph what's broken, and come back to prove it got fixed.** FieldIssue turns a neighbourhood walk into evidence: a geotagged photo and a short note open an issue (a broken bench, a pothole, a dead streetlight), an open-weight Gemma vision model describes what it sees, and a later revisit photo produces a before/after diff of what was removed, added or unchanged. A person, never the model, marks the issue resolved.
 
-## Architecture
+Built for the DEV **Hacktoberfest Open-Source AI Challenge, Week 1: Touch Grass** (repository started 6 October 2026, inside the 5–11 October window).
+
+## Demo and links
+
+| What | Link |
+| --- | --- |
+| Try it in a browser | Open `/` on any running FieldIssue API (local: <http://127.0.0.1:3000/>). Walkthrough and video shot list: [DEMO.md](DEMO.md) |
+| Hosted demo | _not deployed yet; one-click judge profile in [`render.demo.yaml`](render.demo.yaml), see [docs/render-deployment.md](docs/render-deployment.md#judge-demo-profile-renderdemoyaml)_ |
+| DEV post | _add after publishing_ |
+| Demo video | _add link_ |
+| Verified live provider runs | [docs/zero-cost-stack.md](docs/zero-cost-stack.md) and [docs/verification/](docs/verification/) |
+
+## How it gets people outside
+
+- **The phone is a camera, not a feed.** You only open it to take a photo and type one sentence. The model does the describing; the walk is the point.
+- **Revisits are the hook.** Every open issue near you is a reason to walk back past it. `POST /v1/issues/:id/observations` adds the new photo and `POST /v1/issues/:id/diff` shows what actually changed.
+- **Nearby and map queries** (`GET /v1/issues?near_lat=…&near_lon=…&radius_meters=500`, `GET /v1/issues/map?bbox=…`) let a walking group plan a route past open issues.
+
+## Open-source AI at the core
+
+| Piece | Role | Status |
+| --- | --- | --- |
+| Gemma (open-weight, vision) | Describes each observation photo and compares before/after photos as structured JSON | Live run verified 7 Oct ([report](docs/verification/gemma-google-live-2026-10-07.json)); the client speaks the OpenAI-compatible `chat/completions` API, so `GEMMA_BASE_URL` can point at any Gemma server |
+| Mastra | Typed create-issue and revisit workflows; database writes stay deterministic outside the model | In the API |
+| Tinker (Qwen3-8B fine-tune) | Note-to-JSON training and base-vs-tuned evaluation on 54 synthetic notes | Real run: severity 14/18 → 16/18 on the held-out split ([evaluation](docs/verification/tinker-evaluation-2026-10-07.json)); a tiny demo, separate from the app's vision path |
+| TabPFN | Revisit prediction from tabular issue history | Adapter built; needs real labelled revisit data before it can run |
+
+Other integrations: SerpApi place context (verified), Sentry error and evaluation traces (verified), ElevenLabs audio briefings (adapter only, no live call yet), PostgreSQL + PostGIS + pgvector (Tiger Data free service provisioned; direct TLS connection still failing).
+
+## Quick start (mock AI, no keys needed)
+
+```sh
+cp .env.example .env
+make dev                                   # Docker: API, intelligence service, PostGIS; migrates and seeds 7 demo issues
+curl http://127.0.0.1:3000/health
+# then open http://127.0.0.1:3000/ for the demo page (report → revisit → compare → resolve)
+```
+
+In mock mode the page shows a banner: analysis and comparison come from your notes, not the photo, with confidence 0.
+
+No Docker? See [Native development](#native-development-and-docker-free-verification). Set `AI_MOCK_MODE=false` and the `GEMMA_*` variables in `.env` for real vision inference.
+
+## Hackathon disclosures
+
+- **Window:** first commit 6 October 2026; all work is inside the challenge window. **Commits after the 11 October 23:59 PDT deadline:** none so far. Any later commit will be listed here, as the challenge rules require.
+- **AI tools:** built with AI coding assistance (Codex sessions, checkpointed with the Entire CLI per [docs/zero-cost-stack.md](docs/zero-cost-stack.md)). The browser demo page, the Render judge-demo profile and DEMO.md (8 October) were drafted with an AI assistant (Hark) and checked with the test suite and a headless-browser run. _Author: confirm or complete this list._
+- **Demo data** is fictional and labelled `DEMO FIXTURE` in every image.
+- **License:** MIT, see [LICENSE](LICENSE).
+
+---
+
+## Backend reference
+
+A backend for geotagged field observations, chronological evidence, explicit issue resolution, and before/after real-world diffs. This repository contains the TypeScript API, private Python intelligence service, database migrations, local tooling, and an opt-in training/evaluation demonstration. The only frontend is a single static demo page the API serves at `/` (no build step, no accounts; see [DEMO.md](DEMO.md)). A validated Render deployment scaffold and its remaining gates are documented in [docs/render-deployment.md](docs/render-deployment.md).
+
+### Architecture
 
 ```text
 Client → TypeScript / Hono API → PostgreSQL 17 + PostGIS + pgvector
@@ -25,7 +80,7 @@ Separate opt-in demonstration: Tinker note-to-JSON training and evaluation
 - Resolution is an explicit API operation recorded in the timeline
 - Image URLs are not accepted as upload input. The API accepts local PNG/JPEG/WebP bytes, with matching MIME signatures and a default 10 MiB limit
 
-## Local Docker setup
+### Local Docker setup
 
 Prerequisites: Docker Engine/Desktop with Compose v2 supporting `run --build` and `up --wait`, plus GNU Make. Native commands require Node.js **22 or newer**, Python **3.11 or newer**, and [uv](https://docs.astral.sh/uv/getting-started/installation/).
 
@@ -38,7 +93,7 @@ make verify-db
 make logs
 ```
 
-`make dev` creates `.env` if absent, builds the local services, waits for database and intelligence readiness, applies migrations, then writes and seeds demo media/data. The API is published only on `127.0.0.1:${PORT}`. Database and intelligence ports are not published. The database is on an internal network; API/intelligence also have outbound access for deliberately configured providers. There is no frontend to open.
+`make dev` creates `.env` if absent, builds the local services, waits for database and intelligence readiness, applies migrations, then writes and seeds demo media/data. The API is published only on `127.0.0.1:${PORT}`. Database and intelligence ports are not published. The database is on an internal network; API/intelligence also have outbound access for deliberately configured providers. Open `http://127.0.0.1:${PORT}/` for the demo page.
 
 The DB image derives from the official `postgres:17-bookworm` image and installs **both** `postgresql-17-postgis-3` and `postgresql-17-pgvector` from the image's signed package repository. Its build verifies extension control files and the vector library. Migrations run `CREATE EXTENSION` for PostGIS and vector. No assumption is made that a PostGIS image includes vector.
 
@@ -75,7 +130,7 @@ COMPOSE='docker compose -f docker-compose.yml -f /tmp/fieldissue-host-db.yml' ma
 
 Keep using that same `COMPOSE` value for subsequent Make commands while this override is in use. The host `DATABASE_URL` in `.env.example` matches this optional mapping; Compose itself overrides the URL to the private `db` hostname. The sample database password is development-only.
 
-## Native development and Docker-free verification
+### Native development and Docker-free verification
 
 From the repository root, with a genuine PostgreSQL instance that supports both extensions:
 
@@ -113,7 +168,7 @@ scripts/local-db.sh run scripts/verify-vertical-slice.sh
 
 The wrapper's `run` command keeps the database and its child command in one process/network lifetime and serializes access to its data directory. The vertical-slice script automatically provisions a separate disposable `fieldissue_test` database when no test URL is supplied; its tests destroy that test database's issue data. In isolated executors, launch the DB, API, intelligence, and HTTP client together; a background service may not survive or be reachable in another command invocation. See the vertical-slice script for this pattern. The Linux package bootstrap is not a replacement for the Docker setup on macOS or other architectures.
 
-## Tests and verification limits
+### Tests and verification limits
 
 The `Backend CI` GitHub Actions workflow runs `make test` against a disposable real PostGIS/pgvector database, runs lint, starts/migrates/seeds the Docker stack, verifies both extensions, and exercises the HTTP vertical slice. It then rebuilds the API with the compiled runtime target and repeats the HTTP checks without the source bind mount. Both HTTP runs explicitly use development AI fixtures. CI requires no provider secrets and retains diagnostic logs as a workflow artifact; a passing run is not evidence of live AI quality or deployment.
 
@@ -137,7 +192,7 @@ The test database must already exist, and its test user must be allowed to creat
 
 Real PostgreSQL/PostGIS/vector checks and an HTTP vertical slice have been run in this workspace; records are in [docs/verification](docs/verification/). The demo seed was separately checked on a fresh real database: seven issues, eight observations, one diff, fourteen events, idempotent reapplication, and all eight valid PNGs served by the real `/media` route. **Docker is not installed in the implementation workspace, so the Docker images and Compose startup have not been executed here.** CI subsequently verified the Docker/PostGIS/HTTP and Render container lifecycle boundaries. Live Google Gemma, free SerpApi, sanitized Sentry delivery, and an MLH-credit-funded Tinker training/evaluation run are now recorded in [the zero-cash stack ledger](docs/zero-cost-stack.md). ElevenLabs, durable S3 storage, direct Tiger Data TLS trust, TabPFN data/runtime, and a public hosting deployment remain incomplete.
 
-## Demo data
+### Demo data
 
 The seven fictional issues are a broken bench, pothole, overflowing litter bin, graffiti, damaged sign, blocked dropped-kerb approach, and streetlight outage. They use deterministic UUIDs and `FI-900001` through `FI-900007`. The bench is manually resolved and has two observations, a before/after diff, and creation/observation/diff/status/resolution timeline events.
 
@@ -145,7 +200,7 @@ All PNGs visibly say **DEMO FIXTURE / NOT A FIELD PHOTO**. Seed notes and compar
 
 `make seed` stores PNGs in the shared Docker media volume. For host-side curl upload examples, also run `node scripts/seed-media.mjs` after `npm ci`; this creates the same fixtures in host `.media`. SQL seeds are recorded in `schema_migrations`, so repeated `make seed` does not duplicate records or overwrite later manual changes. Fixture IDs and media keys are defined in `db/seeds/001_demo.sql` and `scripts/seed-media.mjs`.
 
-## API examples
+### API examples
 
 The examples use the default port. They upload labeled placeholders to exercise the API and do not demonstrate visual inference. In real mode use actual authorized photos, with notes describing only supported observations.
 
@@ -189,7 +244,7 @@ Issue creation runs inference and media uploads outside the database transaction
 
 `GET /health` is liveness; `GET /ready` checks database schema availability and intelligence readiness. Errors contain a stable code and request ID, without echoing notes, images, credentials, or raw provider responses. The API returns an `X-Request-ID` header.
 
-## Environment and genuine provider configuration
+### Environment and genuine provider configuration
 
 | Setting | Meaning |
 | --- | --- |
@@ -233,7 +288,7 @@ For real mode, **both** Gemma and TabPFN must be provisioned for intelligence re
 
 The small Tinker dataset is synthetic, manually annotated, and intended to test supervised note-to-JSON plumbing. It is not training for image analysis or evidence of production accuracy. The runnable SDK training and actual base-versus-checkpoint evaluation, provenance checks, metrics, checkpoint retention, and costs are documented in [training/README.md](services/intelligence/training/README.md). Missing credentials yield no fabricated checkpoint or model score.
 
-## Security and production boundaries
+### Security and production boundaries
 
 This backend does not yet implement end-user authentication, tenant authorization, rate limiting, moderation, or operational emergency response. An optional `API_ACCESS_TOKEN` provides a shared demo gateway for all report and media routes, required by the Render supervisor. Reporter IDs remain supplied metadata, not authenticated identity. Without that token the media route serves stored objects to callers who have their URLs. Add your access-control and retention policy before using private field reports. S3 credentials need only the minimum permissions for the selected bucket; telemetry is opt-in. Do not expose the private intelligence service.
 
@@ -253,7 +308,7 @@ The production API image uses the supplied `PORT` and listens on `0.0.0.0`; `/he
 
 The production-configured Python HTTP boundary successfully called Google's free-tier Gemma 4 endpoint for a public CC0 pothole photo: analysis 4.392 seconds, identical-photo comparison 4.198 seconds. Anonymous access returned 401. The comparison returned no added/removed conditions and recommended `OPEN`. An earlier comparison was rejected for empty-string list entries; the prompt was clarified and strict validation retained. See [the actual report](docs/verification/gemma-google-live-2026-10-07.json). This is a bounded live-provider smoke check, not a real revisit, accuracy benchmark, Node/database end-to-end test, or hosted deployment. Full readiness still returns 503 because genuine TabPFN data/weights are absent.
 
-## Official implementation references
+### Official implementation references
 
 - [Official PostgreSQL image and extension installation](https://hub.docker.com/_/postgres)
 - [Official PostgreSQL 17 Debian image Dockerfile](https://github.com/docker-library/postgres/blob/master/17/bookworm/Dockerfile)
