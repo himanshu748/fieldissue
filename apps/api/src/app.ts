@@ -501,6 +501,31 @@ export function createApp(deps: Dependencies) {
       await deps.service.resolve(issueId(c.req.param("id")), body.note),
     );
   });
+  app.post("/v1/issues/:id/revisit-review", async (c) => {
+    const body = z
+      .object({
+        beforeObservationId: z.uuid(),
+        afterObservationId: z.uuid(),
+        materialChange: z.boolean(),
+        note: z.string().trim().min(10).max(2000),
+        evidenceIsGenuine: z.literal(true),
+      })
+      .strict()
+      .parse(await json(c.req.raw));
+    return c.json(
+      await deps.repository.reviewRevisit(issueId(c.req.param("id")), body),
+    );
+  });
+  app.get("/v1/revisit-training-data", async (c) => {
+    const data = await deps.repository.trainingData();
+    c.header("Content-Type", "text/csv; charset=utf-8");
+    c.header(
+      "Content-Disposition",
+      'attachment; filename="fieldissue-revisit-training.csv"',
+    );
+    c.header("Cache-Control", "private, no-store");
+    return c.body(data);
+  });
   app.post("/v1/issues/:id/revisit-prediction", async (c) =>
     c.json(await deps.service.predict(issueId(c.req.param("id")))),
   );

@@ -31,24 +31,24 @@ an unconfigured provider is already live.
 The user accepted Render **or** DigitalOcean for hosting; both deployment paths
 remain documented. Hosting code does not prove a sponsor deployment. The Render
 free image does not include the local TabPFN/PyTorch runtime. Full readiness must
-remain blocked until genuine TabPFN data/runtime is available. The separate Tiger Data connection still needs certificate trust; the live judge profile uses Render PostgreSQL instead.
+remain blocked until genuine TabPFN data/runtime is available. A standard Tiger Data instance is now provisioned under the verified $1,000 Performance Trial (28 days remaining on October 8, no payment method). Its certificate and hostname verification, PostGIS, pgvector and migrations passed. The Render connection is configured for Tiger; deployment acceptance is tracked in the October 8 integration verification record.
 
 ## Every named integration
 
 | Integration | Current verified state | Remaining work / $0 constraint |
 | --- | --- | --- |
 | Gemma | Real Gemma 4 vision analysis and identical-image negative control passed through the Python HTTP boundary; report in `docs/verification/gemma-google-live-2026-10-07.json` | Google project is on free tier; quota errors must fail, never fall back to a paid provider. This is not a real revisit benchmark |
-| Tiger Data | Free shared service provisioned; authenticated SQL console verified PostgreSQL 18.6, PostGIS 3.6.4, vector 0.8.6 and both migrations | Direct `pg` connection still fails certificate-chain verification. Do not disable TLS verification or upgrade to paid compute to hide it |
+| Tiger Data | `fieldissue-live`: 0.5 CPU / 2 GiB, Virginia, created with explicit user approval using the $1,000 Performance Trial. Trusted TLS, PostGIS 3.6.4, vector 0.8.6 and all four migrations verified | No payment method. About $31/month plus storage deducted from credits. Trial has 28 days remaining as of October 8; export before expiry. The old free shared service remains separate |
 | SerpApi | Existing Free Plan verified by Account API; production adapter returned a nearby Bengaluru landmark after fixing single-place and distance handling | 250 searches/month plan. `node scripts/live-serpapi.mjs` checks zero-price plan and remaining allowance before one public lookup |
 | ElevenLabs | Real TTS adapter, MP3 validation, deterministic saved-issue briefing and cache implemented/tested | Sign-in and key/voice configuration pending; use free quota or a verified no-card promotion. No speech call made |
 | Sentry | Sanitized Node/Python and Tinker instrumentation implemented/tested. Existing Sponsored Team subscription has a **$0 pay-as-you-go limit** | Dedicated `fieldissue` Hono project created; controlled sanitized error verified as FIELDISSUE-1 and 37 actual Tinker evaluation events as FIELDISSUE-2 in the dashboard. See `docs/verification/sentry-live-2026-10-07.json` |
 | Tinker | Actual SDK training and base-versus-checkpoint evaluation scripts; 54 transparently synthetic note annotations, held-out split and provenance checks | MLH $10 grant redeemed; auto-reload off, no saved payment method. Named key saved only in ignored local environment. Real one-epoch Qwen3-8B training and 18-note held-out evaluation completed under a $1 promotional-credit cap; manifest, raw outputs and bounded cost evidence are in `docs/verification/tinker-*-2026-10-07.json`. Both models: 18/18 strict schema, 17/18 category. Severity: base 14/18, trained 16/18. Tiny synthetic demo only; one-hour checkpoint TTL. Remains separate from Gemma vision |
-| Prior Labs TabPFN | Real local classifier adapter with all eight requested features, official-weight configuration, strict CSV validation and bounded inference | Genuine labeled revisit history and official weights/license missing. Local inference has no per-call cash charge, but real data cannot be fabricated; no production heuristic fallback |
+| Prior Labs TabPFN | Real local classifier adapter with all eight requested features, official-weight configuration, strict CSV validation and bounded inference | [Human review and CSV export](revisit-reviews.md) now collect genuine labeled history without turning AI suggestions into labels. Existing genuine labels and official weights/license are still missing. Local inference has no per-call cash charge, but real data cannot be fabricated; no production heuristic fallback |
 | Entire | Official CLI 0.11.4 downloaded and checksum verified; local Codex setup initialized. This actual session was manually attached to checkpoint `01M4AQGE79FAFZK4W186TFH848`; telemetry and automatic checkpoint pushing disabled | Seven Codex hooks require approval via `/hooks` for future automatic capture. Workspace-specific hook paths and captured transcripts stay local. No remote session publication is claimed |
 
 ## Verified boundaries
 
-- No cash purchase, paid hosting resource, or subscription upgrade was made.
+- No cash purchase or payment method was added. The approved Tiger Data standard instance uses trial credits only; it is a metered resource, not the free shared plan.
   Tinker training uses the redeemed MLH promotional grant only. Render's credit balance was
   previously verified as $50 and was not used by this work.
 - Provider quotas and credit expiration can change. Recheck the account before

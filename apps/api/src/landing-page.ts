@@ -73,7 +73,7 @@ export const landingPageHtml = `<!doctype html>
   h1 span { display:block; }
   h1 .hl { text-decoration:underline; text-decoration-color:var(--lime); text-decoration-thickness:.16em; text-underline-offset:.1em; text-decoration-skip-ink:none; }
   .lead { margin:26px 0 0; max-width:33em; font-size:1.12rem; color:var(--muted); }
-  .hero-media { grid-column:1 / -1; margin:0; }
+  .hero-media { grid-column:1 / -1; margin:0; overflow:hidden; }
   .hero-media img { width:100%; aspect-ratio:4 / 3; object-fit:cover; object-position:58% 55%; background:var(--paper2); }
   .hero-media figcaption { margin-top:10px; padding:0 20px; font-size:.84rem; color:var(--muted); }
   @keyframes up { from { opacity:0; transform:translateY(16px); } }
@@ -83,6 +83,86 @@ export const landingPageHtml = `<!doctype html>
   .hero-copy > :nth-child(3) { animation-delay:.16s; }
   .hero-copy > :nth-child(4) { animation-delay:.24s; }
   .hero-media img { animation:settle 1.1s .1s var(--ease) both; }
+
+
+  /* A native scroll timeline: no frame loop, scroll handler or animation dependency. */
+  .journey { background:#203b2a; color:#f6f4ec; padding:64px 0; }
+  .journey .kicker { color:#c9e86a; }
+  .scene-pin { max-width:1240px; margin:auto; padding:0 20px; }
+  .scene-heading { max-width:650px; margin-bottom:28px; }
+  .scene-heading h2 { font-size:clamp(2rem,5vw,3.5rem); }
+  .scene-layout { display:grid; gap:24px; }
+  .scene-copy { list-style:none; padding:0; margin:0; }
+  .scene-copy li { padding:16px 0; border-top:1px solid #54715c; }
+  .scene-copy .chapter { color:#c9e86a; font-size:.78rem; letter-spacing:.12em; text-transform:uppercase; }
+  .scene-copy h3 { font-size:clamp(1.5rem,3vw,2.4rem); line-height:1.1; letter-spacing:-.03em; margin:10px 0; }
+  .scene-copy p { color:#cfdbc8; max-width:26em; margin:0; font-size:1rem; }
+  .scene-visual { position:relative; min-height:300px; overflow:hidden; border-radius:16px; background:#40563e; isolation:isolate; }
+  .scene-landscape { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:.8; }
+  .scene-visual::after { content:''; position:absolute; inset:0; background:linear-gradient(transparent 20%,#102619b3); z-index:0; pointer-events:none; }
+  .scene-viewfinder { position:absolute; inset:28px; border:1px solid #f6f4ecb3; border-radius:10px; z-index:1; }
+  .scene-viewfinder::before { content:'Same place. A new record.'; position:absolute; left:14px; top:10px; font-size:.75rem; letter-spacing:.06em; }
+  .scene-record { position:absolute; z-index:2; left:24px; bottom:30px; width:55%; padding:18px; background:#f6f4ec; color:#1c211d; border:1px solid #d8d5c4; border-radius:10px; box-shadow:0 12px 30px #10261933; }
+  .scene-record small { display:block; color:#56632f; letter-spacing:.08em; font-size:.68rem; text-transform:uppercase; }
+  .scene-record strong { display:block; font-size:1.1rem; margin-top:4px; }
+  .record-return { left:auto; right:24px; bottom:94px; background:#e6edcd; }
+  .scene-confirm { position:absolute; right:24px; top:26px; z-index:3; padding:12px 16px; background:#c9e86a; color:#203b2a; border-radius:8px; font-size:.85rem; font-weight:750; }
+  .scene-caption { color:#b9ccb2; font-size:.77rem; margin:12px 0 0; }
+  .scene-progress { height:3px; background:#54715c; margin-top:28px; overflow:hidden; }
+  .scene-progress::after { content:''; display:block; width:100%; height:100%; background:#c9e86a; transform-origin:left; }
+  @media(max-width:759px) {
+    .scene-record { width:64%; padding:12px; left:14px; bottom:20px; }
+    .scene-record strong { font-size:.9rem; }
+    .record-return { left:auto; right:14px; bottom:108px; }
+    .scene-confirm { right:14px; top:12px; padding:8px 10px; font-size:.75rem; }
+    .scene-viewfinder::before { display:none; }
+  }
+  @media(min-width:760px) {
+    .scene-layout { grid-template-columns:4fr 6fr; gap:64px; align-items:center; }
+    .scene-visual { height:370px; }
+  }
+  @supports (animation-timeline: view()) {
+    @media(prefers-reduced-motion:no-preference) and (min-height:620px) {
+      .journey { height:310svh; padding:0; view-timeline-name:--field-journey; view-timeline-axis:block; }
+      .scene-pin { position:sticky; top:76px; padding-top:22px; padding-bottom:22px; }
+      .scene-heading h2 { font-size:clamp(2rem,4vw,3rem); }
+      .scene-visual { height:clamp(230px,43svh,370px); min-height:230px; }
+      .scene-copy { display:grid; position:relative; min-height:160px; }
+      .scene-copy li { grid-area:1 / 1; padding:0; border:0; opacity:0; }
+      .scene-copy li:nth-child(1) { animation-name:chapter-one; }
+      .scene-copy li:nth-child(2) { animation-name:chapter-two; }
+      .scene-copy li:nth-child(3) { animation-name:chapter-three; }
+      .scene-copy li:nth-child(4) { animation-name:chapter-four; }
+      .scene-landscape { animation-name:scene-drift; }
+      .record-first { animation-name:record-arrive; }
+      .record-return { animation-name:revisit-arrive; }
+      .scene-confirm { animation-name:confirm-arrive; }
+      .scene-progress::after { animation-name:journey-progress; }
+      .scene-copy li, .scene-landscape, .scene-record, .scene-confirm, .scene-progress::after {
+        animation-duration:auto; animation-timing-function:linear; animation-fill-mode:both;
+        animation-timeline:--field-journey; animation-range:contain 0% contain 100%;
+      }
+      @keyframes chapter-one { 0%,19% { opacity:1; transform:translateY(0); } 25%,100% { opacity:0; transform:translateY(-14px); } }
+      @keyframes chapter-two { 0%,20% { opacity:0; transform:translateY(14px); } 27%,44% { opacity:1; transform:translateY(0); } 50%,100% { opacity:0; transform:translateY(-14px); } }
+      @keyframes chapter-three { 0%,45% { opacity:0; transform:translateY(14px); } 52%,69% { opacity:1; transform:translateY(0); } 75%,100% { opacity:0; transform:translateY(-14px); } }
+      @keyframes chapter-four { 0%,70% { opacity:0; transform:translateY(14px); } 77%,100% { opacity:1; transform:translateY(0); } }
+      @keyframes scene-drift { from { transform:scale(1.12) translateY(8px); } to { transform:scale(1) translateY(0); } }
+      @keyframes record-arrive { 0% { opacity:0; transform:translateY(36px) rotate(-4deg); } 15%,100% { opacity:1; transform:translateY(0) rotate(-2deg); } }
+      @keyframes revisit-arrive { 0%,24% { opacity:0; transform:translateY(42px) rotate(4deg); } 42%,60% { opacity:1; transform:translateY(0) rotate(2deg); } 78%,100% { opacity:1; transform:translateY(-12px) rotate(0); } }
+      @keyframes confirm-arrive { 0%,73% { opacity:0; transform:translateY(-16px) scale(.96); } 88%,100% { opacity:1; transform:translateY(0) scale(1); } }
+      @keyframes journey-progress { from { transform:scaleX(0); } to { transform:scaleX(1); } }
+    }
+    @media(prefers-reduced-motion:no-preference) and (min-height:620px) and (max-width:759px) {
+      .journey { height:270svh; }
+      .scene-pin { top:8px; }
+      .scene-heading { margin-bottom:18px; }
+      .scene-heading .kicker { margin-bottom:8px; }
+      .scene-copy { min-height:136px; }
+      .scene-visual { min-height:240px; height:30svh; }
+      .scene-layout { gap:16px; }
+      .scene-progress { margin-top:16px; }
+    }
+  }
 
   /* Shared section type */
   .kicker { margin:0 0 14px; font-size:.8rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--olive); }
@@ -189,6 +269,31 @@ export const landingPageHtml = `<!doctype html>
     <img src="/assets/field-walk.png" width="1536" height="1024" alt="Illustrated neighbourhood park with a path, trees and benches." fetchpriority="high" decoding="async">
     <figcaption>AI-generated illustration. Not submitted field evidence.</figcaption>
   </figure>
+</section>
+
+<section class="journey" aria-labelledby="journey-title">
+  <div class="scene-pin">
+    <div class="scene-heading"><p class="kicker">Follow the evidence</p><h2 id="journey-title">A report is just the beginning.</h2></div>
+    <div class="scene-layout">
+      <ol class="scene-copy">
+        <li><span class="chapter">01 / Observe</span><h3>Start with what you see.</h3><p>A photo, a short note, a place. Give the problem a record someone can return to.</p></li>
+        <li><span class="chapter">02 / Revisit</span><h3>Walk back. Look again.</h3><p>Keep the first observation. Add the next one. Every visit becomes part of the same story.</p></li>
+        <li><span class="chapter">03 / Compare</span><h3>Let the evidence speak.</h3><p>Review both visits side by side. Gemma suggests what changed; its suggestion stays separate from the decision.</p></li>
+        <li><span class="chapter">04 / Confirm</span><h3>A person makes the call.</h3><p>Confirm a fix with a note, or keep the issue open. The history stays there either way.</p></li>
+      </ol>
+      <div>
+        <div class="scene-visual" aria-hidden="true">
+          <img class="scene-landscape" src="/assets/field-walk.png" width="1536" height="1024" alt="" loading="lazy" decoding="async">
+          <div class="scene-viewfinder"></div>
+          <div class="scene-record record-first"><small>First observation</small><strong>Photo + note + place</strong></div>
+          <div class="scene-record record-return"><small>Return visit</small><strong>New evidence, same issue</strong></div>
+          <div class="scene-confirm">✓ Human confirmation</div>
+        </div>
+        <p class="scene-caption">Workflow illustration • not a field report or an AI result.</p>
+      </div>
+    </div>
+    <div class="scene-progress" aria-hidden="true"></div>
+  </div>
 </section>
 
 <section class="how" id="how" aria-labelledby="how-title">

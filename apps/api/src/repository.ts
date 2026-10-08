@@ -223,6 +223,23 @@ export class IssueRepository {
           409,
           "Rejected issues do not accept observations",
         );
+      const previous = (
+        await c.query(
+          "SELECT id,captured_at FROM observations WHERE issue_id=$1 ORDER BY captured_at DESC,created_at DESC,id DESC LIMIT 1",
+          [issue.id],
+        )
+      ).rows[0];
+      const at = new Date(input.capturedAt ?? Date.now());
+      // Backdated uploads remain valid evidence, but cannot recreate historical
+      // severity, status or neighbourhood counts. Do not invent a training row.
+      const now = new Date();
+      const features =
+        previous &&
+        at > previous.captured_at &&
+        at <= now &&
+        now.getTime() - at.getTime() <= 300000
+          ? await this.features(issue.id, c, now)
+          : null;
       const o = await this.insertObservation(
         c,
         issue.id,
@@ -230,6 +247,14 @@ export class IssueRepository {
         media,
         analysis,
       );
+      if (features) {
+        await c.query(
+          "UPDATE observations SET revisit_features=$2,previous_observation_id=$3 WHERE id=$1",
+          [o.id, JSON.stringify(features), previous.id],
+        );
+        o.revisit_features = features;
+        o.previous_observation_id = previous.id;
+      }
       await c.query(
         "UPDATE issues SET updated_at=clock_timestamp() WHERE id=$1",
         [issue.id],
@@ -494,6 +519,7 @@ export class IssueRepository {
   async features(
     id: string,
     client: Pool | PoolClient = this.pool,
+    at = new Date(),
   ): Promise<Record<string, string | number>> {
     const i = await this.issue(client, id);
     const r = (
@@ -511,10 +537,13 @@ export class IssueRepository {
     return {
       days_since_last_observation: Math.max(
         0,
-        (Date.now() - r.last.getTime()) / 86400000,
+        (at.getTime() - r.last.getTime()) / 86400000,
       ),
       previous_observation_count: r.count,
-      issue_age_days: (Date.now() - i.created_at.getTime()) / 86400000,
+      issue_age_days: Math.max(
+        0,
+        (at.getTime() - i.created_at.getTime()) / 86400000,
+      ),
       severity: i.severity,
       category: i.category,
       nearby_issue_count: (
@@ -526,6 +555,106 @@ export class IssueRepository {
       previous_change_count: changes,
       status: i.status,
     };
+  }
+  async reviewRevisit(
+    id: string,
+    input: {
+      beforeObservationId: string;
+      afterObservationId: string;
+      materialChange: boolean;
+      note: string;
+      evidenceIsGenuine: true;
+    },
+  ) {
+    return this.transaction(async (c) => {
+      const issue = await this.issue(c, id, true);
+      const after = (
+        await c.query(
+          "SELECT * FROM observations WHERE id=$1 AND issue_id=$2",
+          [input.afterObservationId, issue.id],
+        )
+      ).rows[0];
+      if (!after) throw notFound();
+      if (
+        !after.revisit_features ||
+        after.previous_observation_id !== input.beforeObservationId
+      )
+        throw new AppError(
+          "REVIEW_NOT_ELIGIBLE",
+          409,
+          "This pair has no predictors recorded before the revisit. Review a new, chronological revisit.",
+        );
+      const hasFixture = (
+        await c.query(
+          "SELECT 1 FROM observations WHERE issue_id=$1 AND ai_analysis->>'model' LIKE 'development-fixture%' LIMIT 1",
+          [issue.id],
+        )
+      ).rowCount;
+      if (hasFixture)
+        throw new AppError(
+          "REVIEW_NOT_ELIGIBLE",
+          409,
+          "Development fixtures cannot become real training labels.",
+        );
+      const row = (
+        await c.query(
+          `INSERT INTO revisit_reviews(after_observation_id,before_observation_id,issue_id,material_change,note,evidence_is_genuine)
+        VALUES($1,$2,$3,$4,$5,true) ON CONFLICT(after_observation_id) DO UPDATE SET
+        material_change=EXCLUDED.material_change,note=EXCLUDED.note,reviewed_at=clock_timestamp() RETURNING *`,
+          [
+            after.id,
+            input.beforeObservationId,
+            issue.id,
+            input.materialChange,
+            input.note,
+          ],
+        )
+      ).rows[0];
+      await this.event(c, issue.id, "REVISIT_REVIEWED", {
+        beforeObservationId: input.beforeObservationId,
+        afterObservationId: after.id,
+        materialChange: input.materialChange,
+        note: input.note,
+        source: "human_review",
+      });
+      return camel(row);
+    });
+  }
+  async trainingData() {
+    const rows = (
+      await this.pool
+        .query(`SELECT o.revisit_features AS features,r.material_change AS changed
+      FROM revisit_reviews r JOIN observations o ON o.id=r.after_observation_id
+      WHERE r.evidence_is_genuine AND o.revisit_features IS NOT NULL ORDER BY r.reviewed_at,r.after_observation_id`)
+    ).rows;
+    if (!rows.some((r) => r.changed) || !rows.some((r) => !r.changed))
+      throw new AppError(
+        "TRAINING_DATA_INCOMPLETE",
+        409,
+        "Review genuine changed and unchanged revisits before exporting TabPFN training data.",
+      );
+    const columns = [
+      "days_since_last_observation",
+      "previous_observation_count",
+      "issue_age_days",
+      "severity",
+      "category",
+      "nearby_issue_count",
+      "previous_change_count",
+      "status",
+    ];
+    // Values are typed server snapshots, never user notes or spreadsheet formulas.
+    return (
+      [
+        ...[columns.concat("material_change_since_last_visit").join(",")],
+        ...rows.map((r) =>
+          columns
+            .map((k) => String(r.features[k]))
+            .concat(r.changed ? "1" : "0")
+            .join(","),
+        ),
+      ].join("\n") + "\n"
+    );
   }
   async savePrediction(
     id: string,

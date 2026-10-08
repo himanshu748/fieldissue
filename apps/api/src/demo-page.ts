@@ -196,7 +196,7 @@ export const demoPageScript = String.raw`"use strict";
     data.events.forEach(function (e) {
       var extra = "";
       if (e.payload && e.payload.note) extra = " - " + e.payload.note;
-      var names = {ISSUE_CREATED:"Issue reported", OBSERVATION_ADDED:"Observation added", CLASSIFICATION_UPDATED:"Classification updated", DIFF_GENERATED:"Comparison saved", ISSUE_RESOLVED:"Marked resolved", STATUS_CHANGED:"Status changed"};
+      var names = {ISSUE_CREATED:"Issue reported", OBSERVATION_ADDED:"Observation added", CLASSIFICATION_UPDATED:"Classification updated", DIFF_GENERATED:"Comparison saved", ISSUE_RESOLVED:"Marked resolved", REVISIT_REVIEWED:"Revisit reviewed", STATUS_CHANGED:"Status changed"};
       if (e.eventType === "STATUS_CHANGED" && e.payload) extra = " · " + e.payload.from + " → " + e.payload.to + extra;
       ol.appendChild(el("li", new Date(e.createdAt).toLocaleString() + " · " + (names[e.eventType] || e.eventType) + extra));
     });
@@ -212,15 +212,33 @@ export const demoPageScript = String.raw`"use strict";
     }
     var d = result.realWorldDiff;
     modeNotice(d.model);
-    box.appendChild(el("h3", "What changed since the previous observation"));
-    box.appendChild(el("p", d.summary));
+    var suggestion = el("details"), suggestionTitle = el("summary", "Show Gemma’s comparison suggestion");
+    suggestion.appendChild(suggestionTitle);
+    var modelBox=el("div");suggestion.appendChild(modelBox);
+    modelBox.appendChild(el("h3", "What changed since the previous observation"));
+    modelBox.appendChild(el("p", d.summary));
     var lists = el("div",null,"diff-lists");
-    lists.appendChild(list("Removed",d.removed)); lists.appendChild(list("Added",d.added)); lists.appendChild(list("Unchanged",d.unchanged)); box.appendChild(lists);
+    lists.appendChild(list("Removed",d.removed)); lists.appendChild(list("Added",d.added)); lists.appendChild(list("Unchanged",d.unchanged)); modelBox.appendChild(lists);
     var rec = el("p");
     rec.appendChild(el("span", "model recommends " + d.recommendedStatus, "pill"));
     rec.appendChild(el("span", "confidence " + d.confidence, "pill"));
-    box.appendChild(rec);
-    box.appendChild(el("p", "This is a recommendation only. Current issue status: " + state.issue.status + ". Model: " + d.model + " (" + d.modelVersion + ")", "muted"));
+    modelBox.appendChild(rec);
+    modelBox.appendChild(el("p", "This is a recommendation only. Current issue status: " + state.issue.status + ". Model: " + d.model + " (" + d.modelVersion + ")", "muted"));
+    var observedAfter = state.issue.observations.find(function(o){return o.id===d.afterObservationId;});
+    if(observedAfter && observedAfter.revisitFeatures && observedAfter.previousObservationId===d.beforeObservationId){
+      var review = el("form"), reviewTitle=el("h3","Your assessment"), reviewHint=el("p","Review both photos yourself. These answers help learn when a return visit is useful; they do not close the issue.","muted");
+      var decisionLabel=el("label","Did the physical condition materially change?"), decision=el("select");
+      decision.required=true;
+      [["","Choose an assessment"],["changed","Yes, it changed"],["unchanged","No material change"]].forEach(function(v){var opt=el("option",v[1]);opt.value=v[0];decision.appendChild(opt);});decisionLabel.appendChild(decision);
+      var noteLabel=el("label","What in the photos supports your assessment?"), note=el("textarea");note.required=true;note.minLength=10;note.maxLength=2000;noteLabel.appendChild(note);
+      var genuineLabel=el("label"), genuine=el("input");genuine.type="checkbox";genuine.required=true;genuineLabel.appendChild(genuine);genuineLabel.appendChild(el("span"," These are genuine field visits, not a demonstration or generated evidence."));
+      var submit=el("button","Save my assessment"), status=el("p",null,"muted");submit.type="submit";status.setAttribute("role","status");
+      [reviewTitle,reviewHint,decisionLabel,noteLabel,genuineLabel,submit,status].forEach(function(n){review.appendChild(n);});
+      var reviewIssueId=state.issue.id;
+      review.addEventListener("submit",async function(event){event.preventDefault();if(!decision.value||!genuine.checked)return;busy(submit,true,"Saving…");try{await api("/v1/issues/"+reviewIssueId+"/revisit-review",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({beforeObservationId:d.beforeObservationId,afterObservationId:d.afterObservationId,materialChange:decision.value==="changed",note:note.value,evidenceIsGenuine:true})});status.textContent="Assessment saved. Issue status is unchanged.";}catch(error){status.textContent=error.message;}finally{busy(submit,false);}});
+      box.appendChild(review);
+    }
+    box.appendChild(suggestion);
   }
   function randomKey() {
     if (window.crypto && crypto.randomUUID) return "web-" + crypto.randomUUID();
