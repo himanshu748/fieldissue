@@ -512,6 +512,8 @@ export const demoPageHtml = String.raw`<!doctype html>
 
   <section id="timelineBox" hidden>
     <h2>Timeline</h2>
+    <button id="refreshIssue" class="secondary" type="button">Refresh issue</button>
+    <div id="refreshError" class="error" hidden></div>
     <ol class="timeline" id="timeline"></ol>
   </section>
 
@@ -543,7 +545,7 @@ export const demoPageHtml = String.raw`<!doctype html>
 export const demoPageScript = String.raw`"use strict";
 (function () {
   var $ = function (id) { return document.getElementById(id); };
-  var state = { issue: null, objectUrls: [] };
+  var state = { issue: null, objectUrls: [], selection: 0, render: 0, read: 0, selecting: false, create: null, revisits: Object.create(null) };
   var tokenInput = $("token");
   tokenInput.value = sessionStorage.getItem("fieldissue-token") || "";
   tokenInput.addEventListener("change", function () {
@@ -565,8 +567,10 @@ export const demoPageScript = String.raw`"use strict";
       var err = body && body.error ? body.error : {};
       var msg = (err.code || ("HTTP_" + response.status)) + ": " + (err.message || "Request failed");
       if (response.status === 401) msg += " (enter the demo access token above)";
-      if (response.status === 503) msg += " (the vision model or a dependency is unavailable; nothing was saved as evidence)";
-      throw new Error(msg);
+      if (response.status === 503) msg += " (a dependency is unavailable; this response does not establish whether a write was saved)";
+      var failure = new Error(msg);
+      failure.status = response.status;
+      throw failure;
     }
     return body;
   }
@@ -630,12 +634,13 @@ export const demoPageScript = String.raw`"use strict";
       img.src = url;
     });
   }
-  async function mediaUrl(observation) {
+  async function mediaUrl(observation, version) {
     var key = observation.storageKey;
     if (!key) return null;
     var response = await fetch("/media/" + encodeURIComponent(key), { headers: headers() });
     if (!response.ok) return null;
     var url = URL.createObjectURL(await response.blob());
+    if (version !== state.render) { URL.revokeObjectURL(url); return null; }
     state.objectUrls.push(url);
     return url;
   }
@@ -656,8 +661,26 @@ export const demoPageScript = String.raw`"use strict";
     box.appendChild(list("Evidence", a.evidence));
     box.appendChild(el("p", "Model: " + a.model + " (" + a.modelVersion + ")", "muted"));
   }
-  async function renderIssue(issue) {
+  async function renderIssue(issue, selection) {
+    if (selection !== state.selection) return;
+    state.selecting = false;
+    var version = ++state.render;
+    var changedIssue = !state.issue || state.issue.id !== issue.id;
     state.issue = issue;
+    if (changedIssue) {
+      $("photo2").value = "";
+      $("note2").value = "";
+      showError("revisitError", null);
+      showError("resolveError", null);
+    }
+    $("modeBanner").hidden = true;
+    $("diff").textContent = "";
+    $("timeline").textContent = "";
+    $("timelineBox").hidden = false;
+    showError("refreshError", null);
+    var revisit = state.revisits[issue.id];
+    if (revisit && revisit.result) renderDiff(revisit.result);
+    if (revisit && revisit.uncertain) showError("revisitError", new Error("Save outcome unknown. Refresh and check the observations before choosing a new photo. This request will not be posted again."));
     state.objectUrls.forEach(function (u) { URL.revokeObjectURL(u); });
     state.objectUrls = [];
     $("issue").hidden = false;
@@ -682,17 +705,18 @@ export const demoPageScript = String.raw`"use strict";
       var fig = document.createElement("figure");
       var img = document.createElement("img");
       img.alt = "Observation " + (i + 1);
-      var src = await mediaUrl(o);
+      var src = await mediaUrl(o, version);
+      if (version !== state.render || selection !== state.selection) return;
       if (src) img.src = src;
       fig.appendChild(img);
       fig.appendChild(el("figcaption", (i === 0 ? "First" : "Revisit " + i) + " - " + new Date(o.capturedAt).toLocaleString() + (o.note ? " - " + o.note : "")));
       photos.appendChild(fig);
     }
-    await renderTimeline();
+    await renderTimeline(issue.id, version, selection);
   }
-  async function renderTimeline() {
-    if (!state.issue) return;
-    var data = await api("/v1/issues/" + state.issue.id + "/timeline");
+  async function renderTimeline(id, version, selection) {
+    var data = await api("/v1/issues/" + id + "/timeline");
+    if (version !== state.render || selection !== state.selection) return;
     var ol = $("timeline");
     ol.textContent = "";
     data.events.forEach(function (e) {
@@ -737,59 +761,135 @@ export const demoPageScript = String.raw`"use strict";
     }, function () { showError("createError", new Error("Location permission was denied; type coordinates instead")); }, { enableHighAccuracy: true, timeout: 10000 });
   });
 
+  // Save confirmation and read recovery are separate. A failed refresh must
+  // never make a committed write look retryable.
+  async function refresh(id, selection, saved) {
+    if (selection !== state.selection) return;
+    var read = ++state.read;
+    try {
+      var issue = await api("/v1/issues/" + id);
+      if (read !== state.read) return;
+      await renderIssue(issue, selection);
+    } catch (error) {
+      if (selection === state.selection && read === state.read) showError("refreshError", new Error((saved ? "Saved. " : "") + "Could not refresh this issue. Use Refresh issue to retry the read. " + error.message));
+    }
+  }
+  async function showSaved(issue, selection) {
+    if (selection !== state.selection) return;
+    var read = ++state.read;
+    try { await renderIssue(issue, selection); }
+    catch (error) {
+      if (selection === state.selection && read === state.read) showError("refreshError", new Error("Saved. Could not refresh photos or timeline. Use Refresh issue to retry the read. " + error.message));
+    }
+  }
+  $("refreshIssue").addEventListener("click", async function () {
+    if (this.disabled || !state.issue || state.selecting) return;
+    busy(this, true, "Refreshing...");
+    try { await refresh(state.issue.id, state.selection, false); }
+    finally { busy(this, false); }
+  });
+
   $("create").addEventListener("click", async function () {
     var button = this;
+    if (button.disabled) return;
+    if (state.selecting) { showError("createError", new Error("Wait for the selected issue to finish loading before reporting another issue.")); return; }
+    var selection = state.selection;
     showError("createError", null);
     busy(button, true, "Analysing photo...");
     try {
-      if ($("lat").value === "" || $("lon").value === "") throw new Error("Add a location (Use my location, or type latitude and longitude)");
-      var file = await prepareImage($("photo1").files[0]);
-      var form = new FormData();
-      if ($("title").value.trim()) form.set("title", $("title").value.trim());
-      form.set("note", $("note1").value.trim());
-      form.set("latitude", $("lat").value);
-      form.set("longitude", $("lon").value);
-      form.set("capturedAt", new Date().toISOString());
-      form.set("image", file);
-      var issue = await api("/v1/issues", { method: "POST", body: form, headers: { "Idempotency-Key": randomKey() } });
-      $("diff").textContent = "";
-      await renderIssue(issue);
-      $("issue").scrollIntoView({ behavior: "smooth" });
-    } catch (error) { showError("createError", error); }
+      if (!state.create) {
+        if ($("lat").value === "" || $("lon").value === "") throw new Error("Add a location (Use my location, or type latitude and longitude)");
+        var source = $("photo1").files[0];
+        var note = $("note1").value.trim(), title = $("title").value.trim();
+        var form = new FormData();
+        if (title) form.set("title", title);
+        form.set("note", note);
+        form.set("latitude", $("lat").value);
+        form.set("longitude", $("lon").value);
+        form.set("capturedAt", new Date().toISOString());
+        form.set("image", await prepareImage(source));
+        // Keep the exact prepared bytes, fields, timestamp and key until the
+        // server confirms success, even if the form changes or a reply is lost.
+        state.create = { form: form, key: randomKey(), source: source, note: note, title: title };
+      }
+      var pending = state.create;
+      var issue = await api("/v1/issues", { method: "POST", body: pending.form, headers: { "Idempotency-Key": pending.key } });
+      if (!issue || !issue.id) throw new Error("Save response was not readable");
+      state.create = null;
+      if ($("photo1").files[0] === pending.source) $("photo1").value = "";
+      if ($("note1").value.trim() === pending.note) $("note1").value = "";
+      if ($("title").value.trim() === pending.title) $("title").value = "";
+      await showSaved(issue, selection);
+      if (selection === state.selection) $("issue").scrollIntoView({ behavior: "smooth" });
+      else showError("createError", new Error("Saved report " + issue.publicId + ". Pick it from Open issues to view it."));
+    } catch (error) {
+      // Validation/auth/upload rejection is safe to correct. Network errors
+      // and dependency failures remain uncertain and retain the same request.
+      if (state.create) {
+        var rejected = [400, 401, 403, 413, 422].indexOf(error.status) !== -1;
+        if (rejected && !state.create.uncertain) state.create = null;
+        else state.create.uncertain = true;
+      }
+      showError("createError", state.create ? new Error("Save not confirmed. Retry sends the same report, including its original photo, note and location. " + error.message) : error);
+    }
     finally { busy(button, false); }
   });
 
   $("addRevisit").addEventListener("click", async function () {
     var button = this;
+    if (button.disabled) return;
+    if (state.selecting) { showError("revisitError", new Error("Wait for the selected issue to finish loading before adding a revisit.")); return; }
     showError("revisitError", null);
     busy(button, true, "Comparing...");
+    var id = state.issue && state.issue.id, selection = state.selection;
+    var attempt = null;
     try {
-      if (!state.issue) throw new Error("Report or pick an issue first");
-      var file = await prepareImage($("photo2").files[0]);
+      if (!id) throw new Error("Report or pick an issue first");
+      var source = $("photo2").files[0], note = $("note2").value.trim();
+      var previous = state.revisits[id];
+      if (previous && previous.uncertain && (!source || source === previous.source)) {
+        await refresh(id, selection, false);
+        throw new Error("Save outcome unknown. Check the refreshed observations before choosing a new photo. This request will not be posted again.");
+      }
       var form = new FormData();
-      form.set("note", $("note2").value.trim());
+      form.set("note", note);
       form.set("capturedAt", new Date().toISOString());
-      form.set("image", file);
-      var result = await api("/v1/issues/" + state.issue.id + "/observations", { method: "POST", body: form });
-      await renderIssue(await api("/v1/issues/" + state.issue.id));
-      renderDiff(result);
-    } catch (error) { showError("revisitError", error); }
+      form.set("image", await prepareImage(source));
+      attempt = { source: source, uncertain: true };
+      state.revisits[id] = attempt;
+      var result = await api("/v1/issues/" + id + "/observations", { method: "POST", body: form });
+      if (!result || !result.observation) throw new Error("Save response was not readable");
+      attempt.uncertain = false;
+      attempt.result = result;
+      // Retire only this submitted input; never erase a newer issue's draft.
+      if (selection === state.selection) {
+        if ($("photo2").files[0] === source) $("photo2").value = "";
+        if ($("note2").value.trim() === note) $("note2").value = "";
+        renderDiff(result);
+        await refresh(id, selection, true);
+      }
+    } catch (error) {
+      if (selection === state.selection) showError("revisitError", attempt && attempt.uncertain ? new Error("Save outcome unknown. Refresh and check the observations before choosing a new photo. This request will not be posted again. " + error.message) : error);
+    }
     finally { busy(button, false); }
   });
 
   $("doResolve").addEventListener("click", async function () {
     var button = this;
+    if (button.disabled) return;
+    if (state.selecting) { showError("resolveError", new Error("Wait for the selected issue to finish loading before resolving it.")); return; }
+    var id = state.issue && state.issue.id, selection = state.selection;
     showError("resolveError", null);
     busy(button, true, "Resolving...");
     try {
-      if (!state.issue) throw new Error("Report or pick an issue first");
-      var issue = await api("/v1/issues/" + state.issue.id + "/resolve", {
+      if (!id) throw new Error("Report or pick an issue first");
+      var issue = await api("/v1/issues/" + id + "/resolve", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ note: $("resolveNote").value.trim() }),
       });
-      await renderIssue(issue);
-    } catch (error) { showError("resolveError", error); }
+      await showSaved(issue, selection);
+    } catch (error) { if (selection === state.selection) showError("resolveError", error); }
     finally { busy(button, false); }
   });
 
@@ -806,11 +906,17 @@ export const demoPageScript = String.raw`"use strict";
         var b = el("button", item.publicId + " - " + item.title, "secondary");
         b.type = "button";
         b.addEventListener("click", async function () {
+          var selection = ++state.selection;
+          var read = ++state.read;
+          state.selecting = true;
+          ++state.render;
           try {
-            $("diff").textContent = "";
-            await renderIssue(await api("/v1/issues/" + item.id));
-            $("issue").scrollIntoView({ behavior: "smooth" });
-          } catch (error) { showError("openError", error); }
+            var issue = await api("/v1/issues/" + item.id);
+            if (read !== state.read) return;
+            await renderIssue(issue, selection);
+            if (selection === state.selection) $("issue").scrollIntoView({ behavior: "smooth" });
+          } catch (error) { if (selection === state.selection && read === state.read) showError("openError", error); }
+          finally { if (selection === state.selection) state.selecting = false; }
         });
         box.appendChild(b);
       });
