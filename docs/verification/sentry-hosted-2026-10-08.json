@@ -1,0 +1,12 @@
+{
+  "verifiedAt": "2026-10-08T06:58:00Z",
+  "boundary": "Real public Render app, sanitized Node Sentry event observed in authenticated Sentry dashboard",
+  "issue": "FIELDISSUE-3",
+  "issueUrl": "https://himanshu-lj.sentry.io/issues/7780490896/",
+  "eventId": "55a065bfc7b84068893437dd76ba5e68",
+  "code": "PLACE_CONTEXT_UNAVAILABLE",
+  "operation": "serpapi",
+  "cause": "The explicitly labeled integration control used placeholder 0,0 coordinates, so optional place lookup produced no nearby place. Core Gemma save still succeeded.",
+  "usersReported": 0,
+  "fieldsObserved": "Sanitized operation/code, no request body, photo, note, credential or precise report location displayed."
+}

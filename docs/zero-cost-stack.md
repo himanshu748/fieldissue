@@ -22,15 +22,16 @@ an unconfigured provider is already live.
 | httpx, pytest, uv | Provider transport, tests, locked Python dependencies | Open source |
 | PostgreSQL, PostGIS, pgvector | Spatial schema/indexes and extensions verified in CI and Tiger SQL console; vector semantic search is not implemented | Local / Tiger free service |
 | Docker, Docker Compose | Two-service application plus spatial development database; production images | Open source |
-| LocalStorageProvider | Validated local media, tests | Local disk |
+| LocalStorageProvider | Validated local media, tests; refused in production | Local disk |
+| PostgresStorageProvider | Live durable media in Render PostgreSQL, verified byte-for-byte after web restart; 200 MiB cap | Included in free database, expires with database |
 | S3CompatibleStorageProvider | SDK adapter implemented; **no durable hosted bucket provisioned** | Must verify a free/no-overage account before activation |
-| Render | Free-plan blueprint and combined process image verified in CI; **not deployed** | Free plan selected; no paid instance requested |
+| Render | [Public landing/workspace](https://fieldissue-demo.onrender.com/) deployed; real Gemma/DB flow and post-restart evidence verified October 8 | Free web + free PostgreSQL 17; database expires 2026-11-07 |
 | DigitalOcean | Standard portable images, PORT binding and health/readiness configuration retained; **not deployed** | No resource or billable inference key created |
 
 The user accepted Render **or** DigitalOcean for hosting; both deployment paths
 remain documented. Hosting code does not prove a sponsor deployment. The Render
 free image does not include the local TabPFN/PyTorch runtime. Full readiness must
-remain blocked until database trust, durable storage and TabPFN are resolved.
+remain blocked until genuine TabPFN data/runtime is available. The separate Tiger Data connection still needs certificate trust; the live judge profile uses Render PostgreSQL instead.
 
 ## Every named integration
 
@@ -71,3 +72,13 @@ remain blocked until database trust, durable storage and TabPFN are resolved.
 - [Official TabPFN](https://github.com/PriorLabs/TabPFN)
 - [Entire CLI](https://github.com/entireio/cli)
 - [Render free instances](https://render.com/docs/free)
+
+## October 8 hosted update
+
+[Application and host acceptance](verification/product-repair-2026-10-08.md)
+records actual Gemma calls through Render, durable PostgreSQL media, 97 passing
+Node tests in CI, and the separate landing/workspace. Fresh SerpApi verification
+confirmed the $0 Free Plan with 233 searches remaining before its one lookup.
+Sentry observed a sanitized error from the deployed service. The test report
+was removed after verifying restart persistence; no fictional issue is seeded
+on the real deployment. Existing S3 abstraction is retained.

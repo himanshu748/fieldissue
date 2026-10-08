@@ -51,3 +51,29 @@ vision endpoint. Free Render database retention is only 30 days.
 
 Generated park artwork is labeled illustration and never used as report
 evidence. Production rejects mock AI; tests remain explicitly fixture-based.
+
+## Public hosting and actual provider acceptance
+
+[Landing](https://fieldissue-demo.onrender.com/) and
+[workspace](https://fieldissue-demo.onrender.com/app) deployed on a free Render
+web service with a free Render Postgres 17 database. The database expires
+**2026-11-07**. Access token stays in ignored `.env.render` and Render settings.
+No payment method, upgrade, paid resource or credit top-up was added.
+
+[CI for application commit 9331902](https://github.com/himanshu748/fieldissue/actions/runs/37739665614)
+passed: **97 Node tests, all database cases included**, Python suite, Docker
+PostGIS/HTTP vertical slice, compiled runtime and combined Render lifecycle.
+
+[Actual hosted verification](render-hosted-2026-10-08.json) covers public HTTPS,
+real Gemma 4 analysis/comparison, create and revisit idempotent replay, saved
+comparison after resolve/reopen, and retrieval after a confirmed new Render
+process started. Both stored photos matched the original SHA-256 after restart.
+The identical public CC0 photo was used twice; this is an unchanged control, not
+a claim of repair or a genuine revisit. Its temporary report and media were
+removed afterward; the public workspace starts without invented field reports.
+
+[Sentry hosted event](sentry-hosted-2026-10-08.json) was observed in the actual
+dashboard, and [SerpApi's free live lookup](serpapi-live-2026-10-08.json) passed.
+SerpApi and Sentry credentials are installed on Render. ElevenLabs remains
+unconfigured pending sign-in; the UI hides unavailable audio.
+`/ready` deliberately remains 503 because real TabPFN data/weights are absent.

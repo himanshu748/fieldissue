@@ -7,9 +7,7 @@ resolve it yourself.
 
 ## Try it
 
-**Hosted:** _add the verified URL here after deploying with
-[`render.demo.yaml`](render.demo.yaml) (see
-[docs/render-deployment.md](docs/render-deployment.md#judge-demo-profile-renderdemoyaml))._
+**Hosted:** [Landing page](https://fieldissue-demo.onrender.com/) · [Workspace](https://fieldissue-demo.onrender.com/app). Ask the project owner for the private shared access token.
 The free service sleeps when idle and takes about a minute to wake. Photos and comparisons survive web restarts in PostgreSQL. The free database
 expires 30 days after provisioning; the workspace shows this retention limit.
 Share the access token privately with judges, never in this repository.

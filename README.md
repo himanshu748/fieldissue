@@ -9,7 +9,7 @@ Built for the DEV **Hacktoberfest Open-Source AI Challenge, Week 1: Touch Grass*
 | What | Link |
 | --- | --- |
 | Try it in a browser | Open `/` for the landing page and `/app` for the separate workspace on any running FieldIssue API (local: <http://127.0.0.1:3000/>). Walkthrough and video shot list: [DEMO.md](DEMO.md) |
-| Hosted demo | _not deployed yet; one-click judge profile in [`render.demo.yaml`](render.demo.yaml), see [docs/render-deployment.md](docs/render-deployment.md#judge-demo-profile-renderdemoyaml)_ |
+| Hosted demo | [Landing](https://fieldissue-demo.onrender.com/) · [Workspace](https://fieldissue-demo.onrender.com/app), private shared access token; free database expires 7 Nov 2026 |
 | DEV post | _add after publishing_ |
 | Demo video | _add link_ |
 | Verified live provider runs | [docs/zero-cost-stack.md](docs/zero-cost-stack.md) and [docs/verification/](docs/verification/) |
@@ -190,7 +190,7 @@ TEST_DATABASE_URL=postgresql://your-user:your-password@127.0.0.1:5432/fieldissue
 
 The test database must already exist, and its test user must be allowed to create PostGIS/vector extensions. Tests apply the schema. Providers are dependency-injected test fixtures or local HTTP doubles; these tests check contracts, boundaries, failure handling, and transactional behavior, not real-model quality.
 
-Real PostgreSQL/PostGIS/vector checks and an HTTP vertical slice have been run in this workspace; records are in [docs/verification](docs/verification/). The demo seed was separately checked on a fresh real database: seven issues, eight observations, one diff, fourteen events, idempotent reapplication, and all eight valid PNGs served by the real `/media` route. **Docker is not installed in the implementation workspace, so the Docker images and Compose startup have not been executed here.** CI subsequently verified the Docker/PostGIS/HTTP and Render container lifecycle boundaries. Live Google Gemma, free SerpApi, sanitized Sentry delivery, and an MLH-credit-funded Tinker training/evaluation run are now recorded in [the zero-cash stack ledger](docs/zero-cost-stack.md). ElevenLabs, durable S3 storage, direct Tiger Data TLS trust, TabPFN data/runtime, and a public hosting deployment remain incomplete.
+Real PostgreSQL/PostGIS/vector checks and an HTTP vertical slice have been run in this workspace; records are in [docs/verification](docs/verification/). The demo seed was separately checked on a fresh real database: seven issues, eight observations, one diff, fourteen events, idempotent reapplication, and all eight valid PNGs served by the real `/media` route. **Docker is not installed in the implementation workspace, so the Docker images and Compose startup have not been executed here.** CI subsequently verified the Docker/PostGIS/HTTP and Render container lifecycle boundaries. Live Google Gemma, free SerpApi, sanitized Sentry delivery, and an MLH-credit-funded Tinker training/evaluation run are now recorded in [the zero-cash stack ledger](docs/zero-cost-stack.md). The [October 8 repair and hosted verification](docs/verification/product-repair-2026-10-08.md) adds a real Render/Gemma deployment with bounded PostgreSQL media persistence. ElevenLabs, a separate S3 bucket, direct Tiger Data TLS trust, and genuine TabPFN data/runtime remain incomplete.
 
 ### Demo data
 
@@ -302,7 +302,7 @@ Use the service's actual credentialed PostgreSQL URL as `DATABASE_URL` and set `
 
 ### Portable image, including DigitalOcean
 
-The production API image uses the supplied `PORT` and listens on `0.0.0.0`; `/health` is process liveness and `/ready` is dependency readiness. Configure your host's HTTP port to match the supplied `PORT`. DigitalOcean App Platform exposes these through its documented [port configuration](https://docs.digitalocean.com/products/app-platform/reference/api/) and [health checks](https://docs.digitalocean.com/products/app-platform/how-to/manage-health-checks/). Keep intelligence private and provide persistent/object media storage. The separate [Render scaffold](docs/render-deployment.md) combines the two processes with loopback isolation and a shared access gateway. It has not been deployed; the database TLS, object storage, and TabPFN gates remain open.
+The production API image uses the supplied `PORT` and listens on `0.0.0.0`; `/health` is process liveness and `/ready` is dependency readiness. Configure your host's HTTP port to match the supplied `PORT`. DigitalOcean App Platform exposes these through its documented [port configuration](https://docs.digitalocean.com/products/app-platform/reference/api/) and [health checks](https://docs.digitalocean.com/products/app-platform/how-to/manage-health-checks/). Keep intelligence private and provide persistent/object media storage. The separate [Render scaffold](docs/render-deployment.md) combines the two processes with loopback isolation and a shared access gateway. The free judge profile is [deployed](https://fieldissue-demo.onrender.com/) with real Gemma and PostgreSQL media; see [hosted evidence](docs/verification/render-hosted-2026-10-08.json). Full production readiness remains blocked by Tiger TLS, optional S3 provisioning and genuine TabPFN data/runtime.
 
 ### Live Gemma evidence, October 7, 2026
 
