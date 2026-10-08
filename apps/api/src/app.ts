@@ -17,7 +17,12 @@ import type { IssueRepository } from "./repository.js";
 import { validateImage, type StorageProvider, type Media } from "./storage.js";
 import { AppError } from "./errors.js";
 import { trace, reportFailure } from "./telemetry.js";
-import { demoPageCsp, demoPageHtml, demoPageScript } from "./demo-page.js";
+import {
+  demoPageCsp,
+  demoPageHtml,
+  demoPageScript,
+  landingScript,
+} from "./demo-page.js";
 const logger = pino({ level: process.env.LOG_LEVEL ?? "info" });
 const numeric = (min: number, max: number) =>
   z
@@ -94,9 +99,15 @@ export function createApp(deps: Dependencies) {
       deps.accessToken &&
       !(
         c.req.method === "GET" &&
-        ["/", "/demo.js", "/favicon.ico", "/health", "/ready"].includes(
-          c.req.path,
-        )
+        [
+          "/",
+          "/demo",
+          "/demo.js",
+          "/landing.js",
+          "/favicon.ico",
+          "/health",
+          "/ready",
+        ].includes(c.req.path)
       )
     ) {
       const expected = Buffer.from(`Bearer ${deps.accessToken}`);
@@ -254,7 +265,7 @@ export function createApp(deps: Dependencies) {
       );
     }
   }
-  // The demo page and its script are static and contain no secrets, so they
+  // The landing/demo page and its scripts are static and contain no secrets, so they
   // stay public; every API call they make still passes the access gateway.
   app.get("/", (c) => {
     c.header("Content-Security-Policy", demoPageCsp);
@@ -266,6 +277,13 @@ export function createApp(deps: Dependencies) {
     c.header("Cache-Control", "no-cache");
     return c.body(demoPageScript);
   });
+  app.get("/landing.js", (c) => {
+    c.header("Content-Type", "text/javascript; charset=utf-8");
+    c.header("Cache-Control", "no-cache");
+    return c.body(landingScript);
+  });
+  // The demo lives in the landing page's #try section; keep a short link.
+  app.get("/demo", (c) => c.redirect("/#try", 302));
   app.get("/favicon.ico", (c) => c.body(null, 204));
   app.get("/health", (c) =>
     c.json({ status: "ok", service: "fieldissue-api" }),
