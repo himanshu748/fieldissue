@@ -20,7 +20,7 @@ an unconfigured provider is already live.
 | Vitest | Unit and real PostgreSQL HTTP integration suites | Local / existing CI |
 | Python 3.11+, FastAPI, Pydantic | Private intelligence HTTP service and strict model schemas | Open source |
 | httpx, pytest, uv | Provider transport, tests, locked Python dependencies | Open source |
-| PostgreSQL, PostGIS, pgvector | Spatial schema/indexes and extensions verified in CI and Tiger SQL console; vector semantic search is not implemented | Local / Tiger free service |
+| PostgreSQL, PostGIS, pgvector | Spatial schema/indexes verified in CI; real Tiger vector/hybrid search verified with certificate-checked TLS | Render free primary / approved Tiger trial secondary |
 | Docker, Docker Compose | Two-service application plus spatial development database; production images | Open source |
 | LocalStorageProvider | Validated local media, tests; refused in production | Local disk |
 | PostgresStorageProvider | Live durable media in Render PostgreSQL, verified byte-for-byte after web restart; 200 MiB cap | Included in free database, expires with database |
@@ -30,8 +30,7 @@ an unconfigured provider is already live.
 
 The user accepted Render **or** DigitalOcean for hosting; both deployment paths
 remain documented. Hosting code does not prove a sponsor deployment. The Render
-free image does not include the local TabPFN/PyTorch runtime. Full readiness must
-remain blocked until genuine TabPFN data/runtime is available. A standard Tiger Data instance is now provisioned under the verified $1,000 Performance Trial (28 days remaining on October 8, no payment method). Its certificate and hostname verification, PostGIS, pgvector and migrations passed. The Render connection is configured for Tiger; deployment acceptance is tracked in the October 8 integration verification record.
+free image does not include the local TabPFN/PyTorch runtime. TabPFN is optional in V2 and does not block core readiness. A standard Tiger Data instance is now provisioned under the verified $1,000 Performance Trial (28 days remaining on October 8, no payment method). Its certificate and hostname verification, PostGIS, pgvector and migrations passed. Render PostgreSQL remains the primary transaction database; Tiger is configured separately as the semantic index.
 
 ## Every named integration
 
@@ -40,7 +39,8 @@ remain blocked until genuine TabPFN data/runtime is available. A standard Tiger 
 | Gemma | Real Gemma 4 vision analysis and identical-image negative control passed through the Python HTTP boundary; report in `docs/verification/gemma-google-live-2026-10-07.json` | Google project is on free tier; quota errors must fail, never fall back to a paid provider. This is not a real revisit benchmark |
 | Tiger Data | `fieldissue-live`: 0.5 CPU / 2 GiB, Virginia, created with explicit user approval using the $1,000 Performance Trial. Trusted TLS, PostGIS 3.6.4, vector 0.8.6 and all four migrations verified | No payment method. About $31/month plus storage deducted from credits. Trial has 28 days remaining as of October 8; export before expiry. The old free shared service remains separate |
 | SerpApi | Existing Free Plan verified by Account API; production adapter returned a nearby Bengaluru landmark after fixing single-place and distance handling | 250 searches/month plan. `node scripts/live-serpapi.mjs` checks zero-price plan and remaining allowance before one public lookup |
-| ElevenLabs | Real TTS adapter, MP3 validation, deterministic saved-issue briefing and cache implemented/tested | Sign-in and key/voice configuration pending; use free quota or a verified no-card promotion. No speech call made |
+| ElevenLabs | Real MP3, browser playback, hosted generation, authenticated media and cache reuse verified; see `verification/elevenlabs-live-2026-10-08.json` | User confirmed sufficient quota and authorized use. Account read still lacks permission, so remaining quota and overage state are not independently readable. No payment settings changed |
+| Backboard | Two actual open-model comparisons persisted; see `verification/backboard-live-2026-10-08.json` | $5 promo credit, auto-reload off; user-approved $0.25 test cap and configured provider price ceiling |
 | Sentry | Sanitized Node/Python and Tinker instrumentation implemented/tested. Existing Sponsored Team subscription has a **$0 pay-as-you-go limit** | Dedicated `fieldissue` Hono project created; controlled sanitized error verified as FIELDISSUE-1 and 37 actual Tinker evaluation events as FIELDISSUE-2 in the dashboard. See `docs/verification/sentry-live-2026-10-07.json` |
 | Tinker | Actual SDK training and base-versus-checkpoint evaluation scripts; 54 transparently synthetic note annotations, held-out split and provenance checks | MLH $10 grant redeemed; auto-reload off, no saved payment method. Named key saved only in ignored local environment. Real one-epoch Qwen3-8B training and 18-note held-out evaluation completed under a $1 promotional-credit cap; manifest, raw outputs and bounded cost evidence are in `docs/verification/tinker-*-2026-10-07.json`. Both models: 18/18 strict schema, 17/18 category. Severity: base 14/18, trained 16/18. Tiny synthetic demo only; one-hour checkpoint TTL. Remains separate from Gemma vision |
 | Prior Labs TabPFN | Real local classifier adapter with all eight requested features, official-weight configuration, strict CSV validation and bounded inference | [Human review and CSV export](revisit-reviews.md) now collect genuine labeled history without turning AI suggestions into labels. Existing genuine labels and official weights/license are still missing. Local inference has no per-call cash charge, but real data cannot be fabricated; no production heuristic fallback |
@@ -54,7 +54,7 @@ remain blocked until genuine TabPFN data/runtime is available. A standard Tiger 
 - Provider quotas and credit expiration can change. Recheck the account before
   activation; never treat a historical screenshot as unlimited free usage.
 - Unit tests use explicitly identified fixtures. Real-mode readiness still fails
-  when required Gemma/TabPFN dependencies are missing.
+  when required Gemma/database dependencies are missing. TabPFN remains optional.
 - A single repeated photo is only a no-change control. It is not a replacement
   for dated, labeled field revisits for TabPFN training.
 - Local `.env` is ignored and mode 0600. Session transcripts and local Entire
@@ -82,3 +82,7 @@ confirmed the $0 Free Plan with 233 searches remaining before its one lookup.
 Sentry observed a sanitized error from the deployed service. The test report
 was removed after verifying restart persistence; no fictional issue is seeded
 on the real deployment. Existing S3 abstraction is retained.
+
+## V2 acceptance update
+
+See the [PRD audit](verification/prd-audit-2026-10-08.md) for the current release and evidence boundaries. V2 CI passes 107 API and 73 Python tests. Hosted synthetic control FI-000002 is explicitly labeled as a public-photo integration test, not a field visit. Actual ElevenLabs audio generated and repeated requests reused its saved media. Entire V2 checkpoint metadata is recorded in [the provenance note](verification/entire-v2-2026-10-08.md); the full session remains private.

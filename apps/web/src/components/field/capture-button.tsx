@@ -20,6 +20,7 @@ export function CaptureButton({
 }) {
   const id = useId();
   const input = useRef<HTMLInputElement>(null);
+  const gallery = useRef<HTMLInputElement>(null);
   const [preparing, setPreparing] = useState(false);
   const [error, setError] = useState<string>();
   const [preview, setPreview] = useState<string>();
@@ -45,6 +46,7 @@ export function CaptureButton({
     } finally {
       setPreparing(false);
       if (input.current) input.current.value = "";
+      if (gallery.current) gallery.current.value = "";
     }
   }
 
@@ -60,6 +62,7 @@ export function CaptureButton({
         disabled={disabled || preparing}
         onChange={(e) => choose(e.target.files?.[0])}
       />
+      <input ref={gallery} type="file" accept="image/jpeg,image/png,image/webp" aria-label="Choose a photo from your files" className="sr-only" disabled={disabled || preparing} onChange={(e) => choose(e.target.files?.[0])} />
       {preview && value ? (
         <figure className="flex flex-col gap-2">
           <div className="relative overflow-hidden border border-ink bg-muted">
@@ -70,7 +73,7 @@ export function CaptureButton({
               {value.width}×{value.height} · {formatBytes(value.blob.size)} JPEG · location metadata removed
             </span>
             <span className="flex gap-2">
-              <Button type="button" size="sm" variant="outline" onClick={() => input.current?.click()} disabled={disabled}>
+              <Button type="button" size="sm" variant="outline" onClick={() => gallery.current?.click()} disabled={disabled || preparing}>
                 <RefreshCwIcon data-icon="inline-start" />
                 Replace
               </Button>
@@ -82,8 +85,10 @@ export function CaptureButton({
           </figcaption>
         </figure>
       ) : (
-        <label
-          htmlFor={id}
+        <button
+          type="button"
+          onClick={() => input.current?.click()}
+          disabled={disabled || preparing}
           className={cn(
             "flex min-h-56 cursor-pointer flex-col items-center justify-center gap-3 border-2 border-dashed border-ink/40 bg-surface p-6 text-center transition-colors hover:border-ink hover:bg-paper focus-within:border-ink",
             (disabled || preparing) && "pointer-events-none opacity-60",
@@ -96,8 +101,9 @@ export function CaptureButton({
             {preparing ? "Preparing photo…" : prompt}
           </span>
           <span className="text-sm text-muted-foreground">Camera or gallery · JPEG, PNG or WebP · resized to 1600 px</span>
-        </label>
+        </button>
       )}
+      {!value ? <Button type="button" variant="outline" onClick={() => gallery.current?.click()} disabled={disabled || preparing}>Choose an existing photo</Button> : null}
       {error ? (
         <p role="alert" className="text-sm text-destructive">
           {error}

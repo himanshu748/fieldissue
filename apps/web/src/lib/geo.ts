@@ -75,7 +75,7 @@ export function recallLocation(): Located | null {
     const raw = sessionStorage.getItem(LAST);
     if (!raw) return null;
     const p = JSON.parse(raw) as Located;
-    return Number.isFinite(p.latitude) && Number.isFinite(p.longitude) ? p : null;
+    return Number.isFinite(p.latitude) && Math.abs(p.latitude) <= 90 && Number.isFinite(p.longitude) && Math.abs(p.longitude) <= 180 && ["device", "manual"].includes(p.source) ? p : null;
   } catch {
     return null;
   }

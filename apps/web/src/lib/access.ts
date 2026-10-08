@@ -1,3 +1,4 @@
+import { clearWalk } from "./walk";
 import { useSyncExternalStore } from "react";
 
 // Same key as the legacy workspace so an unlocked tab stays unlocked across both.
@@ -39,6 +40,8 @@ export function setToken(value: string) {
 }
 
 export function clearToken() {
+  clearWalk();
+  try { sessionStorage.removeItem("fieldissue-last-location"); sessionStorage.removeItem("fieldissue-map-consent"); } catch { /* Storage may be disabled. */ }
   setToken("");
 }
 

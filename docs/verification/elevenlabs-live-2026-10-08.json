@@ -1,0 +1,59 @@
+{
+  "verifiedAt": "2026-10-08T17:10:31.528Z",
+  "provider": "ElevenLabs",
+  "model": "eleven_multilingual_v2",
+  "scope": "Real provider plus local V2 browser and isolated database",
+  "userAuthorization": "User confirmed sufficient quota and requested use, with existing zero-cash constraint.",
+  "subscriptionRead": {
+    "httpStatus": 401,
+    "error": "missing_permissions",
+    "remainingAllowance": "User-confirmed; not independently readable with this key"
+  },
+  "directTest": {
+    "characters": 92,
+    "mp3Bytes": 89487
+  },
+  "issueTest": {
+    "httpStatus": 200,
+    "cached": true,
+    "textCharacters": 97,
+    "mediaHttpStatus": 200,
+    "mp3Bytes": 125849,
+    "browserReadyState": 4,
+    "browserDurationSeconds": 7.801905,
+    "browserPlaybackReachedEnd": true,
+    "browserError": null
+  },
+  "hosted": {
+    "deployId": "dep-db3sr5psrm7s73a3ffng",
+    "commit": "f9947bb17cc3a764f3dc6f5aff73529bfc3f302c",
+    "status": "live",
+    "readinessHttp": 200,
+    "audioEnabled": true,
+    "mock": false,
+    "issueTest": {
+      "publicId": "FI-000002",
+      "createHttpStatus": 201,
+      "audioHttpStatus": 200,
+      "firstCached": false,
+      "secondCached": true,
+      "sameStorageKey": true,
+      "mediaHttpStatus": 200,
+      "anonymousMediaHttpStatus": 401,
+      "mp3Bytes": 134626,
+      "textCharacters": 97,
+      "browserPlayback": {
+        "readyState": 4,
+        "durationSeconds": 8.359184,
+        "playedToEnd": true,
+        "error": null
+      }
+    }
+  },
+  "limitations": [
+    "Subscription balance and paid-overage state cannot be independently read with this key. No payment settings changed.",
+    "Local issue is an explicitly synthetic public-photo control, not an outdoor field report."
+  ],
+  "totalNewSpeechCharacters": 286,
+  "newSpeechRequests": 3
+}

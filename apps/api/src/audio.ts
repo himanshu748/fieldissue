@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import type { IssueRepository, Row } from "./repository.js";
 import type { StorageProvider, Media } from "./storage.js";
 import { AppError } from "./errors.js";
@@ -9,22 +9,25 @@ export interface SpeechProvider {
   generate(text: string): Promise<Media>;
 }
 export function buildBriefing(issue: Row, now = new Date()) {
-  const last = issue.observations.at(-1);
-  const days = last
-    ? Math.max(
-        0,
-        Math.floor(
-          (now.getTime() - new Date(last.capturedAt).getTime()) / 86400000,
-        ),
-      )
-    : 0;
+  const times = issue.observations
+    .map((observation: Row) => new Date(observation.capturedAt).getTime())
+    .filter((time: number) => Number.isFinite(time) && time <= now.getTime());
+  const last = times.length ? Math.max(...times) : null;
+  const days =
+    last === null ? null : Math.floor((now.getTime() - last) / 86400000);
+  const observed =
+    days === null
+      ? "Observation date unavailable."
+      : days === 0
+        ? "Last observed less than a day ago."
+        : `Last observed ${days} ${days === 1 ? "day" : "days"} ago.`;
   const number = Number(issue.publicId.replace("FI-", ""));
   const revisit =
     issue.revisitPrediction?.priorityScore >= 0.5 &&
     !["RESOLVED", "REJECTED"].includes(issue.status)
       ? " Revisit recommended."
       : "";
-  return `Field issue ${number}. ${issue.title}. Status ${issue.status.toLowerCase().replace("_", " ")}. Last observed ${days} ${days === 1 ? "day" : "days"} ago.${revisit}`;
+  return `Field issue ${number}. ${issue.title}. Status ${issue.status.toLowerCase().replace("_", " ")}. ${observed}${revisit}`;
 }
 export class ElevenLabsSpeechProvider implements SpeechProvider {
   constructor(
@@ -150,28 +153,86 @@ export class AudioSummaryService {
         }),
       )
       .digest("hex");
+    const owner = randomUUID();
+    const deadline = Date.now() + 40000;
+    // A durable, expiring lease prevents duplicate provider calls without holding
+    // a connection or transaction open during network I/O.
+    while (true) {
+      const cached = (
+        await this.repository.pool.query(
+          "SELECT media_url,storage_key FROM audio_summaries WHERE cache_key=$1",
+          [key],
+        )
+      ).rows[0];
+      if (cached)
+        return {
+          mediaUrl: cached.media_url,
+          storageKey: cached.storage_key,
+          cached: true,
+          text,
+        };
+      const claim = await this.repository.pool.query(
+        `INSERT INTO audio_generation_leases(cache_key,issue_id,owner,expires_at)
+         VALUES($1,$2,$3,now()+interval '2 minutes')
+         ON CONFLICT(cache_key) DO UPDATE SET owner=$3,expires_at=now()+interval '2 minutes'
+         WHERE audio_generation_leases.expires_at<now() RETURNING owner`,
+        [key, issue.id, owner],
+      );
+      if (claim.rowCount) break;
+      if (Date.now() >= deadline)
+        throw new AppError(
+          "AUDIO_PENDING",
+          503,
+          "A briefing is already being prepared. Try again shortly.",
+        );
+      await new Promise((resolve) => setTimeout(resolve, 150));
+    }
     let cleanup: string | undefined;
     try {
-      const output = await this.repository.transaction(async (c) => {
-        await c.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", [
-          `audio:${key}`,
-        ]);
-        const cached = (
-          await c.query(
-            "SELECT media_url,storage_key FROM audio_summaries WHERE cache_key=$1",
-            [key],
-          )
+      // Another worker may have completed between the cache read and lease claim.
+      const cached = (
+        await this.repository.pool.query(
+          "SELECT media_url,storage_key FROM audio_summaries WHERE cache_key=$1",
+          [key],
+        )
+      ).rows[0];
+      if (cached)
+        return {
+          mediaUrl: cached.media_url,
+          storageKey: cached.storage_key,
+          cached: true,
+          text,
+        };
+      await this.consume(1);
+      const media = await this.speech.generate(text);
+      const stored = await this.storage.put(media);
+      cleanup = stored.storageKey;
+      await this.repository.transaction(async (c) => {
+        const lease = await c.query(
+          "SELECT owner FROM audio_generation_leases WHERE cache_key=$1 AND owner=$2 AND expires_at>now() FOR UPDATE",
+          [key, owner],
+        );
+        if (!lease.rowCount)
+          throw new AppError(
+            "AUDIO_PENDING",
+            503,
+            "Briefing generation expired. Try again.",
+          );
+        const current = (
+          await c.query("SELECT updated_at FROM issues WHERE id=$1 FOR SHARE", [
+            issue.id,
+          ])
         ).rows[0];
-        if (cached)
-          return {
-            mediaUrl: cached.media_url,
-            storageKey: cached.storage_key,
-            cached: true,
-          };
-        await this.consume(1);
-        const media = await this.speech.generate(text);
-        const stored = await this.storage.put(media);
-        cleanup = stored.storageKey;
+        if (
+          !current ||
+          new Date(current.updated_at).getTime() !==
+            new Date(issue.updatedAt).getTime()
+        )
+          throw new AppError(
+            "EVIDENCE_CHANGED",
+            409,
+            "This issue changed while the briefing was being prepared. Refresh and try again.",
+          );
         await c.query(
           "INSERT INTO audio_summaries(cache_key,issue_id,media_url,storage_key,voice_id,model) VALUES($1,$2,$3,$4,$5,$6)",
           [
@@ -183,13 +244,19 @@ export class AudioSummaryService {
             this.speech.model,
           ],
         );
-        return { ...stored, cached: false };
       });
       cleanup = undefined;
-      return { ...output, text };
+      return { ...stored, cached: false, text };
     } catch (error) {
       if (cleanup) await this.storage.delete(cleanup).catch(() => {});
       throw error;
+    } finally {
+      await this.repository.pool
+        .query(
+          "DELETE FROM audio_generation_leases WHERE cache_key=$1 AND owner=$2",
+          [key, owner],
+        )
+        .catch(() => {});
     }
   }
 }

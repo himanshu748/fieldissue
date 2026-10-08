@@ -1,3 +1,4 @@
+import { CaptureTime, captureTimeValid } from "@/components/field/capture-time";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useNavigate, useParams } from "react-router";
 import { ArrowLeftRightIcon, ShieldAlertIcon } from "lucide-react";
@@ -35,14 +36,15 @@ export function RevisitPage() {
   const [locationMode, setLocationMode] = useState<"inherit" | "here">("inherit");
   const [location, setLocation] = useState<Located | null>(null);
   const [note, setNote] = useState("");
+  const [capturedAt, setCapturedAt] = useState("");
   const [consent, setConsent] = useState(false);
   const [phase, setPhase] = useState<Phase>({ kind: "idle" });
   const attempt = useRef<{ key: string; signature: string; photo: PreparedImage } | null>(null);
   const sending = phase.kind === "sending";
 
   const signature = useMemo(
-    () => JSON.stringify([photo?.blob.size, photo?.width, locationMode, location?.latitude, location?.longitude, note.trim()]),
-    [photo, locationMode, location, note],
+    () => JSON.stringify([photo?.blob.size, photo?.width, locationMode, location?.latitude, location?.longitude, note.trim(), capturedAt]),
+    [photo, locationMode, location, note, capturedAt],
   );
 
   useEffect(() => {
@@ -64,10 +66,10 @@ export function RevisitPage() {
   const data = issue.data;
   const previous = data.observations.at(-1);
   const locationReady = locationMode === "inherit" || !!location;
-  const missing = [!photo && "a new photo", !locationReady && "a location", !consent && "consent to analysis"].filter(Boolean) as string[];
+  const missing = [!photo && "a new photo", !locationReady && "a location", !consent && "consent to analysis", !captureTimeValid(capturedAt) && "a valid capture time"].filter(Boolean) as string[];
 
   async function send() {
-    if (!photo || !locationReady || !consent || sending) return;
+    if (!photo || !locationReady || !consent || !captureTimeValid(capturedAt) || sending) return;
     if (attempt.current?.signature !== signature || attempt.current?.photo !== photo) attempt.current = { key: newKey("revisit"), signature, photo };
     const form = new FormData();
     form.set("image", photo.blob, "revisit.jpg");
@@ -77,6 +79,7 @@ export function RevisitPage() {
       form.set("locationSource", location.source);
     }
     if (note.trim()) form.set("note", note.trim());
+    if (capturedAt) form.set("capturedAt", new Date(capturedAt).toISOString());
     setPhase({ kind: "sending", step: "uploading", fraction: 0 });
     try {
       const result = await api.addObservation(data.publicId, form, attempt.current.key, (step, fraction) =>
@@ -202,6 +205,8 @@ export function RevisitPage() {
         </Field>
         <FieldDescription>Saying nothing changed is useful evidence too.</FieldDescription>
       </FieldGroup>
+
+      <CaptureTime value={capturedAt} onChange={setCapturedAt} disabled={sending} />
 
       <ProcessingConsent id="revisit-consent" checked={consent} onChange={setConsent} config={config} />
 

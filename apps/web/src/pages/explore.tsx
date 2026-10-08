@@ -156,7 +156,7 @@ export function ExplorePage() {
           <h2 id="where" className="eyebrow">
             Where
           </h2>
-          <LocationPicker value={origin} onChange={setOrigin} idPrefix="explore" showMap={false} />
+          <LocationPicker value={origin} onChange={setOrigin} idPrefix="explore" />
           {origin ? (
             <Button variant="link" className="self-start px-0" onClick={() => setOrigin(null)}>
               Clear location and show all recent issues

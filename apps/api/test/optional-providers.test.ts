@@ -129,3 +129,28 @@ it("builds deterministic briefing from saved issue content only", () => {
   expect(text).toContain("3 days ago");
   expect(text).toContain("Revisit recommended");
 });
+
+it.each([
+  [[], "Observation date unavailable."],
+  [[{ capturedAt: "invalid" }], "Observation date unavailable."],
+  [[{ capturedAt: "2027-01-01" }], "Observation date unavailable."],
+  [
+    [{ capturedAt: "2026-10-04T10:00:00Z" }],
+    "Last observed less than a day ago.",
+  ],
+  [[{ capturedAt: "2026-10-03T10:00:00Z" }], "Last observed 1 day ago."],
+  [
+    [{ capturedAt: "2026-10-04T10:00:00Z" }, { capturedAt: "2026-10-01" }],
+    "Last observed less than a day ago.",
+  ],
+])(
+  "speaks valid observation ages without zero or NaN days",
+  (observations, expected) => {
+    const text = buildBriefing(
+      { publicId: "FI-000002", title: "Bench", status: "OPEN", observations },
+      new Date("2026-10-04T12:00:00Z"),
+    );
+    expect(text).toContain(expected);
+    expect(text).not.toMatch(/NaN|0 days ago/);
+  },
+);

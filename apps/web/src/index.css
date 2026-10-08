@@ -188,3 +188,7 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* Map controls remain usable on phones, including Leaflet's own controls. */
+.leaflet-touch .leaflet-bar a, .leaflet-bar a { width: 44px; height: 44px; line-height: 44px; }
+.leaflet-container { font-family: inherit; }

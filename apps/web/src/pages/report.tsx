@@ -1,3 +1,4 @@
+import { CaptureTime, captureTimeValid } from "@/components/field/capture-time";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router";
 import { ShieldAlertIcon, SparklesIcon } from "lucide-react";
@@ -23,6 +24,7 @@ export function ReportPage() {
   const [photo, setPhoto] = useState<PreparedImage | null>(null);
   const [location, setLocation] = useState<Located | null>(recallLocation);
   const [note, setNote] = useState("");
+  const [capturedAt, setCapturedAt] = useState("");
   const [consent, setConsent] = useState(false);
   const [phase, setPhase] = useState<Phase>({ kind: "idle" });
   // One idempotency key per exact set of inputs: a retry after a dropped
@@ -31,8 +33,8 @@ export function ReportPage() {
   const sending = phase.kind === "sending";
 
   const signature = useMemo(
-    () => JSON.stringify([photo?.blob.size, photo?.width, location?.latitude, location?.longitude, location?.source, note.trim()]),
-    [photo, location, note],
+    () => JSON.stringify([photo?.blob.size, photo?.width, location?.latitude, location?.longitude, location?.source, note.trim(), capturedAt]),
+    [photo, location, note, capturedAt],
   );
 
   useEffect(() => {
@@ -42,7 +44,7 @@ export function ReportPage() {
     return () => window.removeEventListener("beforeunload", warn);
   }, [sending]);
 
-  const missing = [!photo && "a photo", !location && "a location", !consent && "consent to analysis"].filter(Boolean) as string[];
+  const missing = [!photo && "a photo", !location && "a location", !consent && "consent to analysis", !captureTimeValid(capturedAt) && "a valid capture time"].filter(Boolean) as string[];
 
   function submit(event: FormEvent) {
     event.preventDefault();
@@ -50,7 +52,7 @@ export function ReportPage() {
   }
 
   async function send() {
-    if (!photo || !location || !consent || sending) return;
+    if (!photo || !location || !consent || !captureTimeValid(capturedAt) || sending) return;
     if (attempt.current?.signature !== signature || attempt.current?.photo !== photo) attempt.current = { key: newKey("create"), signature, photo };
     const form = new FormData();
     form.set("image", photo.blob, "observation.jpg");
@@ -58,6 +60,7 @@ export function ReportPage() {
     form.set("longitude", String(location.longitude));
     form.set("locationSource", location.source);
     if (note.trim()) form.set("note", note.trim());
+    if (capturedAt) form.set("capturedAt", new Date(capturedAt).toISOString());
     setPhase({ kind: "sending", step: "uploading", fraction: 0 });
     try {
       const result = await api.createIssue(form, attempt.current.key, (step, fraction) =>
@@ -133,6 +136,8 @@ export function ReportPage() {
           <FieldDescription>One sentence is enough. Don't include names or personal details.</FieldDescription>
         </Field>
       </FieldGroup>
+
+      <CaptureTime value={capturedAt} onChange={setCapturedAt} disabled={sending} />
 
       <ProcessingConsent id="report-consent" checked={consent} onChange={setConsent} config={config} />
 

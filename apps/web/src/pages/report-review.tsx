@@ -193,7 +193,7 @@ export function ReportReviewPage() {
           <CardHeader>
             <CardTitle>Issue details</CardTitle>
             <CardDescription>
-              {corrected.category || corrected.severity ? "Already corrected by a person." : "Currently matches the model's suggestion."}
+              {corrected.category || corrected.severity ? "Category or severity differs from the original suggestion." : "Category and severity match the original suggestion. Title edits are recorded in the issue history."}
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-4">

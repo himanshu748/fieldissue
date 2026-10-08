@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { HeadphonesIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
@@ -6,13 +6,14 @@ import { api, fetchMedia } from "@/lib/api";
 import { ProviderUnavailable } from "./states";
 
 export function AudioBriefing({ issueId, available }: { issueId: string; available: boolean | undefined }) {
+  const generation = useRef(0);
   const [state, setState] = useState<{ url?: string; text?: string; error?: string; loading?: boolean }>({});
 
   useEffect(() => () => {
     if (state.url) URL.revokeObjectURL(state.url);
   }, [state.url]);
 
-  useEffect(() => setState({}), [issueId]);
+  useEffect(() => { setState({}); return () => { generation.current++; }; }, [issueId]);
 
   if (available === false)
     return (
@@ -23,12 +24,15 @@ export function AudioBriefing({ issueId, available }: { issueId: string; availab
     );
 
   async function generate() {
+    const request = ++generation.current;
     setState({ loading: true });
     try {
       const audio = await api.audio(issueId);
       const blob = await fetchMedia(audio.storageKey);
+      if (request !== generation.current) return;
       setState({ url: URL.createObjectURL(blob), text: audio.text });
     } catch (e) {
+      if (request !== generation.current) return;
       setState({ error: (e as Error).message });
     }
   }
@@ -36,7 +40,7 @@ export function AudioBriefing({ issueId, available }: { issueId: string; availab
   return (
     <div className="flex flex-col gap-3">
       {state.url ? (
-        <audio controls autoPlay src={state.url} className="w-full" aria-label="Issue briefing audio">
+        <audio controls autoPlay onError={() => setState({ error: "The audio could not be played. Try loading the briefing again." })} src={state.url} className="w-full" aria-label="Issue briefing audio">
           Your browser cannot play this audio.
         </audio>
       ) : (

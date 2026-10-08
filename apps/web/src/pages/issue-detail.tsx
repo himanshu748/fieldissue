@@ -316,6 +316,9 @@ export function IssueDetailPage() {
                 <p className="mt-1 font-mono text-xs break-all">{formatCoords(data)}</p>
               </div>
             </div>
+            {data.latitude === 0 && data.longitude === 0 ? (
+              <p role="note" className="border border-border bg-muted p-3 text-sm">This record is at 0°, 0° in the Atlantic Ocean. If these are test coordinates, the map will not show a neighbourhood. Use your actual location when reporting.</p>
+            ) : null}
             <NearbyMap
               markers={[{ id: data.publicId, latitude: data.latitude, longitude: data.longitude, title: data.title, status: data.status }]}
               className="h-56"
@@ -339,7 +342,7 @@ export function IssueDetailPage() {
 
           <section className="flex flex-col gap-3">
             <h2 className="eyebrow">Field briefing</h2>
-            <AudioBriefing issueId={data.publicId} available={config?.audio} />
+            <AudioBriefing key={`${data.publicId}:${data.updatedAt}`} issueId={data.publicId} available={config?.audio} />
           </section>
 
           <section aria-labelledby="history" className="flex flex-col gap-4">

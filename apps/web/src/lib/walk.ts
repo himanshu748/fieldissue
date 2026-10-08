@@ -20,8 +20,7 @@ export interface Walk {
   items: WalkItem[];
 }
 
-// localStorage, not sessionStorage: mobile browsers often discard the tab while
-// the camera is open, and a walker should not lose their queue mid-walk.
+// Keep precise walk locations within this tab session.
 const KEY = "fieldissue-walk-v1";
 const listeners = new Set<() => void>();
 let snapshot: Walk | null | undefined;
@@ -29,7 +28,9 @@ let snapshot: Walk | null | undefined;
 function read(): Walk | null {
   if (snapshot !== undefined) return snapshot;
   try {
-    const parsed = JSON.parse(localStorage.getItem(KEY) ?? "null") as Walk | null;
+    // Remove the previous persistent queue when upgrading an existing browser.
+    localStorage.removeItem(KEY);
+    const parsed = JSON.parse(sessionStorage.getItem(KEY) ?? "null") as Walk | null;
     snapshot = parsed?.version === 1 && Array.isArray(parsed.items) ? parsed : null;
   } catch {
     snapshot = null;
@@ -40,8 +41,8 @@ function read(): Walk | null {
 function write(next: Walk | null) {
   snapshot = next;
   try {
-    if (next) localStorage.setItem(KEY, JSON.stringify(next));
-    else localStorage.removeItem(KEY);
+    if (next) sessionStorage.setItem(KEY, JSON.stringify(next));
+    else sessionStorage.removeItem(KEY);
   } catch {
     // Storage blocked: the queue lives in memory for this page only.
   }
