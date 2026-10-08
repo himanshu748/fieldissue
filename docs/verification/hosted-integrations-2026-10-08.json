@@ -1,0 +1,40 @@
+{
+  "checkedAt": "2026-10-08T18:30:48.779Z",
+  "baseUrl": "https://fieldissue-demo.onrender.com",
+  "runtimeCommit": "fd60f4d52c9b2a518056baf6468620502659ef3b",
+  "dataStatus": "Synthetic public-photo control. Not genuine outdoor evidence.",
+  "backboard": {
+    "httpStatus": 200,
+    "observationId": "a7726dab-40a9-4e19-bf1f-6730b25a2479",
+    "results": [
+      {
+        "status": "complete",
+        "cached": false,
+        "model": "google/gemma-3-27b-it",
+        "latencyMs": 7784,
+        "inputTokens": 330,
+        "outputTokens": 111,
+        "costUsd": null
+      },
+      {
+        "status": "complete",
+        "cached": false,
+        "model": "qwen/qwen-2.5-72b-instruct",
+        "latencyMs": 9875,
+        "inputTokens": 345,
+        "outputTokens": 143,
+        "costUsd": null
+      }
+    ],
+    "changesIssueStatus": false
+  },
+  "tiger": {
+    "httpStatus": 200,
+    "query": "synthetic pothole",
+    "method": "hybrid_keyword_vector",
+    "model": "sentence-transformers/all-MiniLM-L6-v2",
+    "returnedPublicIds": [
+      "FI-000002"
+    ]
+  }
+}

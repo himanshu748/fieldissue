@@ -1,0 +1,72 @@
+{
+  "checkedAt": "2026-10-08T18:39:16.151Z",
+  "commit": "fb06bfe2c5ec0bc531737ed552976f60238453f7",
+  "renderDeploy": "dep-db3u2cvlot8c73c1ok9g",
+  "ci": "https://github.com/himanshu748/fieldissue/actions/runs/37824318536",
+  "tests": {
+    "api": 120,
+    "python": 74
+  },
+  "baseUrl": "https://fieldissue-demo.onrender.com",
+  "dataStatus": "Synthetic public CC0 photo and explicit test coordinates. Not a genuine outdoor revisit.",
+  "browser": {
+    "method": "Codex browser UI controls, not Playwright test-runner execution",
+    "viewportWidth": 390,
+    "publicId": "FI-000003",
+    "flow": [
+      "gallery upload",
+      "reload restores draft; consent resets",
+      "real Gemma analysis",
+      "human title correction",
+      "reload record",
+      "same-photo revisit with real analysis",
+      "exact-byte comparison guard",
+      "latest-photo resolution disabled",
+      "explicit manual resolution",
+      "reopen",
+      "history retained",
+      "share preview and clipboard",
+      "ElevenLabs briefing played to completion",
+      "Explore map zoom and marker-to-record navigation"
+    ],
+    "observationCount": 2,
+    "finalStatus": "OPEN",
+    "comparisonModel": "fieldissue-image-identity",
+    "audio": {
+      "durationSeconds": 7.941224,
+      "ended": true,
+      "error": null
+    },
+    "consoleErrorsObserved": 0,
+    "horizontalOverflowAt390": false
+  },
+  "performance": {
+    "checkedAt": "2026-10-08T18:33:19.726Z",
+    "kind": "20 sequential warm authenticated GET requests from one client; network included, not a production load benchmark",
+    "samplesMs": [
+      617,
+      395,
+      356,
+      299,
+      315,
+      320,
+      328,
+      420,
+      296,
+      326,
+      438,
+      327,
+      326,
+      326,
+      338,
+      339,
+      314,
+      307,
+      397,
+      603
+    ],
+    "p50Ms": 327,
+    "p95Ms": 603
+  },
+  "physicalDevice": "Android Chrome requested. User reached access gate; private code file supplied. Actual camera/GPS result pending."
+}
