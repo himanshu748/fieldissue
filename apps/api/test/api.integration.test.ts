@@ -41,13 +41,13 @@ describeDb("real PostgreSQL API integration", () => {
   let publicId: string;
   let firstId: string;
   let secondId: string;
-  const body = (note = "broken bench") => {
+  const body = (note = "broken bench", image = png) => {
     const f = new FormData();
     f.set("title", "Broken park bench");
     f.set("note", note);
     f.set("latitude", "12.9716");
     f.set("longitude", "77.5946");
-    f.set("image", new File([png], "bench.png", { type: "image/png" }));
+    f.set("image", new File([image], "bench.png", { type: "image/png" }));
     return f;
   };
   beforeAll(async () => {
@@ -143,7 +143,13 @@ describeDb("real PostgreSQL API integration", () => {
   it("appends a second observation and chronological event", async () => {
     const r = await app.request(`/v1/issues/${issueId}/observations`, {
       method: "POST",
-      body: body("repaired seat"),
+      body: body(
+        "repaired seat",
+        Buffer.from(
+          "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a9ZkAAAAASUVORK5CYII=",
+          "base64",
+        ),
+      ),
     });
     expect(r.status).toBe(201);
     secondId = (await r.json()).observation.id;

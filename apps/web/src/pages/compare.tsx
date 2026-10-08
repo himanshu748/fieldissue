@@ -281,7 +281,7 @@ export function ComparePage() {
               <h2 className="eyebrow text-muted-foreground">{identical ? "Status at comparison" : "AI recommendation"}</h2>
               <p className="mt-2 text-2xl font-bold">{label(diff.recommendedStatus)}</p>
               <p className="mt-2 text-sm text-muted-foreground">
-                A suggestion only. The issue is still <strong className="text-ink">{label(data.status)}</strong> until a person
+                {identical ? "No status change was inferred. The issue is still " : "A suggestion only. The issue is still "}<strong className="text-ink">{label(data.status)}</strong> until a person
                 decides.
               </p>
             </div>

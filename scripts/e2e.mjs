@@ -19,13 +19,13 @@ for (let i = 0; i < 80; i++) {
     await new Promise((r) => setTimeout(r, 250));
   }
 }
-function form(note) {
+function form(note, image = png) {
   const f = new FormData();
   f.set("title", "Broken park bench");
   f.set("note", note);
   f.set("latitude", "12.9716");
   f.set("longitude", "77.5946");
-  f.set("image", new File([png], "bench.png", { type: "image/png" }));
+  f.set("image", new File([image], "bench.png", { type: "image/png" }));
   return f;
 }
 const issue = await request("/v1/issues", {
@@ -41,7 +41,13 @@ assert.equal(retrieved.observations.length, 1);
 await new Promise((r) => setTimeout(r, 10));
 const second = await request(`/v1/issues/${issue.id}/observations`, {
   method: "POST",
-  body: form("wooden slat replaced; graffiti removed; clean surface"),
+  body: form(
+    "wooden slat replaced; graffiti removed; clean surface",
+    Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a9ZkAAAAASUVORK5CYII=",
+      "base64",
+    ),
+  ),
 });
 const diff = await request(`/v1/issues/${issue.id}/diff`, {
   method: "POST",

@@ -121,7 +121,7 @@ export function ResolvePage() {
             <FieldContent>
               <FieldLabel htmlFor="basis-latest">Verified from the latest observation</FieldLabel>
               <FieldDescription>
-                {hasRevisit
+                {repeatedPhoto ? "This file repeats an earlier photo. Add a fresh revisit for new visual evidence." : hasRevisit
                   ? "The photo above shows the problem is fixed. It is linked to this decision."
                   : "Only the original photo exists. Consider adding a revisit first."}
               </FieldDescription>
