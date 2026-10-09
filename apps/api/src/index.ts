@@ -183,7 +183,8 @@ const app = createApp({
       id: "render",
       name: "Render",
       status: process.env.RENDER ? "configured" : "local",
-      detail: "Primary PostgreSQL database and application hosting.",
+      detail:
+        "Application hosting for the Node API and private Python intelligence service.",
     },
     {
       id: "gemma",
@@ -238,7 +239,7 @@ const app = createApp({
       name: "Tiger Data",
       status: semantic ? "configured" : "unavailable",
       detail:
-        "Secondary hybrid keyword and open-model vector search; writes use a durable retry queue.",
+        "Hybrid keyword and open-model vector search; index writes use a durable retry queue. The hosted primary database also uses Tiger Data.",
     },
     {
       id: "entire",
