@@ -26,8 +26,8 @@ Built for the DEV **Hacktoberfest Open-Source AI Challenge, Week 1: Touch Grass*
 | --- | --- | --- |
 | Gemma (open-weight, vision) | Describes each observation photo and compares before/after photos as structured JSON | Live run verified 7 Oct ([report](docs/verification/gemma-google-live-2026-10-07.json)); the client speaks the OpenAI-compatible `chat/completions` API, so `GEMMA_BASE_URL` can point at any Gemma server |
 | Mastra | Typed create-issue and revisit workflows; database writes stay deterministic outside the model | In the API |
-| Tinker (Qwen3-8B fine-tune) | Note-to-JSON training and base-vs-tuned evaluation on 54 synthetic notes | Real run: severity 14/18 → 16/18 on the held-out split ([evaluation](docs/verification/tinker-evaluation-2026-10-07.json)); a tiny demo, separate from the app's vision path |
-| TabPFN | Revisit prediction from tabular issue history | Adapter built; needs real labelled revisit data before it can run |
+| Tinker (Qwen3-8B fine-tune) | Live, opt-in structured interpretation of a report owner’s note | Trained on 36 synthetic notes; severity 13/18 → 17/18 on 18 held-out notes ([evaluation](docs/verification/tinker-evaluation-2026-10-09.json)). Saved results and bounded credit use; separate from vision |
+| TabPFN | Live synthetic revisit scenario tester through the free Prior Labs API | 96 invented training rows; held-out 16/24 versus 17/24 majority baseline. Demonstrates integration, not real-world accuracy. Real-history ranking remains gated on genuine labels |
 
 Other integrations: SerpApi place context, Sentry error/evaluation traces, real ElevenLabs audio briefings, Backboard two-model comparison, and Tiger Data semantic search. Provider-specific proof and remaining acceptance gaps are recorded in the [V2 PRD audit](docs/verification/prd-audit-2026-10-08.md). Render PostgreSQL remains the primary database; Tiger is a certificate-verified secondary index.
 
@@ -55,7 +55,7 @@ No Docker? See [Native development](#native-development-and-docker-free-verifica
 
 ## Backend reference
 
-A backend for geotagged field observations, chronological evidence, explicit issue resolution, and before/after real-world diffs. This repository contains the TypeScript API, private Python intelligence service, database migrations, local tooling, and an opt-in training/evaluation demonstration. The V2 frontend in `apps/web` uses React, Vite, Tailwind, shadcn/ui, Motion and Leaflet. The API serves its build at `/` with distinct workspace routes under `/app`; the judge demo supports public guest access with browser-owned reports and a private operator token. These are not personal accounts. See [V2 architecture](docs/v2-implementation.md) and [DEMO.md](DEMO.md). A validated Render deployment scaffold and its remaining gates are documented in [docs/render-deployment.md](docs/render-deployment.md).
+A backend for geotagged field observations, chronological evidence, explicit issue resolution, and before/after real-world diffs. This repository contains the TypeScript API, private Python intelligence service, database migrations, local tooling, and live opt-in Tinker note interpretation plus a synthetic TabPFN scenario tester. The V2 frontend in `apps/web` uses React, Vite, Tailwind, shadcn/ui, Motion and Leaflet. The API serves its build at `/` with distinct workspace routes under `/app`; the judge demo supports public guest access with browser-owned reports and a private operator token. These are not personal accounts. See [V2 architecture](docs/v2-implementation.md) and [DEMO.md](DEMO.md). A validated Render deployment scaffold and its remaining gates are documented in [docs/render-deployment.md](docs/render-deployment.md).
 
 ### Architecture
 
@@ -69,12 +69,12 @@ Client → TypeScript / Hono API → PostgreSQL 17 + PostGIS + pgvector
                           └── local Prior Labs TabPFN classifier
 
 Optional API integrations: SerpApi place context, ElevenLabs audio, Sentry
-Separate opt-in demonstration: Tinker note-to-JSON training and evaluation
+Live opt-in API tools: Tinker trained note interpretation, TabPFN synthetic scenarios
 ```
 
 - Issues have UUIDs plus stable human-readable `FI-000001` identifiers
 - Observations keep image bytes, coordinates, capture time, notes, and structured model provenance
-- PostGIS powers map bounding boxes and proximity queries; pgvector is installed and migrated, but this version does not implement embeddings or semantic search
+- PostGIS powers map bounding boxes and proximity queries; a separate Tiger Data pgvector index serves semantic search using local embeddings
 - Transactional writes preserve issue/observation/events together. Keyset pagination and idempotency keys are supported
 - A comparison records removed, added, and unchanged conditions. A model's recommended status never resolves an issue by itself
 - Resolution is an explicit API operation recorded in the timeline
@@ -190,7 +190,7 @@ TEST_DATABASE_URL=postgresql://your-user:your-password@127.0.0.1:5432/fieldissue
 
 The test database must already exist, and its test user must be allowed to create PostGIS/vector extensions. Tests apply the schema. Providers are dependency-injected test fixtures or local HTTP doubles; these tests check contracts, boundaries, failure handling, and transactional behavior, not real-model quality.
 
-Real PostgreSQL/PostGIS/vector checks and an HTTP vertical slice have been run in this workspace; records are in [docs/verification](docs/verification/). The demo seed was separately checked on a fresh real database: seven issues, eight observations, one diff, fourteen events, idempotent reapplication, and all eight valid PNGs served by the real `/media` route. **Docker is not installed in the implementation workspace, so the Docker images and Compose startup have not been executed here.** CI subsequently verified the Docker/PostGIS/HTTP and Render container lifecycle boundaries. Live Google Gemma, free SerpApi, sanitized Sentry delivery, and an MLH-credit-funded Tinker training/evaluation run are now recorded in [the zero-cash stack ledger](docs/zero-cost-stack.md). The [October 8 repair and hosted verification](docs/verification/product-repair-2026-10-08.md) adds a real Render/Gemma deployment with bounded PostgreSQL media persistence. The subsequent V2 checks verified Tiger TLS/semantic retrieval, Backboard comparisons, and hosted ElevenLabs audio with caching. A separate S3 bucket and genuine TabPFN data/runtime are not configured; durable PostgreSQL media and the core workflow operate without them. See the [current PRD audit](docs/verification/prd-audit-2026-10-08.md) for remaining product acceptance gaps.
+Real PostgreSQL/PostGIS/vector checks and an HTTP vertical slice have been run in this workspace; records are in [docs/verification](docs/verification/). The demo seed was separately checked on a fresh real database: seven issues, eight observations, one diff, fourteen events, idempotent reapplication, and all eight valid PNGs served by the real `/media` route. **Docker is not installed in the implementation workspace, so the Docker images and Compose startup have not been executed here.** CI subsequently verified the Docker/PostGIS/HTTP and Render container lifecycle boundaries. Live Google Gemma, free SerpApi, sanitized Sentry delivery, and an MLH-credit-funded Tinker training/evaluation run are now recorded in [the zero-cash stack ledger](docs/zero-cost-stack.md). The [October 8 repair and hosted verification](docs/verification/product-repair-2026-10-08.md) adds a real Render/Gemma deployment with bounded PostgreSQL media persistence. The subsequent V2 checks verified Tiger TLS/semantic retrieval, Backboard comparisons, and hosted ElevenLabs audio with caching. A separate S3 bucket and genuine labeled revisit history are not configured; durable PostgreSQL media and the core workflow operate without them. The free TabPFN API now powers the explicitly synthetic scenario tester, and Tinker serves trained note interpretations; see [October 9 live models](docs/verification/live-models-2026-10-09.md). See the [current PRD audit](docs/verification/prd-audit-2026-10-08.md) for remaining product acceptance gaps.
 
 ### Demo data
 

@@ -27,3 +27,15 @@ This change adds fixed safe error kinds (such as TypeError and PostgreSQL SQLSTA
 ## Verification
 
 Actual Claude Opus source review ran with tools disabled; its useful findings were addressed: preflight before budget reservation, expiry/provenance-aware availability, separate atomic daily/guest/lifetime budgets, chat-control-token rejection, explicit synthetic acknowledgment and nonduplicated diagnostics. Its schema/Backboard-filter/consent-default concerns were checked against the actual migration and queries and were not defects. Local build, typecheck/formatting and unit checks run before deployment. Real provider smoke responses and real database cache/allowance/guest-ownership tests accompany the code. Hosted release evidence is recorded after deployment, separately from these pre-deployment results.
+
+### Hosted acceptance
+
+Runtime commit `059523ba2ccf896f3bf8f4d7a4a404b7fe61ef4d` passed [CI 37887679416](https://github.com/himanshu748/fieldissue/actions/runs/37887679416): 153 API tests, 74 Python tests, types/formatting, PostGIS/pgvector, development and compiled HTTP workflows, and Render 512 MiB container isolation/embedding/lifecycle checks. Render deploy `dep-db47i0k9v7es73ac910g` became live at 2026-10-09T05:19:17Z.
+
+The public browser, without an operator token, ran Tinker on its owned FI-000005 synthetic test report. The note contained no specific civic condition, so the actual trained model returned OTHER / LOW / unknown / unspecified, with no invented evidence, in 6.7 seconds. A second request and the issue-detail action both displayed the saved result. The issue remained OPEN / INFRASTRUCTURE / MEDIUM.
+
+The deployed TabPFN tester returned 49.5% in 7.6 seconds for the default invented scenario. The repeat displayed Saved prediction. Prior Labs usage rose from 20,000 to 30,000 free tokens, with exactly one additional prediction and no provider-reported error. The account remained on 5M daily / 20M monthly free limits. These are integration results, not a claim of useful real-world prediction.
+
+Both photos and four map tile images loaded on FI-000005. The existing ElevenLabs briefing loaded with duration 7.941224 seconds, media readyState 4 and no media error. The public issue retained its owner-only revisit and resolution controls. Browser error logs were empty. `/health` and `/ready` returned 200; `/app-config` enabled public access and Tinker, with mock mode off. The serving-checkpoint evaluation and reviewed Entire repository link were present.
+
+The fresh Sentry readback showed no new inference failure. An unauthenticated verification probe to the unsupported `/v1/app-config` path produced an expected OWNER_REQUIRED event, now correctly classified as Info with HTTP 403, safe error kind and the deployed release SHA; the correct public endpoint is `/app-config`. Older unexplained errors remain unproven rather than marked fixed.

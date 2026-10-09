@@ -85,4 +85,4 @@ on the real deployment. Existing S3 abstraction is retained.
 
 ## V2 acceptance update
 
-See the [PRD audit](verification/prd-audit-2026-10-08.md) for the current release and evidence boundaries. V2 CI passes 107 API and 73 Python tests. Hosted synthetic control FI-000002 is explicitly labeled as a public-photo integration test, not a field visit. Actual ElevenLabs audio generated and repeated requests reused its saved media. Entire V2 checkpoint metadata is recorded in [the provenance note](verification/entire-v2-2026-10-08.md); the full session remains private.
+See the [PRD audit](verification/prd-audit-2026-10-08.md) for the October 8 release and evidence boundaries. That V2 CI run passed 107 API and 73 Python tests; later release checks are recorded in their dated verification notes. Hosted synthetic control FI-000002 is explicitly labeled as a public-photo integration test, not a field visit. Actual ElevenLabs audio generated and repeated requests reused its saved media. Entire V2 checkpoint metadata is recorded in [the provenance note](verification/entire-v2-2026-10-08.md); the full session remains private.
