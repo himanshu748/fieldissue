@@ -52,7 +52,7 @@ it("uses an allowlisted model with memory and web search off and validates evide
   );
   await expect(
     wrong.interpret(comparisonModels[0], "A broken bench"),
-  ).rejects.toMatchObject({ code: "INVALID_MODEL_OUTPUT" });
+  ).rejects.toMatchObject({ code: "INVALID_PROVIDER_RESPONSE" });
 });
 it("requires access, explicit consent and two distinct allowed models before any provider call", async () => {
   const compare = vi.fn(async () => ({ results: [] }));
@@ -165,4 +165,58 @@ it("does not send the retry if its provider allowance is exhausted", async () =>
     { status: "failed", error: "PROVIDER_LIMIT" },
   ]);
   expect(interpret).toHaveBeenCalledTimes(1);
+});
+
+it("preserves quoted multiline evidence and rejects evidence outside the sent input", async () => {
+  const phrase = 'Sign says "closed"\nUse alternate path';
+  const provider = new BackboardProvider("test", async () =>
+    response({ content: JSON.stringify({ ...output, evidence: [phrase] }) }),
+  );
+  await expect(
+    provider.interpret(comparisonModels[0], phrase),
+  ).resolves.toMatchObject({ result: { evidence: [phrase] } });
+  await expect(
+    provider.interpret(comparisonModels[0], "x".repeat(4000) + phrase),
+  ).rejects.toMatchObject({ code: "INVALID_MODEL_OUTPUT" });
+  const interpret = vi
+    .fn()
+    .mockResolvedValue({ model: comparisonModels[0], result: output });
+  const { service, query } = comparisonFixture(interpret);
+  query.mockImplementationOnce(async () => ({
+    rows: [{ note: phrase, ai_analysis: { evidence: [phrase] } }],
+  }));
+  await service.compare("observation", [comparisonModels[0]]);
+  expect(interpret.mock.calls[0][1]).toContain(phrase);
+});
+it("does not retry unexpected provider identity or transport failures", async () => {
+  for (const failure of [
+    new AppError("INVALID_PROVIDER_RESPONSE", 502, "identity"),
+    new Error("network"),
+  ]) {
+    const interpret = vi.fn().mockRejectedValue(failure);
+    const { service, consume } = comparisonFixture(interpret);
+    const result = await service.compare("observation", [comparisonModels[0]]);
+    expect(result.results[0].status).toBe("failed");
+    expect(interpret).toHaveBeenCalledTimes(1);
+    expect(consume).toHaveBeenCalledTimes(1);
+  }
+});
+it("does not spend quota after its lease is lost", async () => {
+  const interpret = vi.fn();
+  const { service, query, consume } = comparisonFixture(interpret);
+  query.mockImplementation(async (sql) => {
+    if (sql.startsWith("SELECT note"))
+      return { rows: [{ note: "test", ai_analysis: {} }], rowCount: 1 };
+    if (sql.startsWith("SELECT *")) return { rows: [], rowCount: 0 };
+    if (sql.startsWith("UPDATE model_comparisons SET updated_at"))
+      return { rows: [], rowCount: 0 };
+    return { rows: [], rowCount: 1 };
+  });
+  const result = await service.compare("observation", [comparisonModels[0]]);
+  expect(result.results[0]).toMatchObject({
+    status: "failed",
+    error: "COMPARISON_IN_PROGRESS",
+  });
+  expect(interpret).not.toHaveBeenCalled();
+  expect(consume).not.toHaveBeenCalled();
 });

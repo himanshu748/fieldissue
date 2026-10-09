@@ -126,7 +126,7 @@ export function BackboardPanel({ integration, observationId }: { integration?: I
                   <p role="status" className="text-sm text-muted-foreground">
                     {r.status === "pending"
                       ? "Still running in another request. Try again shortly."
-                      : `This model failed independently: ${r.error ?? "unknown error"}. The other result is unaffected.`}
+                      : "This model could not return a verified answer. Wait a minute before trying again. The other result is unaffected."}
                   </p>
                 )}
               </div>
