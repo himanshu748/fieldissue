@@ -30,9 +30,14 @@ export class IssueService {
       note,
     };
   }
-  async create(input: CreateIssueInput, media: Media, key?: string) {
+  async create(
+    input: CreateIssueInput,
+    media: Media,
+    key?: string,
+    guestOwner?: string,
+  ) {
     const hash = createHash("sha256")
-      .update(JSON.stringify(input))
+      .update(JSON.stringify(guestOwner ? { input, guestOwner } : input))
       .update(media.mime)
       .update(media.bytes)
       .digest("hex");
@@ -51,7 +56,13 @@ export class IssueService {
             await this.consume(1);
             return this.intelligence.analyze(this.evidence(media, input.note));
           },
-          nearby: () => this.repository.nearby(input.latitude, input.longitude),
+          nearby: () =>
+            this.repository.nearby(
+              input.latitude,
+              input.longitude,
+              this.repository.pool,
+              !!guestOwner,
+            ),
           persist: async (_input, analysis) => {
             const stored = await this.storage.put(media);
             cleanupKey = stored.storageKey;
@@ -62,6 +73,8 @@ export class IssueService {
               stored,
               analysis,
               key ? { key, hash } : undefined,
+              undefined,
+              guestOwner,
             );
             replayed = created.replayed;
             if (replayed) await this.storage.delete(stored.storageKey);
@@ -90,7 +103,12 @@ export class IssueService {
         ...saved,
         placeContext: placeContext ?? saved.placeContext,
         nearbyIssues: (
-          await this.repository.nearby(input.latitude, input.longitude)
+          await this.repository.nearby(
+            input.latitude,
+            input.longitude,
+            this.repository.pool,
+            !!guestOwner,
+          )
         ).filter((nearby) => nearby.id !== issueId),
         replayed,
         revisitMetadata,

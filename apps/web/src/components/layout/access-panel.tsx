@@ -12,7 +12,7 @@ export function AccessPanel() {
 
   function submit(event: FormEvent) {
     event.preventDefault();
-    if (value.trim()) setToken(value);
+    if (value.trim()) { setToken(value); window.location.reload(); }
     setValue("");
   }
 

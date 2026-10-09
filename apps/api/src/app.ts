@@ -1,3 +1,11 @@
+import { getCookie, setCookie } from "hono/cookie";
+import {
+  guestCookie,
+  guestLifetime,
+  signGuest,
+  verifyGuest,
+  guestAllowance,
+} from "./guest-access.js";
 import { publicSummary } from "./public-summary.js";
 import { readFile } from "node:fs/promises";
 import { comparisonModels, type ModelComparisonService } from "./backboard.js";
@@ -9,11 +17,11 @@ import {
   landingPageScript,
   landingPageCsp,
 } from "./landing-page.js";
-import type { RequestGuard } from "./request-guard.js";
+import { RequestGuard } from "./request-guard.js";
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { secureHeaders } from "hono/secure-headers";
-import { randomUUID, timingSafeEqual } from "node:crypto";
+import { createHash, randomUUID, timingSafeEqual } from "node:crypto";
 import { z, ZodError } from "zod";
 import pino from "pino";
 import {
@@ -66,9 +74,13 @@ interface Dependencies {
   storage: StorageProvider;
   maxUploadBytes: number;
   accessToken?: string;
+  publicAccess?: boolean;
+  publicOrigin?: string;
+  secureGuestCookie?: boolean;
   guard?: RequestGuard;
   capabilities?: {
     accessRequired: boolean;
+    publicAccess?: boolean;
     storage: string;
     retentionNotice: string;
     audio: boolean;
@@ -83,8 +95,16 @@ interface Dependencies {
   integrations?: { id: string; name: string; status: string; detail: string }[];
 }
 export function createApp(deps: Dependencies) {
+  if (deps.publicAccess && !deps.accessToken)
+    throw new Error("Public access requires an operator secret");
   const web = deps.webDirectory ? loadWebBundle(deps.webDirectory) : undefined;
-  const app = new Hono<{ Variables: { requestId: string } }>();
+  const app = new Hono<{
+    Variables: {
+      requestId: string;
+      admin: boolean;
+      guestId: string | undefined;
+    };
+  }>();
   app.use(
     "*",
     secureHeaders({ referrerPolicy: "strict-origin-when-cross-origin" }),
@@ -125,8 +145,20 @@ export function createApp(deps: Dependencies) {
   // Deployment gateway: protect reports, media and inference before parsing bodies.
   // This is shared demo access, not end-user identity or tenant authorization.
   app.use("*", async (c, next) => {
+    const expectedAuth = Buffer.from(`Bearer ${deps.accessToken}`);
+    const suppliedAuth = Buffer.from(c.req.header("Authorization") ?? "");
+    const admin =
+      !deps.accessToken ||
+      (expectedAuth.length === suppliedAuth.length &&
+        timingSafeEqual(expectedAuth, suppliedAuth));
+    c.set("admin", admin);
     if (
       deps.accessToken &&
+      !(
+        deps.publicAccess &&
+        !c.req.header("Authorization") &&
+        (c.req.path.startsWith("/v1/") || c.req.path.startsWith("/media/"))
+      ) &&
       !(
         (["GET", "HEAD"].includes(c.req.method) &&
           [
@@ -188,6 +220,152 @@ export function createApp(deps: Dependencies) {
       release?.();
     }
   });
+  const publicReads = new RequestGuard(async () => {}, 300, 12);
+  app.use("*", async (c, next) => {
+    if (
+      !deps.publicAccess ||
+      c.get("admin") ||
+      !["GET", "HEAD"].includes(c.req.method) ||
+      !(c.req.path.startsWith("/v1/") || c.req.path.startsWith("/media/"))
+    )
+      return next();
+    const release = await publicReads.enter(0);
+    try {
+      await next();
+    } finally {
+      release();
+    }
+  });
+  app.use("*", async (c, next) => {
+    if (!deps.publicAccess || c.get("admin")) return next();
+    if (!deps.accessToken)
+      throw new Error("Public access requires an operator secret");
+    let guestId = verifyGuest(deps.accessToken, getCookie(c, guestCookie));
+    if (c.req.path === "/app-config" && c.req.method === "GET" && !guestId) {
+      const cookie = signGuest(deps.accessToken);
+      guestId = verifyGuest(deps.accessToken, cookie);
+      setCookie(c, guestCookie, cookie, {
+        httpOnly: true,
+        secure: !!deps.secureGuestCookie,
+        sameSite: "Strict",
+        path: "/",
+        maxAge: guestLifetime,
+      });
+    }
+    c.set("guestId", guestId);
+    const path = c.req.path;
+    if (!path.startsWith("/v1/") && !path.startsWith("/media/")) return next();
+    c.header("Cache-Control", "private, no-store");
+    const write = !["GET", "HEAD"].includes(c.req.method);
+    const forbidden = () => {
+      throw new AppError(
+        "OWNER_REQUIRED",
+        403,
+        "Only the reporting browser or an operator can change this report's status or details.",
+      );
+    };
+    if (write) {
+      if (!guestId)
+        throw new AppError(
+          "GUEST_SESSION_REQUIRED",
+          403,
+          "Open the app first to start a guest session. Enable first-party cookies to report.",
+        );
+      if (
+        c.req.header("Origin") !==
+        (deps.publicOrigin ?? new URL(c.req.url).origin)
+      )
+        throw new AppError(
+          "INVALID_ORIGIN",
+          403,
+          "Submit from this app's own page.",
+        );
+    }
+    const match = path.match(/^\/v1\/issues\/([^/]+)(?:\/(.*))?$/);
+    if (match && match[1] !== "map") {
+      const issue = await deps.repository.issue(
+        deps.repository.pool,
+        issueId(match[1]!),
+      );
+      if (!issue.is_public)
+        throw new AppError("NOT_FOUND", 404, "Issue not found");
+      const suffix = match[2] ?? "";
+      if (
+        write &&
+        (c.req.method === "PATCH" ||
+          ["resolve", "revisit-review", "revisit-prediction"].includes(
+            suffix,
+          )) &&
+        issue.guest_owner !== guestId
+      )
+        forbidden();
+      if (
+        write &&
+        !(c.req.method === "PATCH" && !suffix) &&
+        !(
+          c.req.method === "POST" &&
+          ["observations", "diff", "resolve", "audio-summary"].includes(suffix)
+        )
+      )
+        forbidden();
+    } else if (path.startsWith("/media/")) {
+      if (write) forbidden();
+      const key = decodeURIComponent(path.slice(7));
+      const visible = await deps.repository.pool.query(
+        "SELECT 1 FROM issues i WHERE i.is_public AND (EXISTS(SELECT 1 FROM observations o WHERE o.issue_id=i.id AND o.storage_key=$1) OR EXISTS(SELECT 1 FROM audio_summaries a WHERE a.issue_id=i.id AND a.storage_key=$1)) LIMIT 1",
+        [key],
+      );
+      if (!visible.rowCount)
+        throw new AppError("NOT_FOUND", 404, "Media not found");
+    } else {
+      const allowed = write
+        ? c.req.method === "POST" &&
+          ["/v1/issues", "/v1/model-lab/compare"].includes(path)
+        : [
+            "/v1/issues",
+            "/v1/issues/map",
+            "/v1/walks/suggestions",
+            "/v1/search/semantic",
+            "/v1/model-lab/evaluations",
+            "/v1/integrations/status",
+          ].includes(path);
+      if (!allowed) forbidden();
+    }
+    if (write)
+      await guestAllowance(
+        deps.repository.pool,
+        guestId!,
+        path === "/v1/issues" || path.endsWith("/observations"),
+      );
+    await next();
+    if (c.res.headers.get("Content-Type")?.includes("application/json")) {
+      const clean = (value: any): any => {
+        if (Array.isArray(value)) return value.map(clean);
+        if (!value || typeof value !== "object") return value;
+        const out: Record<string, unknown> = {};
+        for (const [key, item] of Object.entries(value))
+          if (!["guestOwner", "reporterId"].includes(key))
+            out[key] = clean(item);
+        if (value.publicId && value.status)
+          out.permissions = {
+            manage: !!guestId && value.guestOwner === guestId,
+          };
+        return out;
+      };
+      const body = clean(await c.res.json());
+      c.res.headers.delete("Content-Length");
+      c.res = new Response(JSON.stringify(body), {
+        status: c.res.status,
+        headers: c.res.headers,
+      });
+    }
+  });
+  const isGuest = (c: { get: (key: "admin") => boolean }) =>
+    !!deps.publicAccess && !c.get("admin");
+  const scopedKey = (key: string | undefined, guestId: string | undefined) =>
+    key && guestId
+      ? createHash("sha256").update(`guest:${guestId}:${key}`).digest("hex")
+      : key;
   app.use(
     "*",
     bodyLimit({
@@ -369,17 +547,18 @@ export function createApp(deps: Dependencies) {
       c.header("Cache-Control", "no-cache");
       return c.html(demoPageHtml);
     });
-  app.get("/app-config", (c) =>
-    c.json(
-      deps.capabilities ?? {
-        accessRequired: !!deps.accessToken,
-        storage: "unknown",
-        retentionNotice: "",
-        audio: !!deps.audio,
-        mock: false,
-      },
-    ),
-  );
+  app.get("/app-config", (c) => {
+    c.header("Cache-Control", "private, no-store");
+    return c.json({
+      storage: "unknown",
+      retentionNotice: "",
+      audio: !!deps.audio,
+      mock: false,
+      ...deps.capabilities,
+      publicAccess: !!deps.publicAccess,
+      accessRequired: !!deps.accessToken && !deps.publicAccess,
+    });
+  });
   app.get("/assets/:name", async (c) => {
     const asset = assets[c.req.param("name")];
     if (!asset || !Object.hasOwn(assets, c.req.param("name")))
@@ -435,7 +614,7 @@ export function createApp(deps: Dependencies) {
         "Semantic search is not configured.",
       );
     await deps.consumeSearch?.();
-    return c.json(await deps.semantic.search(q));
+    return c.json(await deps.semantic.search({ ...q, publicOnly: isGuest(c) }));
   });
   app.post("/v1/model-lab/compare", async (c) => {
     const input = z
@@ -449,6 +628,18 @@ export function createApp(deps: Dependencies) {
       })
       .strict()
       .parse(await json(c.req.raw));
+    if (isGuest(c)) {
+      const visible = await deps.repository.pool.query(
+        "SELECT 1 FROM observations o JOIN issues i ON i.id=o.issue_id WHERE o.id=$1 AND i.is_public AND i.guest_owner=$2",
+        [input.observationId, c.get("guestId")],
+      );
+      if (!visible.rowCount)
+        throw new AppError(
+          "OWNER_REQUIRED",
+          403,
+          "Compare models on a report created in this browser.",
+        );
+    }
     if (!deps.modelComparison)
       throw new AppError(
         "BACKBOARD_UNAVAILABLE",
@@ -470,6 +661,14 @@ export function createApp(deps: Dependencies) {
   });
   app.post("/v1/issues", async (c) => {
     const { media, fields } = await upload(c.req.raw);
+    if (isGuest(c) && fields.publicConsent !== "true")
+      throw new AppError(
+        "PUBLIC_CONSENT_REQUIRED",
+        400,
+        "Confirm that this photo, note and location may be published.",
+      );
+    delete fields.publicConsent;
+    if (isGuest(c)) delete fields.reporterId;
     const input = createIssueSchema.parse(fields);
     const key = c.req.header("Idempotency-Key");
     if (key && !/^[a-zA-Z0-9:_-]{1,128}$/.test(key))
@@ -478,7 +677,12 @@ export function createApp(deps: Dependencies) {
         400,
         "Invalid idempotency key",
       );
-    const result = await deps.service.create(input, media, key);
+    const result = await deps.service.create(
+      input,
+      media,
+      scopedKey(key, c.get("guestId")),
+      isGuest(c) ? c.get("guestId") : undefined,
+    );
     return c.json(result, result.replayed ? 200 : 201);
   });
   app.get("/v1/walks/suggestions", async (c) => {
@@ -497,6 +701,7 @@ export function createApp(deps: Dependencies) {
         q.longitude,
         q.radius_meters,
         q.limit,
+        isGuest(c),
       ),
     );
   });
@@ -514,6 +719,7 @@ export function createApp(deps: Dependencies) {
     }
     return c.json(
       await deps.repository.list({
+        publicOnly: isGuest(c),
         search: q.search,
         status: q.status,
         category: q.category,
@@ -545,7 +751,7 @@ export function createApp(deps: Dependencies) {
       .parse(q.bbox.split(",").map(Number));
     if (q.bbox.split(",").some((x) => !x.trim()))
       throw new AppError("INVALID_BBOX", 400, "Invalid bounding box");
-    return c.json(await deps.repository.map(bbox, q.limit));
+    return c.json(await deps.repository.map(bbox, q.limit, isGuest(c)));
   });
   app.get("/v1/issues/:id", async (c) =>
     c.json(await deps.repository.get(issueId(c.req.param("id")))),
@@ -561,6 +767,13 @@ export function createApp(deps: Dependencies) {
   app.post("/v1/issues/:id/observations", async (c) => {
     const id = issueId(c.req.param("id"));
     const { media, fields } = await upload(c.req.raw);
+    if (isGuest(c) && fields.publicConsent !== "true")
+      throw new AppError(
+        "PUBLIC_CONSENT_REQUIRED",
+        400,
+        "Confirm that this revisit may be published.",
+      );
+    delete fields.publicConsent;
     delete fields.title;
     const issue = await deps.repository.get(id);
     if ((fields.latitude === undefined) !== (fields.longitude === undefined))
@@ -585,7 +798,12 @@ export function createApp(deps: Dependencies) {
         400,
         "Invalid idempotency key",
       );
-    const result = await deps.service.addObservation(id, input, media, key);
+    const result = await deps.service.addObservation(
+      id,
+      input,
+      media,
+      scopedKey(key, c.get("guestId")),
+    );
     return c.json(result, result.replayed ? 200 : 201);
   });
   app.get("/v1/issues/:id/observations", async (c) =>

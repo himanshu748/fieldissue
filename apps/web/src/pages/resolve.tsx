@@ -49,6 +49,7 @@ export function ResolvePage() {
     );
 
   const data = issue.data;
+  if (data.permissions?.manage === false) return <EmptyState icon={<InfoIcon />} title="Resolution belongs to the reporter" description="Open the browser that created this report to resolve or reopen it. You can still contribute a fresh revisit photo from this browser."><Button asChild><Link to={`/app/issues/${data.publicId}/revisit`}>Add a revisit</Link></Button></EmptyState>;
   const latest = data.observations.at(-1);
   const latestDiff = diffs.data?.items.filter((d) => d.afterObservationId === latest?.id).at(-1);
   const repeatedPhoto = latestDiff?.model === "fieldissue-image-identity";
@@ -157,7 +158,7 @@ export function ResolvePage() {
         <InfoIcon />
         <AlertTitle>Human-confirmed, not identity-verified</AlertTitle>
         <AlertDescription>
-          This demo uses shared access, so the record notes that a person confirmed the resolution but not who.
+          The record confirms a human decision, not a verified identity. Guest controls belong to the browser that created the report.
         </AlertDescription>
       </Alert>
 

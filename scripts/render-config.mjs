@@ -12,6 +12,8 @@
 export function renderEnvironment(source) {
   const env = { ...source };
   const demo = env.FIELDISSUE_DEMO_PROFILE === "true";
+  // Judge demos are public with signed guest ownership; the operator token stays private.
+  env.PUBLIC_GUEST_ACCESS ??= demo ? "true" : "false";
   const required = [
     "API_ACCESS_TOKEN",
     "INTERNAL_SERVICE_TOKEN",

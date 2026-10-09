@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { NavLink, Outlet } from "react-router";
 import { CameraIcon, CompassIcon, FlaskConicalIcon, FootprintsIcon, LockOpenIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -6,7 +7,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { ErrorNotice } from "@/components/field/states";
 import { Brand } from "./brand";
 import { AccessPanel } from "./access-panel";
-import { clearToken, useAccess } from "@/lib/access";
+import { clearToken, markLocked, useAccess } from "@/lib/access";
 import { useAppConfig } from "@/hooks/use-app-config";
 import { useWalk } from "@/lib/walk";
 import { cn } from "@/lib/utils";
@@ -21,9 +22,10 @@ const nav = [
 export function AppShell() {
   const { config, error } = useAppConfig();
   const { hasToken, isLocked } = useAccess();
+  const [operatorAccess, setOperatorAccess] = useState(false);
   const walk = useWalk();
   const pendingWalk = walk?.items.filter((i) => i.state === "pending").length ?? 0;
-  const needsUnlock = !!config && ((config.accessRequired && !hasToken) || isLocked);
+  const needsUnlock = !!config && ((config.accessRequired && !hasToken) || isLocked || (operatorAccess && !hasToken));
 
   return (
     <div className="flex min-h-dvh flex-col bg-background">
@@ -53,13 +55,13 @@ export function AppShell() {
               </NavLink>
             ))}
           </nav>
-          {config?.accessRequired && hasToken && !isLocked ? (
-            <Button variant="ghost" size="sm" onClick={clearToken} title="Forget the access token in this tab">
+          {hasToken && !isLocked ? (
+            <Button variant="ghost" size="sm" onClick={() => { clearToken(); setOperatorAccess(false); window.location.reload(); }} title="Forget the access token in this tab">
               <LockOpenIcon data-icon="inline-start" />
               <span className="hidden sm:inline">Lock</span>
             </Button>
           ) : (
-            <span className="hidden w-16 md:block" />
+            config?.publicAccess ? <Button variant="ghost" size="sm" onClick={() => { if (needsUnlock) { clearToken(); markLocked(false); setOperatorAccess(false); window.location.reload(); } else setOperatorAccess(true); }}>{needsUnlock ? "Continue as guest" : "Operator access"}</Button> : <span className="hidden w-16 md:block" />
           )}
         </div>
         {config?.mock ? (
@@ -80,7 +82,10 @@ export function AppShell() {
         ) : needsUnlock ? (
           <AccessPanel />
         ) : (
-          <Outlet />
+          <>
+            {config.publicAccess && !hasToken ? <p className="mb-6 border-b border-border pb-3 text-sm text-muted-foreground">Public demo · no account needed. You can resolve and reopen reports created in this browser. Keep this browser’s cookies to retain those controls for 30 days.</p> : null}
+            <Outlet />
+          </>
         )}
       </main>
 

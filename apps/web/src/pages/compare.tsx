@@ -312,7 +312,7 @@ export function ComparePage() {
         <Button variant="outline" size="lg" onClick={() => navigate(`/app/issues/${data.publicId}`)}>
           {closed ? "Back to issue" : "Keep open"}
         </Button>
-        {!closed ? (
+        {!closed && issue.data?.permissions?.manage !== false ? (
           <Button asChild size="lg">
             <Link to={`/app/issues/${data.publicId}/resolve`}>
               <CheckCircle2Icon data-icon="inline-start" />

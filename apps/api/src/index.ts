@@ -237,7 +237,9 @@ const app = createApp({
     config.PROVIDER_CONCURRENCY,
   ),
   capabilities: {
-    accessRequired: !!config.API_ACCESS_TOKEN,
+    accessRequired:
+      !!config.API_ACCESS_TOKEN && config.PUBLIC_GUEST_ACCESS !== "true",
+    publicAccess: config.PUBLIC_GUEST_ACCESS === "true",
     storage: config.STORAGE_PROVIDER,
     retentionNotice:
       config.DATA_RETENTION_DAYS > 0
@@ -248,6 +250,9 @@ const app = createApp({
     mock: config.AI_MOCK_MODE === "true",
   },
   accessToken: config.API_ACCESS_TOKEN,
+  publicAccess: config.PUBLIC_GUEST_ACCESS === "true",
+  publicOrigin: new URL(config.MEDIA_BASE_URL).origin,
+  secureGuestCookie: config.NODE_ENV === "production",
   ready: () => intelligence.ready(),
   audio: audio ? (id) => audio.generate(id) : undefined,
 });

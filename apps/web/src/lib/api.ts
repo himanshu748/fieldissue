@@ -31,6 +31,9 @@ export class ApiError extends Error {
 }
 
 const friendly: Record<string, string> = {
+  OWNER_REQUIRED: "You can resolve, reopen or edit reports created in this browser. You can still add a revisit to other public reports.",
+  GUEST_SESSION_REQUIRED: "Enable cookies for this site, then reload before reporting.",
+  GUEST_LIMIT: "Your daily guest allowance is used. Browsing still works; try again after midnight UTC.",
   UNAUTHORIZED: "This deployment needs its shared access token.",
   PROVIDER_UNAVAILABLE:
     "The analysis service is unavailable right now. Nothing was saved. Your photo and note are kept here so you can retry.",

@@ -99,6 +99,7 @@ export class IssueRepository {
     analysis: Analysis,
     idempotency?: { key: string; hash: string },
     client?: PoolClient,
+    guestOwner?: string,
   ) {
     const execute = async (c: PoolClient) => {
       if (idempotency) {
@@ -113,7 +114,7 @@ export class IssueRepository {
         if (existingId) return { id: existingId, replayed: true };
       }
       const r = await c.query(
-        "INSERT INTO issues(title,description,category,severity,latitude,longitude,reporter_id) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING *",
+        "INSERT INTO issues(title,description,category,severity,latitude,longitude,reporter_id,is_public,guest_owner) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *",
         [
           input.title ??
             `${analysis.objects[0] ?? "Field issue"}: ${analysis.conditions[0] ?? "Needs inspection"}`.slice(
@@ -126,6 +127,8 @@ export class IssueRepository {
           input.latitude,
           input.longitude,
           input.reporterId ?? null,
+          !!guestOwner,
+          guestOwner ?? null,
         ],
       );
       const issue = r.rows[0];
@@ -528,6 +531,7 @@ export class IssueRepository {
     );
   }
   async list(filters: {
+    publicOnly?: boolean;
     status?: string;
     category?: string;
     severity?: string;
@@ -539,7 +543,7 @@ export class IssueRepository {
     search?: string;
   }) {
     const params: unknown[] = [];
-    const where: string[] = [];
+    const where: string[] = filters.publicOnly ? ["is_public"] : [];
     const bind = (v: unknown) => {
       params.push(v);
       return `$${params.length}`;
@@ -580,14 +584,18 @@ export class IssueRepository {
           : null,
     };
   }
-  async map(bbox: [number, number, number, number], limit: number) {
+  async map(
+    bbox: [number, number, number, number],
+    limit: number,
+    publicOnly = false,
+  ) {
     const [west, south, east, north] = bbox;
     const predicate =
       west <= east
         ? "geom && ST_MakeEnvelope($1,$2,$3,$4,4326)"
         : "(geom && ST_MakeEnvelope($1,$2,180,$4,4326) OR geom && ST_MakeEnvelope(-180,$2,$3,$4,4326))";
     const r = await this.pool.query(
-      `SELECT * FROM issues WHERE ${predicate} ORDER BY created_at DESC,id DESC LIMIT $5`,
+      `SELECT * FROM issues WHERE ${predicate} ${publicOnly ? "AND is_public" : ""} ORDER BY created_at DESC,id DESC LIMIT $5`,
       [west, south, east, north, limit + 1],
     );
     return {
@@ -605,13 +613,14 @@ export class IssueRepository {
     longitude: number,
     radius: number,
     limit: number,
+    publicOnly = false,
   ) {
     const result = await this.pool.query(
       `SELECT i.id AS issue_id,i.title,i.status,
         ST_Distance(i.geom::geography,p.point) AS distance_meters,
         COALESCE((SELECT max(o.captured_at) FROM observations o WHERE o.issue_id=i.id),i.created_at) AS last_observed_at
        FROM issues i CROSS JOIN (SELECT ST_SetSRID(ST_MakePoint($1,$2),4326)::geography AS point) p
-       WHERE i.status NOT IN ('RESOLVED','REJECTED') AND ST_DWithin(i.geom::geography,p.point,$3)
+       WHERE ${publicOnly ? "i.is_public AND" : ""} i.status NOT IN ('RESOLVED','REJECTED') AND ST_DWithin(i.geom::geography,p.point,$3)
        ORDER BY distance_meters ASC,last_observed_at ASC,i.id ASC LIMIT $4`,
       [longitude, latitude, radius, limit],
     );
@@ -625,10 +634,11 @@ export class IssueRepository {
     latitude: number,
     longitude: number,
     client: Pool | PoolClient = this.pool,
+    publicOnly = false,
   ) {
     return (
       await client.query(
-        "SELECT id,public_id,title FROM issues WHERE status NOT IN ('RESOLVED','REJECTED') AND ST_DWithin(geom::geography,ST_SetSRID(ST_MakePoint($1,$2),4326)::geography,100) LIMIT 10",
+        `SELECT id,public_id,title FROM issues WHERE ${publicOnly ? "is_public AND" : ""} status NOT IN ('RESOLVED','REJECTED') AND ST_DWithin(geom::geography,ST_SetSRID(ST_MakePoint($1,$2),4326)::geography,100) LIMIT 10`,
         [longitude, latitude],
       )
     ).rows.map(camel);
@@ -665,8 +675,8 @@ export class IssueRepository {
       category: i.category,
       nearby_issue_count: (
         await client.query(
-          "SELECT count(*)::int count FROM issues WHERE id<>$1 AND status NOT IN ('RESOLVED','REJECTED') AND ST_DWithin(geom::geography,ST_SetSRID(ST_MakePoint($2,$3),4326)::geography,100)",
-          [i.id, i.longitude, i.latitude],
+          "SELECT count(*)::int count FROM issues WHERE id<>$1 AND (NOT $4::boolean OR is_public) AND status NOT IN ('RESOLVED','REJECTED') AND ST_DWithin(geom::geography,ST_SetSRID(ST_MakePoint($2,$3),4326)::geography,100)",
+          [i.id, i.longitude, i.latitude, !!i.is_public],
         )
       ).rows[0].count,
       previous_change_count: changes,

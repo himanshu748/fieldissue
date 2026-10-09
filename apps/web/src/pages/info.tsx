@@ -67,7 +67,7 @@ export function MethodologyPage() {
           all earlier evidence.
         </p>
         <p>
-          The hosted demo uses one shared access token, so a resolution is <strong>human-confirmed, not identity-verified</strong>.
+          Guests manage reports from their reporting browser; operators can moderate all reports. A resolution is <strong>human-confirmed, not identity-verified</strong>.
         </p>
       </Section>
       <Section n="05" title="Walk suggestions">
@@ -119,7 +119,9 @@ export function PrivacyPage() {
           show it.
         </p>
       </Section>
-      <Section n="05" title="Access tokens">
+      <Section n="05" title="Guest access and operator access">
+        <p>Public guest mode uses a signed, first-party, HttpOnly cookie for 30 days. It lets the reporting browser edit, resolve and reopen its reports. Clearing cookies or switching browsers loses these guest controls; the operator can still moderate. This is browser ownership, not a verified personal identity.</p>
+        <p>New guest reports and revisits are public after explicit consent, including their photo, note and precise coordinates. Existing private reports stay private. Anyone can browse public reports and add revisit evidence.</p>
         <p>
           When a deployment requires a shared access token, it is stored in this browser tab's session storage only and is
           sent as an authorization header to the same origin. Photos are fetched with that header and shown through
@@ -129,7 +131,7 @@ export function PrivacyPage() {
       <Section n="06" title="Drafts, removal and retention">
         <p>Unsubmitted drafts stay in this tab's session storage for up to 24 hours. Locking the workspace clears saved drafts, locations and the walk queue. Drafts are not uploaded automatically.</p>
         <p>{config?.retentionNotice || "Ask the workspace owner about this deployment's retention policy."}</p>
-        <p>For removal, give the workspace owner the issue ID. Only the operator can remove the complete record and its photos, voice files and secondary search entry. Everyone sharing a demo token can view and edit reports, so do not use this workspace for sensitive locations. Exported share summaries exclude photos, notes, titles and street addresses, and round coordinates to 0.01 degrees (about 1 km). Exact coordinates remain inside the protected workspace.</p>
+        <p>For removal, give the workspace owner the issue ID. Only the operator can remove the complete record and its photos, voice files and secondary search entry. Only the reporting browser or an operator can change a public report’s classification or status. Do not publish sensitive locations. Exported share summaries exclude photos, notes, titles and street addresses, and round coordinates to 0.01 degrees (about 1 km). Public reports show precise coordinates on the map; the copied summary uses only an approximate location. Private reports remain operator-only.</p>
       </Section>
       <Section n="07" title="Safety">
         <p>

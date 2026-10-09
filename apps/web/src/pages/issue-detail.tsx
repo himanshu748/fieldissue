@@ -156,6 +156,7 @@ export function IssueDetailPage() {
           Reported {formatDate(data.createdAt)} · last observed {timeAgo(lastObserved(data))} · {observations.length}{" "}
           observation{observations.length === 1 ? "" : "s"}
         </p>
+        {data.permissions?.manage === false ? <p className="text-sm text-muted-foreground">Anyone can add a revisit. The reporting browser or an operator confirms resolution and reopening.</p> : null}
         <div className="flex flex-wrap gap-2">
           {data.status !== "REJECTED" ? (
             <Button asChild>
@@ -173,7 +174,7 @@ export function IssueDetailPage() {
               </Link>
             </Button>
           ) : null}
-          {!closed ? (
+          {!closed && data.permissions?.manage !== false ? (
             <Button asChild variant="outline">
               <Link to={`/app/issues/${data.publicId}/resolve`}>
                 <CheckCircle2Icon data-icon="inline-start" />
@@ -181,7 +182,7 @@ export function IssueDetailPage() {
               </Link>
             </Button>
           ) : null}
-          {data.status === "RESOLVED" ? (
+          {data.status === "RESOLVED" && data.permissions?.manage !== false ? (
             <StatusAction
               to="OPEN"
               onConfirm={changeStatus}
@@ -324,7 +325,7 @@ export function IssueDetailPage() {
               markers={[{ id: data.publicId, latitude: data.latitude, longitude: data.longitude, title: data.title, status: data.status }]}
               className="h-56"
             />
-            {!closed && data.status === "OPEN" ? (
+            {!closed && data.status === "OPEN" && data.permissions?.manage !== false ? (
               <div className="flex flex-wrap gap-2">
                 <StatusAction to="ACKNOWLEDGED" onConfirm={changeStatus} description="Records that a person has seen and accepted this report.">
                   Mark acknowledged
@@ -334,7 +335,7 @@ export function IssueDetailPage() {
                 </StatusAction>
               </div>
             ) : null}
-            {data.status === "ACKNOWLEDGED" ? (
+            {data.status === "ACKNOWLEDGED" && data.permissions?.manage !== false ? (
               <StatusAction to="IN_PROGRESS" onConfirm={changeStatus} description="Records that someone says a fix is under way.">
                 Mark in progress
               </StatusAction>

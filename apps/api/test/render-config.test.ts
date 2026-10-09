@@ -53,6 +53,7 @@ it("allows the judge demo profile only with real Gemma", () => {
   const { env, demo: isDemo, migrateFirst } = renderEnvironment(demo);
   expect(isDemo).toBe(true);
   expect(migrateFirst).toBe(true);
+  expect(env.PUBLIC_GUEST_ACCESS).toBe("true");
   expect(env.STORAGE_PROVIDER).toBe("postgres");
   expect(env.MEDIA_BASE_URL).toBe("https://fieldissue-demo.onrender.com/media");
   for (const change of [

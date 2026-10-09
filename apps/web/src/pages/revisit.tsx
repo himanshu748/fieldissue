@@ -83,6 +83,7 @@ function RevisitForm({ id }: { id: string }) {
     setDraft(nextDraft);
     await persist(nextDraft);
     const form = new FormData();
+    if (config?.publicAccess && consent) form.set("publicConsent", "true");
     form.set("image", photo.blob, "revisit.jpg");
     if (locationMode === "here" && location) {
       form.set("latitude", String(location.latitude));

@@ -30,6 +30,7 @@ export const configSchema = z
     PROVIDER_CONCURRENCY: z.coerce.number().int().min(1).max(10).default(2),
     DATA_RETENTION_DAYS: z.coerce.number().int().min(0).max(3650).default(0),
     DATA_RETENTION_NOTICE: z.string().max(1000).optional(),
+    PUBLIC_GUEST_ACCESS: z.enum(["true", "false"]).default("false"),
     API_ACCESS_TOKEN: z.string().min(32).optional(),
     INTELLIGENCE_URL: z.string().url().default("http://127.0.0.1:8000"),
     PROVIDER_TIMEOUT_MS: z.coerce
@@ -65,7 +66,7 @@ export const configSchema = z
   .passthrough()
   .superRefine((v, c) => {
     if (
-      v.NODE_ENV === "production" &&
+      (v.NODE_ENV === "production" || v.PUBLIC_GUEST_ACCESS === "true") &&
       (!v.API_ACCESS_TOKEN || v.API_ACCESS_TOKEN === v.INTERNAL_SERVICE_TOKEN)
     )
       c.addIssue({

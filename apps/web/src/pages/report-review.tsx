@@ -265,7 +265,7 @@ export function ReportReviewPage() {
               </>
             ) : (
               <>
-                <Button type="button" variant="outline" onClick={() => setEditing(true)}>
+                <Button type="button" variant="outline" disabled={data.permissions?.manage === false} onClick={() => setEditing(true)}>
                   <PencilIcon data-icon="inline-start" />
                   Edit details
                 </Button>

@@ -256,7 +256,7 @@ export function ExplorePage() {
               description={
                 origin
                   ? "No issues have been recorded near this location yet. Nothing here is invented to fill the space."
-                  : "This deployment has no issues yet."
+                  : "No reports are visible here yet. Be the first to publish one."
               }
             >
               <Button asChild>

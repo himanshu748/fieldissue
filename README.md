@@ -9,7 +9,7 @@ Built for the DEV **Hacktoberfest Open-Source AI Challenge, Week 1: Touch Grass*
 | What | Link |
 | --- | --- |
 | Try it in a browser | Open `/` for the landing page and `/app` for the separate workspace on any running FieldIssue API (local: <http://127.0.0.1:3000/>). Walkthrough and video shot list: [DEMO.md](DEMO.md) |
-| Hosted demo | [Landing](https://fieldissue-demo.onrender.com/) · [Workspace](https://fieldissue-demo.onrender.com/app), private shared access token; free database expires 7 Nov 2026 |
+| Hosted demo | [Landing](https://fieldissue-demo.onrender.com/) · [Workspace](https://fieldissue-demo.onrender.com/app), public guest access with browser-owned reports; free database expires 7 Nov 2026 |
 | DEV post | _add after publishing_ |
 | Demo video | _add link_ |
 | Verified live provider runs | [docs/zero-cost-stack.md](docs/zero-cost-stack.md) and [docs/verification/](docs/verification/) |
@@ -55,7 +55,7 @@ No Docker? See [Native development](#native-development-and-docker-free-verifica
 
 ## Backend reference
 
-A backend for geotagged field observations, chronological evidence, explicit issue resolution, and before/after real-world diffs. This repository contains the TypeScript API, private Python intelligence service, database migrations, local tooling, and an opt-in training/evaluation demonstration. The V2 frontend in `apps/web` uses React, Vite, Tailwind, shadcn/ui, Motion and Leaflet. The API serves its build at `/` with distinct protected workspace routes under `/app`; access uses a shared deployment token, not personal accounts. See [V2 architecture](docs/v2-implementation.md) and [DEMO.md](DEMO.md). A validated Render deployment scaffold and its remaining gates are documented in [docs/render-deployment.md](docs/render-deployment.md).
+A backend for geotagged field observations, chronological evidence, explicit issue resolution, and before/after real-world diffs. This repository contains the TypeScript API, private Python intelligence service, database migrations, local tooling, and an opt-in training/evaluation demonstration. The V2 frontend in `apps/web` uses React, Vite, Tailwind, shadcn/ui, Motion and Leaflet. The API serves its build at `/` with distinct workspace routes under `/app`; the judge demo supports public guest access with browser-owned reports and a private operator token. These are not personal accounts. See [V2 architecture](docs/v2-implementation.md) and [DEMO.md](DEMO.md). A validated Render deployment scaffold and its remaining gates are documented in [docs/render-deployment.md](docs/render-deployment.md).
 
 ### Architecture
 
@@ -290,7 +290,7 @@ The small Tinker dataset is synthetic, manually annotated, and intended to test 
 
 ### Security and production boundaries
 
-This backend does not yet implement end-user authentication, tenant authorization, rate limiting, moderation, or operational emergency response. An optional `API_ACCESS_TOKEN` provides a shared demo gateway for all report and media routes, required by the Render supervisor. Reporter IDs remain supplied metadata, not authenticated identity. Without that token the media route serves stored objects to callers who have their URLs. Add your access-control and retention policy before using private field reports. S3 credentials need only the minimum permissions for the selected bucket; telemetry is opt-in. Do not expose the private intelligence service.
+This backend uses signed browser cookies for guest ownership, request and provider limits, and an operator token for moderation. It does not implement personal accounts, tenant workspaces, or operational emergency response. `API_ACCESS_TOKEN` is required by the Render supervisor and whenever public guest access is enabled. Public reports are visible to everyone; existing private reports and media remain operator-only. Reporter IDs are metadata, not verified identity. S3 credentials need only the minimum permissions for the selected bucket; telemetry is opt-in. Do not expose the private intelligence service.
 
 Production must use `NODE_ENV=production` / `ENVIRONMENT=production`, `AI_MOCK_MODE=false`, a fresh strong internal token, actual configured providers, TLS where appropriate, managed credentials, verified database access, controlled media sharing, and backups. The demo token and mock mode are not production settings. Local Compose is not a deployment recipe.
 
@@ -324,3 +324,7 @@ The production dependency audit reports one **moderate** [sprintf-js denial-of-s
 ### Evidence lifecycle and acceptance
 
 [Operator removal and retention controls](docs/data-lifecycle.md) cover reports, stored media and secondary search cleanup. Automatic expiry is off until explicitly configured. [Live browser acceptance](tests/e2e/README.md) is opt-in and consumes existing provider quota; it never substitutes mock inference.
+
+### Public hackathon access
+
+The judge demo supports token-free browsing and guest reporting. Guests can resolve and reopen reports created in their browser; operators keep moderation access. Existing private reports stay private. See [guest access and limits](docs/public-guests.md).

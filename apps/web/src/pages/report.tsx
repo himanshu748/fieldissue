@@ -62,6 +62,7 @@ export function ReportPage() {
     setDraft(nextDraft);
     await persist(nextDraft);
     const form = new FormData();
+    if (config?.publicAccess && consent) form.set("publicConsent", "true");
     form.set("image", photo.blob, "observation.jpg");
     form.set("latitude", String(location.latitude));
     form.set("longitude", String(location.longitude));

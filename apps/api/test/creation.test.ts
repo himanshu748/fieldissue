@@ -96,6 +96,8 @@ it("cleans the unused upload when another request wins the idempotency race", as
     expect.anything(),
     expect.anything(),
     { key: "concurrent-key", hash: expect.stringMatching(/^[a-f0-9]{64}$/) },
+    undefined,
+    undefined,
   );
   expect(storage.delete).toHaveBeenCalledExactlyOnceWith("uploaded-fixture");
   expect(intelligence.predict).not.toHaveBeenCalled();

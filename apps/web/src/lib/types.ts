@@ -58,6 +58,8 @@ export interface Observation {
 }
 
 export interface Issue {
+  permissions?: { manage: boolean };
+  isPublic?: boolean;
   id: string;
   publicId: string;
   title: string;
@@ -124,6 +126,7 @@ export interface IssueEvent {
 }
 
 export interface AppConfig {
+  publicAccess?: boolean;
   accessRequired: boolean;
   storage: string;
   retentionNotice: string;

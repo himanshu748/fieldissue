@@ -141,6 +141,7 @@ export class SemanticSearch {
     }
   }
   async search(input: {
+    publicOnly?: boolean;
     q: string;
     limit: number;
     category?: string;
@@ -179,8 +180,8 @@ export class SemanticSearch {
         };
       const current = (
         await this.repository.pool.query(
-          "SELECT * FROM issues WHERE id=ANY($1::uuid[])",
-          [rows.map((r) => r.issue_id)],
+          "SELECT * FROM issues WHERE id=ANY($1::uuid[]) AND (NOT $2::boolean OR is_public)",
+          [rows.map((r) => r.issue_id), !!input.publicOnly],
         )
       ).rows;
       const byId = new Map(current.map((r) => [r.id, r]));
