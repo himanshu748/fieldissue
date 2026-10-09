@@ -1,4 +1,5 @@
 import { useId, useState } from "react";
+import { Link } from "react-router";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
@@ -17,7 +18,7 @@ export function TinkerNote({ observationId, note, available, canManage = true }:
   const [loading, setLoading] = useState(false);
   if (!available) return <p className="text-sm text-muted-foreground">Trained note interpretation is unavailable on this deployment.</p>;
   if (!note?.trim()) return <p className="text-sm text-muted-foreground">Add a written note with your next observation to use the trained note model.</p>;
-  if (!canManage) return <p className="text-sm text-muted-foreground">Open a report created in this browser to interpret its note.</p>;
+  if (!canManage) return <p className="text-sm text-muted-foreground">Live interpretation needs a report you own and your consent. <Link to="/app/lab#tinker-examples" className="underline">Inspect recorded Tinker examples</Link>, or <Link to="/app/report" className="underline">create your own report</Link>.</p>;
   async function run() {
     if (!observationId || !consent) return;
     setLoading(true); setError(undefined);

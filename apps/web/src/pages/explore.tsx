@@ -151,6 +151,8 @@ export function ExplorePage() {
         </Button>
       </div>
 
+      {issues.length > 0 && issues.every(i => i.latitude === 0 && i.longitude === 0 && i.title.startsWith("DEMO TEST:")) ? <aside className="space-y-2 border border-border bg-muted p-4" aria-label="Sample report notice"><p className="font-semibold">These are labeled test reports, not a neighbourhood survey.</p><p className="text-sm">The sample uses a public photo and coordinates at 0°, 0° in the Atlantic. Open it to inspect the workflow, or report something at your own location. Nearby walk results depend on reports actually existing near your chosen start.</p><Link to="/app/lab#tinker-examples" className="inline-flex min-h-11 items-center text-sm underline">Inspect recorded Tinker examples without creating a report</Link></aside> : null}
+
       <section aria-labelledby="where" className="grid gap-6 border border-ink bg-paper p-4 sm:p-6 lg:grid-cols-[1fr_1fr]">
         <div className="flex flex-col gap-3">
           <h2 id="where" className="eyebrow">

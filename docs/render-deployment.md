@@ -15,7 +15,21 @@ The current integration set includes real Gemma, ElevenLabs, SerpApi, Backboard,
 ## Reproducible profiles
 
 - `render.yaml` is the external TLS database/S3 profile. It requires configured secrets and provisioned storage before use.
-- `render.demo.yaml` is the original smaller Render database/PostgreSQL-media profile. It does not replicate the current secondary Tiger index or the full provider configuration. Its generated administrative token is not a public demo credential. Do not apply it over the existing service to recreate the current deployment.
+- `render.demo.yaml` declares the Render database/PostgreSQL-media profile, public guest access and all optional provider settings used by the demo. Empty optional secrets keep those integrations disabled. It does not create third-party accounts, train a checkpoint, fit a TabPFN model or initialize a Tiger index. Its generated administrative token stays private. Do not apply a new Blueprint over the existing service; preserve its database and dashboard secrets.
+
+### Optional integration setup for a fresh service
+
+| Feature | Private environment settings | Setup before deployment |
+| --- | --- | --- |
+| Trained notes | `TINKER_API_KEY`, `TINKER_MODEL_PATH`, `TINKER_CHECKPOINT_EXPIRES_AT` | Run the training/evaluation scripts in `services/intelligence/training`; use your actual sampler checkpoint and ISO expiry. An expired checkpoint cannot make new predictions. |
+| Synthetic TabPFN scenarios | `TABPFN_API_KEY`, `TABPFN_FITTED_MODEL_ID` | Follow `services/intelligence/training/revisit-demo/README.md` and run its `fit.py` within verified free quota; use the returned fitted-model UUID. The setup script uses `TABPFN_TOKEN`; the deployed runtime uses `TABPFN_API_KEY`. Real-history ranking remains disabled. |
+| Model comparisons | `BACKBOARD_API_KEY` | Verify remaining credit and disable paid automatic reload before enabling. |
+| Semantic search | `TIGER_DATABASE_URL`, `SEMANTIC_SEARCH_ENABLED=true` | Apply `db/tiger-index.sql` to the secondary database; the runtime verifies TLS certificates. The index is secondary, not the authoritative report store. |
+| Place context | `SERPAPI_API_KEY` | Verify free search quota. A location with no nearby place can legitimately return no context. |
+| Audio | `ELEVENLABS_API_KEY`, `ELEVENLABS_VOICE_ID` | Verify voice availability and free/credit-only quota. |
+| Telemetry | `SENTRY_DSN` | Use the intended project; verify sanitized event delivery and traces. |
+
+Never copy another deployment's fitted model ID or expiring checkpoint without access to that provider account. The blueprint retains the 60-unit daily provider cap and the separate Tinker/TabPFN limits. This protects the cash-free demo; it does not promise unlimited concurrent judge uploads. Public recorded Tinker examples need neither credentials nor inference calls.
 
 For a fresh service, supply only verified free or sponsor-credit providers, keep mock mode off, preserve certificate verification for external database connections (the Render private-network connection is separate), configure bounded provider quotas and media capacity, and add no paid plan or payment method. Use `/ready` as the deployment readiness gate. After deploy, verify the exact runtime commit, public/private access, report/revisit behavior and durable media. Preserve existing records when migrating databases.
 

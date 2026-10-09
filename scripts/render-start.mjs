@@ -8,7 +8,7 @@ Object.assign(process.env, env);
 process.env.INTELLIGENCE_URL = "http://127.0.0.1:8000";
 if (demo)
   console.log(
-    "FieldIssue judge demo profile: real Gemma, no TabPFN, " +
+    "FieldIssue judge demo profile: real Gemma, optional configured providers, " +
       (process.env.STORAGE_PROVIDER === "postgres" ? "durable PostgreSQL media" : "S3 media"),
   );
 if (migrateFirst) {

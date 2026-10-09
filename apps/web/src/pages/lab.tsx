@@ -1,5 +1,6 @@
 import { TabPFNDemo } from "@/components/field/tabpfn-demo";
 import { TinkerNote } from "@/components/field/tinker-note";
+import { RecordedTinkerExamples } from "@/components/field/tinker-examples";
 import { Link } from "react-router";
 import { ArrowUpRightIcon, BeakerIcon, CircleDotIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -215,6 +216,7 @@ export function LabPage() {
 
       <section className="flex flex-col gap-4" aria-labelledby="tinker-live">
         <h2 id="tinker-live" className="text-2xl font-bold uppercase">Trained field-note interpretation</h2>
+        {evaluations.data?.tinkerExamples ? <RecordedTinkerExamples data={evaluations.data.tinkerExamples} /> : null}
         <TinkerNote key={latestObservationId} observationId={latestObservationId} note={latest.data?.observations.at(-1)?.note} available={byId.get("tinker")?.status === "configured"} canManage={latest.data?.permissions?.manage !== false} />
       </section>
 

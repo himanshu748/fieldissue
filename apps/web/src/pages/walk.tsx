@@ -14,6 +14,7 @@ import { LocationPicker } from "@/components/field/location-picker";
 import { NearbyMap } from "@/components/field/nearby-map";
 import { EmptyState, ErrorNotice } from "@/components/field/states";
 import { api } from "@/lib/api";
+import { useResource } from "@/hooks/use-resource";
 import { formatDistance, recallLocation, type Located } from "@/lib/geo";
 import { timeAgo } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -32,6 +33,7 @@ function Planner() {
   const [radius, setRadius] = useState(2000);
   const [result, setResult] = useState<{ data?: WalkSuggestions; error?: Error; loading?: boolean }>({});
   const [picked, setPicked] = useState<Set<string>>(new Set());
+  const existing = useResource(signal => api.listIssues(new URLSearchParams({ limit: "20", status: "OPEN" }), signal), []);
 
   async function find() {
     if (!origin) return;
@@ -69,6 +71,13 @@ function Planner() {
         <div className="flex flex-col gap-3">
           <h2 className="eyebrow">Starting point</h2>
           <LocationPicker value={origin} onChange={setOrigin} idPrefix="walk" />
+          {existing.data?.items.length ? <label className="flex flex-col gap-2 text-sm">Or start near an existing open report
+            <select className="min-h-11 w-full min-w-0 border border-ink bg-paper px-3" value="" onChange={e => { const issue = existing.data?.items.find(i => i.publicId === e.target.value); if (issue) { setOrigin({ latitude: issue.latitude, longitude: issue.longitude, source: "manual" }); setResult({}); setPicked(new Set()); } }}>
+              <option value="">Choose a report's location</option>
+              {existing.data.items.map(i => <option key={i.id} value={i.publicId}>{i.publicId}: {i.title}</option>)}
+            </select>
+          </label> : null}
+          {origin?.latitude === 0 && origin.longitude === 0 ? <p role="note" className="border border-border bg-muted p-3 text-sm">This starting point is 0°, 0° in the Atlantic. You can inspect sample planning here, but it is not a real walking route. Use your actual location for an outdoor walk.</p> : null}
         </div>
         <div className="flex flex-col gap-4">
           <span className="eyebrow" id="walk-radius">
@@ -107,6 +116,7 @@ function Planner() {
           <Button asChild variant="outline">
             <Link to="/app/report">Report an issue</Link>
           </Button>
+          <Button asChild variant="ghost"><Link to="/app/explore">Browse all reports</Link></Button>
         </EmptyState>
       ) : null}
 
@@ -259,7 +269,7 @@ function ActiveWalk() {
         </AlertDescription>
       </Alert>
 
-      <section className="space-y-3 border border-ink p-4"><h2 className="font-bold">Walking directions</h2><p className="text-sm text-muted-foreground">Open Google Maps for a walking route from the last visited stop (or your starting point) to the next stop. This shares the exact start and destination with Google. Follow local signs; accessibility and safe passage are not guaranteed.</p><label className="flex items-start gap-3"><Checkbox checked={directionsConsent} onCheckedChange={v=>setDirectionsConsent(v===true)}/>Share these two locations with Google Maps</label>{(() => {const next=walk.items.find(i=>i.state==='pending');const dest=next&&issueCoords[next.issueId];if(!dest)return <p>No pending stop with a location.</p>;const previous=walk.items.filter(i=>i.state==='visited').at(-1);const start=previous&&issueCoords[previous.issueId]||walk.origin;const url=new URL('https://www.google.com/maps/dir/');url.search=new URLSearchParams({api:'1',origin:`${start.latitude},${start.longitude}`,destination:`${dest.latitude},${dest.longitude}`,travelmode:'walking'}).toString();return directionsConsent?<Button asChild><a href={url.toString()} target="_blank" rel="noreferrer">Open walking directions</a></Button>:null;})()}</section>
+      <section className="space-y-3 border border-ink p-4"><h2 className="font-bold">Walking directions</h2><p className="text-sm text-muted-foreground">Open Google Maps for a walking route from the last visited stop (or your starting point) to the next stop. This shares the exact start and destination with Google. Follow local signs; accessibility and safe passage are not guaranteed.</p><label className="flex items-start gap-3"><Checkbox checked={directionsConsent} onCheckedChange={v=>setDirectionsConsent(v===true)}/>Share these two locations with Google Maps</label>{(() => {const next=walk.items.find(i=>i.state==='pending');const dest=next&&issueCoords[next.issueId];if(!dest)return <p>No pending stop with a location.</p>;const previous=walk.items.filter(i=>i.state==='visited').at(-1);const start=previous&&issueCoords[previous.issueId]||walk.origin;if ((start.latitude === 0 && start.longitude === 0) || (dest.latitude === 0 && dest.longitude === 0)) return <p className="text-sm text-muted-foreground">Directions are unavailable for the 0°, 0° sample. This saved plan demonstrates the workflow, not an outdoor route.</p>;const url=new URL('https://www.google.com/maps/dir/');url.search=new URLSearchParams({api:'1',origin:`${start.latitude},${start.longitude}`,destination:`${dest.latitude},${dest.longitude}`,travelmode:'walking'}).toString();return directionsConsent?<Button asChild><a href={url.toString()} target="_blank" rel="noreferrer">Open walking directions</a></Button>:null;})()}</section>
       <div className="grid gap-8 lg:grid-cols-[1fr_1fr]">
         <div className="flex flex-col gap-4">
           <ol className="flex flex-col border-t border-ink">

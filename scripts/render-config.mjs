@@ -4,8 +4,8 @@
 //   /ready health check that requires Gemma and the database.
 // - judge demo (FIELDISSUE_DEMO_PROFILE=true): real Gemma only, never mocks.
 //   Media must use durable PostgreSQL or S3 storage, the database may be a
-//   Render private-network Postgres, and migrations run at start. TabPFN stays
-//   unconfigured, so revisit predictions report available=false. See
+//   Render private-network Postgres, and migrations run at start. Optional
+//   provider credentials enable the separate synthetic TabPFN API demo. See
 //   docs/render-deployment.md before using it.
 
 

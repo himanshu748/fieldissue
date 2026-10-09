@@ -164,6 +164,28 @@ export interface Evaluation {
   serving: boolean;
 }
 
+export interface TinkerExamples {
+  recordedAt: string;
+  model: string;
+  modelVersion: string;
+  evidenceUrl: string;
+  samples: {
+    id: string;
+    note: string;
+    target: NotePrediction;
+    basePrediction: NotePrediction;
+    fineTunedPrediction: NotePrediction;
+  }[];
+}
+
+interface NotePrediction {
+  category: string;
+  severity: string;
+  object: string;
+  condition: string;
+  evidence: string[];
+}
+
 export interface IntegrationStatus {
   id: string;
   name: string;

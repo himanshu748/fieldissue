@@ -6,6 +6,7 @@ import type {
   CreateIssueResult,
   Diff,
   Evaluation,
+  TinkerExamples,
   IntegrationStatus,
   Issue,
   IssueEvent,
@@ -209,7 +210,7 @@ export const api = {
       json: { observationId, models, consentToExternalProcessing: true },
     }),
   evaluations: (signal?: AbortSignal) =>
-    request<{ evaluations: Evaluation[] }>("/v1/model-lab/evaluations", { signal }),
+    request<{ evaluations: Evaluation[]; tinkerExamples?: TinkerExamples }>("/v1/model-lab/evaluations", { signal }),
   integrations: (signal?: AbortSignal) =>
     request<{ integrations: IntegrationStatus[]; coreReady: boolean }>(
       "/v1/integrations/status",

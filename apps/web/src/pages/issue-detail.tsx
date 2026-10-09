@@ -199,6 +199,7 @@ export function IssueDetailPage() {
               Add to walk
             </Button>
           ) : null}
+          {!walk && !closed ? <Button asChild variant="outline"><Link to="/app/walk" state={{ origin: { latitude: data.latitude, longitude: data.longitude, source: "manual" } }}><FootprintsIcon data-icon="inline-start" />Plan around this report</Link></Button> : null}
         </div>
       </header>
 
@@ -277,7 +278,8 @@ export function IssueDetailPage() {
                   >
                     <span className="flex flex-wrap items-center justify-between gap-2">
                       <span className="font-mono text-xs text-muted-foreground">{formatDateTime(d.createdAt)}</span>
-                      <Badge variant="outline">{d.model === "fieldissue-image-identity" ? "Repeated photo — no new evidence" : `Model suggested ${label(d.recommendedStatus)}`}</Badge>
+                      <Badge variant="outline">{d.model === "fieldissue-image-identity" ? "Repeated photo: no new evidence" : `Model suggested ${label(d.recommendedStatus)}`}</Badge>
+                      {d.model === "fieldissue-image-identity" ? <p className="text-xs text-muted-foreground">This checks identical file bytes. Edited copies can differ; this is not proof that a repair happened.</p> : null}
                     </span>
                     <span>{d.summary}</span>
                     <span className="font-mono text-xs text-muted-foreground">

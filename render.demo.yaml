@@ -1,6 +1,8 @@
 # Judge demo profile: one free web service plus one free Render Postgres.
-# Real Gemma vision only (no mocks). TabPFN is not configured, so revisit
-# predictions report available=false. Media is stored in the PostgreSQL
+# Real Gemma vision (no mocks), with optional real provider integrations below.
+# TabPFN's synthetic API demo is separate from disabled real-history ranking.
+# Node and loopback-only FastAPI run in ONE container; Gemma is hosted by Google.
+# Media is stored in the PostgreSQL
 # database, with a bounded media capacity; web service restarts retain photos;
 # issue records stay in Postgres. The free database expires 30 days after
 # creation. Read docs/render-deployment.md ("Judge demo profile") first.
@@ -34,6 +36,8 @@ services:
         value: production
       - key: AI_MOCK_MODE
         value: "false"
+      - key: PUBLIC_GUEST_ACCESS
+        value: "true"
       - key: API_ACCESS_TOKEN
         generateValue: true
       - key: INTERNAL_SERVICE_TOKEN
@@ -69,7 +73,25 @@ services:
       - key: AI_MAX_RETRIES
         value: "0"
 
-      # Optional free-tier integrations. Leave blank until configured.
+      # Optional free-tier / sponsor-credit integrations. Empty values disable
+      # the feature. Supply your own credentials, fitted model and checkpoint;
+      # a Blueprint cannot create provider accounts, train models or claim credit.
+      - key: TINKER_API_KEY
+        sync: false
+      - key: TINKER_MODEL_PATH
+        sync: false
+      - key: TINKER_CHECKPOINT_EXPIRES_AT
+        sync: false
+      - key: TABPFN_API_KEY
+        sync: false
+      - key: TABPFN_FITTED_MODEL_ID
+        sync: false
+      - key: BACKBOARD_API_KEY
+        sync: false
+      - key: TIGER_DATABASE_URL
+        sync: false
+      - key: SEMANTIC_SEARCH_ENABLED
+        value: "true"
       - key: SERPAPI_API_KEY
         sync: false
       - key: ELEVENLABS_API_KEY
