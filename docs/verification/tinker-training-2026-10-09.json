@@ -1,0 +1,224 @@
+{
+  "kind": "fieldissue-tinker-training",
+  "dataStatus": "synthetic-annotation-demo",
+  "createdAt": "2026-10-09T04:56:23.353742+00:00",
+  "baseModel": "Qwen/Qwen3-8B",
+  "modelVersion": "tinker://efb40129-33b1-57e0-9f76-6524f961de35:train:0/sampler_weights/fieldissue-note-json-20261009-045450",
+  "statePath": "tinker://efb40129-33b1-57e0-9f76-6524f961de35:train:0/weights/fieldissue-note-json-20261009-045450",
+  "samplerPath": "tinker://efb40129-33b1-57e0-9f76-6524f961de35:train:0/sampler_weights/fieldissue-note-json-20261009-045450",
+  "checkpointTtlSeconds": 2592000,
+  "promptVersion": "fieldissue-note-json-v2",
+  "annotationVersion": "annotation-v2",
+  "datasetSha256": "e0df917ba8dd25c7911d435248283a4a8e0a33a6015d3c55378733aebf6877a3",
+  "trainIds": [
+    "train-cleanliness-01",
+    "train-cleanliness-02",
+    "train-cleanliness-03",
+    "train-cleanliness-04",
+    "train-infrastructure-01",
+    "train-infrastructure-02",
+    "train-infrastructure-03",
+    "train-infrastructure-04",
+    "train-accessibility-01",
+    "train-accessibility-02",
+    "train-accessibility-03",
+    "train-accessibility-04",
+    "train-safety-01",
+    "train-safety-02",
+    "train-safety-03",
+    "train-safety-04",
+    "train-environment-01",
+    "train-environment-02",
+    "train-environment-03",
+    "train-environment-04",
+    "train-signage-01",
+    "train-signage-02",
+    "train-signage-03",
+    "train-signage-04",
+    "train-lighting-01",
+    "train-lighting-02",
+    "train-lighting-03",
+    "train-lighting-04",
+    "train-trail-01",
+    "train-trail-02",
+    "train-trail-03",
+    "train-trail-04",
+    "train-other-01",
+    "train-other-02",
+    "train-other-03",
+    "train-other-04"
+  ],
+  "trainNoteHashes": [
+    "97e06930acf2cb4dd860db02b51ba8fbb54083630ebcc6335bb6999fb78e4827",
+    "b6cd59d54d387205db7f002fe83f8bde060e3922e763277261efda9e4f90ba64",
+    "55186a3d6acb753dea632a6335e7b7e9014c492d0f31fdb99e59c847c5066cca",
+    "79cf7240d671424ca07b962983c8894d490a5fd09f9b50c565c29a50c0247cff",
+    "ab0b8a4fa4a82a120aa0dd7870aa21ea5a874bdfb5097f870f530521c40bb297",
+    "844f9d8c6a88fe24cd5bdcf4b25d261de499bf98a907abc6328e95ee03af0e7d",
+    "89d8e7edcffd37ce49b46718379eefa2c293e180cde8f366649274b4de4db4f3",
+    "f16b5818fe3e66ea288720e775c1f1141c4fb49d8e03b225bdaf3c90abba1748",
+    "516caaae6e337207439dec830c244153b26999f164b003dc240c85f36501851f",
+    "a613dedd5fd6ff8b0554afe655bffac7222e81f53e822db1a295aad6b811cc75",
+    "fcd135554fc44a23875232863d806a720d2ab57713ee5b871239b76f2d0b7491",
+    "7a75ffb8e5cbb9068e163ddf027551850d9bbaf63757fa3242b2044bc6162661",
+    "a38911a8a3f1d16adaebe5f4017a2b5476ef6c0dcb690b155f74c6fd5f834d56",
+    "c9a1e2e5cad7aabbeba6af1f9b1bbfefe5f32955e202019a61df7ceac87a214e",
+    "04e7d554d9a2ded4cce170f64f0d4c9bc6a9c22457041e89429b5690aaaeb3fb",
+    "d4f25523f56e8f6b519bc864c7e618155490dee2dcbc0ee72c4c398ca83394ef",
+    "d97c86d7f429d2c4cc21633491796720cb9f78de03c5724456e40204fd53e300",
+    "5015629f789aa412e9cf85a7aed65e05e0d58deb72003d9eac63a77fbd460a1e",
+    "16145375e880cfe72f3a0444526f3706c1db07d3c3c4560972927ea2adf8d6da",
+    "16f85e3865412126eeb64be559a21e01de67fbec0e6095eea0916947af5d860a",
+    "c483135fe607939644f57a32d5ac620bd9817884b075d5602608d8ae93725175",
+    "82d97e2416f18b47ba7ddf44a191fe43cf554814648892893f67ff6d2c286b8e",
+    "3c9cd9e6bfbff60260025955a65fc2be59072c744146cfce205300b074eec7a7",
+    "5a05bc8ac9a76acefb3187093d16f53c609af2b9da07dee3b357db68c38c2e10",
+    "e4151b4d0090254b9ea9293259b0cba34e8292df602ce6da33c974a15ab2baeb",
+    "7a7343688a37473a34aa1e3d909901a56fae48f10e0e80ac86926363a6ffdef4",
+    "d3983264cf3bb7dc6acc71a815f1692a2cf73969afde432466d67bb2e6ed58e5",
+    "37a603d4dfaa5dbaac60abf3b457f24f7e68bb6bbde769a0901b77fd26f543f3",
+    "d1865856c35862fa3cad4e7019834570f5e011392a1300c826437fce406cec3a",
+    "c0df45b2df84772d3b70aa0b256ded9b3cce2a4ce36921531e25181832ea1473",
+    "ae526d27786796ca972b79626142da181327decbc83bdc35a24bdc73040c90f9",
+    "5f1717611743e390d3259dc833282a8bd380f27b88801b6018ca8e394d58bc55",
+    "0ee4f8987814678b8a417c473d037bd0954718482fc3b7d91d49407be76519ff",
+    "6868adc57b3915ece4b6968e20c989bdd99ca119dacc931116571213d07fe0b0",
+    "84aacdb54cd8a3343af22bac7a2458a14d7892e9287d911e11347efae4427672",
+    "8f19cacaf91caa86fea17dc4a097c00ab1c7b61a2329c0ad7df20c39f2075e69"
+  ],
+  "epochs": 1,
+  "steps": 9,
+  "batchSize": 4,
+  "loraRank": 16,
+  "learningRate": 0.0001,
+  "seed": 42,
+  "trainingMetrics": [
+    {
+      "step": 1,
+      "epoch": 1,
+      "exampleIds": [
+        "train-accessibility-02",
+        "train-safety-01",
+        "train-infrastructure-02",
+        "train-lighting-04"
+      ],
+      "metrics": {
+        "clock_cycle:unique": 4465284.0,
+        "loss:sum": 121.27989673614502
+      }
+    },
+    {
+      "step": 2,
+      "epoch": 1,
+      "exampleIds": [
+        "train-other-01",
+        "train-environment-04",
+        "train-trail-03",
+        "train-lighting-02"
+      ],
+      "metrics": {
+        "clock_cycle:unique": 4465288.0,
+        "loss:sum": 121.02029418945312
+      }
+    },
+    {
+      "step": 3,
+      "epoch": 1,
+      "exampleIds": [
+        "train-signage-03",
+        "train-lighting-03",
+        "train-trail-04",
+        "train-accessibility-03"
+      ],
+      "metrics": {
+        "clock_cycle:unique": 4465292.0,
+        "loss:sum": 130.79082489013672
+      }
+    },
+    {
+      "step": 4,
+      "epoch": 1,
+      "exampleIds": [
+        "train-accessibility-04",
+        "train-trail-01",
+        "train-accessibility-01",
+        "train-signage-01"
+      ],
+      "metrics": {
+        "clock_cycle:unique": 4465296.0,
+        "loss:sum": 98.46514511108398
+      }
+    },
+    {
+      "step": 5,
+      "epoch": 1,
+      "exampleIds": [
+        "train-environment-01",
+        "train-other-04",
+        "train-infrastructure-03",
+        "train-lighting-01"
+      ],
+      "metrics": {
+        "clock_cycle:unique": 4465300.0,
+        "loss:sum": 39.21656799316406
+      }
+    },
+    {
+      "step": 6,
+      "epoch": 1,
+      "exampleIds": [
+        "train-cleanliness-01",
+        "train-other-03",
+        "train-safety-02",
+        "train-environment-03"
+      ],
+      "metrics": {
+        "clock_cycle:unique": 4465304.0,
+        "loss:sum": 60.018131256103516
+      }
+    },
+    {
+      "step": 7,
+      "epoch": 1,
+      "exampleIds": [
+        "train-cleanliness-03",
+        "train-other-02",
+        "train-trail-02",
+        "train-signage-02"
+      ],
+      "metrics": {
+        "clock_cycle:unique": 4465308.0,
+        "loss:sum": 18.384475708007812
+      }
+    },
+    {
+      "step": 8,
+      "epoch": 1,
+      "exampleIds": [
+        "train-cleanliness-04",
+        "train-signage-04",
+        "train-infrastructure-01",
+        "train-safety-03"
+      ],
+      "metrics": {
+        "clock_cycle:unique": 4465312.0,
+        "loss:sum": 83.79714965820312
+      }
+    },
+    {
+      "step": 9,
+      "epoch": 1,
+      "exampleIds": [
+        "train-safety-04",
+        "train-environment-02",
+        "train-cleanliness-02",
+        "train-infrastructure-04"
+      ],
+      "metrics": {
+        "clock_cycle:unique": 4465316.0,
+        "loss:sum": 88.32106018066406
+      }
+    }
+  ],
+  "limitations": "Tiny synthetic demo. No generalization, safety, calibration, or improvement claims."
+}

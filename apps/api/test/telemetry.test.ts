@@ -1,5 +1,9 @@
 import { expect, it } from "vitest";
-import { sanitizeEvent, sanitizeSpan } from "../src/telemetry.js";
+import {
+  sanitizeEvent,
+  sanitizeSpan,
+  safeErrorKind,
+} from "../src/telemetry.js";
 it("strips private attributes and unknown fields from streamed spans", () => {
   const span = sanitizeSpan({
     trace_id: "a".repeat(32),
@@ -44,4 +48,26 @@ it("denies secret-bearing exception values, contexts and spans", () => {
     tags: { api_key: "secret-key" },
   });
   expect(JSON.stringify(event)).not.toContain("secret");
+});
+
+it("keeps safe failure diagnostics while excluding exception messages", () => {
+  expect(safeErrorKind(new TypeError("private note"))).toBe("TypeError");
+  expect(safeErrorKind({ code: "23505", message: "private SQL" })).toBe(
+    "Postgres_23505",
+  );
+  expect(safeErrorKind({ code: "private-key" })).toBe("OperationError");
+  const event = sanitizeEvent({
+    tags: {
+      operation: "model_lab",
+      error_kind: "TypeError",
+      http_status: "500",
+      release_sha: "a".repeat(40),
+      note: "private note",
+    },
+  });
+  expect(event.tags).toMatchObject({
+    error_kind: "TypeError",
+    http_status: "500",
+  });
+  expect(JSON.stringify(event)).not.toContain("private");
 });

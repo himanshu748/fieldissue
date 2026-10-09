@@ -1,3 +1,6 @@
+import { demoFeaturesSchema, type TabPFNDemoService } from "./tabpfn-demo.js";
+import { safeErrorKind } from "./telemetry.js";
+import type { TinkerNoteService } from "./tinker.js";
 import { getCookie, setCookie } from "hono/cookie";
 import {
   guestCookie,
@@ -90,6 +93,8 @@ interface Dependencies {
   audio?: (id: string) => Promise<unknown>;
   webDirectory?: string;
   semantic?: SemanticSearch;
+  tabpfnDemo?: TabPFNDemoService;
+  tinkerNotes?: TinkerNoteService;
   modelComparison?: ModelComparisonService;
   consumeSearch?: () => Promise<void>;
   integrations?: { id: string; name: string; status: string; detail: string }[];
@@ -320,7 +325,12 @@ export function createApp(deps: Dependencies) {
     } else {
       const allowed = write
         ? c.req.method === "POST" &&
-          ["/v1/issues", "/v1/model-lab/compare"].includes(path)
+          [
+            "/v1/issues",
+            "/v1/model-lab/compare",
+            "/v1/model-lab/interpret-note",
+            "/v1/model-lab/revisit-demo",
+          ].includes(path)
         : [
             "/v1/issues",
             "/v1/issues/map",
@@ -385,9 +395,26 @@ export function createApp(deps: Dependencies) {
   );
   app.onError((error, c) => {
     reportFailure(
-      error instanceof AppError ? error.code : "REQUEST_FAILED",
-      "api",
+      error instanceof AppError
+        ? error.code
+        : error instanceof ZodError
+          ? "VALIDATION_ERROR"
+          : "REQUEST_FAILED",
+      c.req.path.startsWith("/v1/model-lab/")
+        ? "model_lab"
+        : c.req.path.startsWith("/v1/issues")
+          ? "issues"
+          : "api",
       c.get("requestId"),
+      {
+        errorKind: safeErrorKind(error),
+        httpStatus:
+          error instanceof AppError
+            ? error.status
+            : error instanceof ZodError
+              ? 400
+              : 500,
+      },
     );
     if (error instanceof ZodError)
       return c.json(
@@ -553,6 +580,7 @@ export function createApp(deps: Dependencies) {
       storage: "unknown",
       retentionNotice: "",
       audio: !!deps.audio,
+      tinkerNotes: !!deps.tinkerNotes?.available,
       mock: false,
       ...deps.capabilities,
       publicAccess: !!deps.publicAccess,
@@ -650,14 +678,90 @@ export function createApp(deps: Dependencies) {
       await deps.modelComparison.compare(input.observationId, input.models),
     );
   });
-  app.get("/v1/model-lab/evaluations", (c) => c.json({ evaluations }));
+  app.post("/v1/model-lab/interpret-note", async (c) => {
+    const input = z
+      .object({
+        observationId: z.uuid(),
+        consentToExternalProcessing: z.literal(true),
+      })
+      .strict()
+      .parse(await json(c.req.raw));
+    if (isGuest(c)) {
+      const owned = await deps.repository.pool.query(
+        "SELECT 1 FROM observations o JOIN issues i ON i.id=o.issue_id WHERE o.id=$1 AND i.is_public AND i.guest_owner=$2",
+        [input.observationId, c.get("guestId")],
+      );
+      if (!owned.rowCount)
+        throw new AppError(
+          "OWNER_REQUIRED",
+          403,
+          "Interpret notes on a report created in this browser.",
+        );
+    }
+    if (!deps.tinkerNotes)
+      throw new AppError(
+        "TINKER_UNAVAILABLE",
+        503,
+        "Trained note interpretation is not configured.",
+      );
+    return c.json(
+      await deps.tinkerNotes.interpret(
+        input.observationId,
+        isGuest(c) ? c.get("guestId") : undefined,
+      ),
+    );
+  });
+  app.post("/v1/model-lab/revisit-demo", async (c) => {
+    const input = z
+      .object({
+        features: demoFeaturesSchema,
+        syntheticDemoAcknowledged: z.literal(true),
+      })
+      .strict()
+      .parse(await json(c.req.raw));
+    if (!deps.tabpfnDemo)
+      throw new AppError(
+        "TABPFN_UNAVAILABLE",
+        503,
+        "The synthetic scenario demo is not configured.",
+      );
+    return c.json(
+      await deps.tabpfnDemo.predict(
+        input.features,
+        isGuest(c) ? c.get("guestId") : undefined,
+      ),
+    );
+  });
+  app.get("/v1/model-lab/evaluations", (c) =>
+    c.json({
+      evaluations: evaluations.map((e) => ({
+        ...e,
+        serving:
+          e.serving &&
+          !!deps.tinkerNotes?.available &&
+          e.modelVersion === deps.tinkerNotes.checkpoint,
+      })),
+    }),
+  );
   app.get("/v1/integrations/status", async (c) => {
     let coreReady = false;
     try {
       await deps.repository.pool.query("SELECT 1 FROM issues LIMIT 1");
       coreReady = deps.ready ? await deps.ready() : true;
     } catch {}
-    return c.json({ coreReady, integrations: deps.integrations ?? [] });
+    return c.json({
+      coreReady,
+      integrations: (deps.integrations ?? []).map((i) =>
+        i.id === "tinker" && deps.tinkerNotes && !deps.tinkerNotes.available
+          ? {
+              ...i,
+              status: "expired",
+              detail:
+                "The trained checkpoint has expired. Saved interpretations remain available through the API; renew the checkpoint to make new predictions.",
+            }
+          : i,
+      ),
+    });
   });
   app.post("/v1/issues", async (c) => {
     const { media, fields } = await upload(c.req.raw);

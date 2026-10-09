@@ -331,4 +331,57 @@ suite("public guests preserve ownership and private evidence", () => {
     expect(analyses).toBe(before);
     expect((await app.request("/v1/issues")).status).toBe(200);
   });
+  it("gates trained-note processing by explicit consent and report ownership", async () => {
+    const observationId = (await repository.get(published.id)).observations[0]!
+      .id;
+    const request = (cookie: string, consent: boolean) =>
+      app.request("/v1/model-lab/interpret-note", {
+        method: "POST",
+        headers: { ...headers(cookie), "Content-Type": "application/json" },
+        body: JSON.stringify({
+          observationId,
+          consentToExternalProcessing: consent,
+        }),
+      });
+    expect((await request(ownerCookie, false)).status).toBe(400);
+    expect((await request(otherCookie, true)).status).toBe(403);
+    // This fixture deliberately has no provider; the owner's request reaches the provider gate.
+    expect((await request(ownerCookie, true)).status).toBe(503);
+    const privateId = (await repository.get(privateIssue.id)).observations[0]!
+      .id;
+    expect(
+      (
+        await app.request("/v1/model-lab/interpret-note", {
+          method: "POST",
+          headers: {
+            ...headers(ownerCookie),
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            observationId: privateId,
+            consentToExternalProcessing: true,
+          }),
+        })
+      ).status,
+    ).toBe(403);
+  });
+  it("requires an explicit synthetic-scenario acknowledgment", async () => {
+    const r = await app.request("/v1/model-lab/revisit-demo", {
+      method: "POST",
+      headers: { ...headers(ownerCookie), "Content-Type": "application/json" },
+      body: JSON.stringify({
+        features: {
+          days_since_last_observation: 7,
+          previous_observation_count: 3,
+          issue_age_days: 21,
+          severity: 1,
+          category: 0,
+          nearby_issue_count: 4,
+          previous_change_count: 1,
+          status: 0,
+        },
+      }),
+    });
+    expect(r.status).toBe(400);
+  });
 });

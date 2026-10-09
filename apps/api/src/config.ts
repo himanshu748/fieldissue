@@ -54,6 +54,14 @@ export const configSchema = z
     S3_ACCESS_KEY_ID: z.string().optional(),
     S3_SECRET_ACCESS_KEY: z.string().optional(),
     SENTRY_DSN: z.string().url().optional(),
+    TABPFN_API_KEY: z.string().optional(),
+    TABPFN_FITTED_MODEL_ID: z.uuid().optional(),
+    TINKER_API_KEY: z.string().optional(),
+    TINKER_MODEL_PATH: z
+      .string()
+      .regex(/^tinker:\/\/[^\s]+\/sampler_weights\/[^\s]+$/)
+      .optional(),
+    TINKER_CHECKPOINT_EXPIRES_AT: z.iso.datetime().optional(),
     BACKBOARD_API_KEY: z.string().optional(),
     TIGER_DATABASE_URL: z.string().url().optional(),
     SEMANTIC_SEARCH_ENABLED: z.enum(["true", "false"]).default("false"),

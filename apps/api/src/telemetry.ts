@@ -30,7 +30,14 @@ export function sanitizeEvent<T extends Record<string, unknown>>(event: T): T {
   const tags = event.tags as Record<string, unknown> | undefined;
   if (tags) {
     clean.tags = Object.fromEntries(
-      ["operation", "code", "request_id"].flatMap((key) => {
+      [
+        "operation",
+        "code",
+        "request_id",
+        "error_kind",
+        "http_status",
+        "release_sha",
+      ].flatMap((key) => {
         const value = safeString(tags[key], /^[a-zA-Z0-9_-]{1,64}$/);
         return value ? [[key, value]] : [];
       }),
@@ -74,6 +81,7 @@ export function sanitizeSpan(span: StreamedSpan): StreamedSpan {
       "place-context",
       "audio-summary",
       "Backboard interpretation",
+      "Tinker note interpretation",
     ].includes(span.name)
       ? span.name
       : "FieldIssue operation",
@@ -88,6 +96,7 @@ export function sanitizeSpan(span: StreamedSpan): StreamedSpan {
           "ai.tabpfn",
           "ai.workflow",
           "ai.backboard",
+          "ai.tinker",
         ].includes(span.attributes["sentry.op"])
           ? span.attributes["sentry.op"]
           : "fieldissue.operation",
@@ -129,11 +138,29 @@ export function reportFailure(
   code: string,
   operation: string,
   requestId?: string,
+  diagnostics: { errorKind?: string; httpStatus?: number } = {},
 ) {
   if (enabled)
     Sentry.captureException(
       new Error(/^[A-Z_]{1,100}$/.test(code) ? code : "OPERATION_FAILED"),
-      { tags: { operation, code, request_id: requestId } },
+      {
+        level:
+          diagnostics.httpStatus && diagnostics.httpStatus < 500
+            ? "info"
+            : "error",
+        tags: {
+          operation,
+          code,
+          request_id: requestId,
+          error_kind: diagnostics.errorKind,
+          http_status: diagnostics.httpStatus?.toString(),
+          release_sha: /^[a-f0-9]{40}$/.test(
+            process.env.RENDER_GIT_COMMIT ?? "",
+          )
+            ? process.env.RENDER_GIT_COMMIT
+            : undefined,
+        },
+      },
     );
 }
 export function trace<T>(
@@ -146,4 +173,15 @@ export function trace<T>(
 }
 export async function flushTelemetry() {
   if (enabled) await Sentry.flush(2000);
+}
+
+/** Fixed diagnostic classes only: never transmit an exception's message or SQL. */
+export function safeErrorKind(error: unknown): string {
+  if (error instanceof TypeError) return "TypeError";
+  if (error instanceof SyntaxError) return "SyntaxError";
+  if (error instanceof RangeError) return "RangeError";
+  const code = (error as { code?: unknown } | null)?.code;
+  if (typeof code === "string" && /^[0-9][0-9A-Z]{4}$/.test(code))
+    return `Postgres_${code}`;
+  return "OperationError";
 }

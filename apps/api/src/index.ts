@@ -1,3 +1,5 @@
+import { TabPFNDemoProvider, TabPFNDemoService } from "./tabpfn-demo.js";
+import { TinkerNoteProvider, TinkerNoteService } from "./tinker.js";
 import { removeFromSemanticIndex } from "./semantic.js";
 import { DataLifecycle } from "./lifecycle.js";
 import { BackboardProvider, ModelComparisonService } from "./backboard.js";
@@ -138,7 +140,32 @@ const retentionTimer = setInterval(
 );
 retentionTimer.unref();
 const webDirectory = fileURLToPath(new URL("../../web/dist", import.meta.url));
+const tinkerNotes =
+  config.TINKER_API_KEY &&
+  config.TINKER_MODEL_PATH &&
+  config.TINKER_CHECKPOINT_EXPIRES_AT
+    ? new TinkerNoteService(
+        repository,
+        new TinkerNoteProvider(
+          config.TINKER_API_KEY,
+          config.TINKER_MODEL_PATH,
+          config.TINKER_CHECKPOINT_EXPIRES_AT,
+        ),
+      )
+    : undefined;
+const tabpfnDemo =
+  config.TABPFN_API_KEY && config.TABPFN_FITTED_MODEL_ID
+    ? new TabPFNDemoService(
+        pool,
+        new TabPFNDemoProvider(
+          config.TABPFN_API_KEY,
+          config.TABPFN_FITTED_MODEL_ID,
+        ),
+      )
+    : undefined;
 const app = createApp({
+  tabpfnDemo,
+  tinkerNotes,
   modelComparison: config.BACKBOARD_API_KEY
     ? new ModelComparisonService(
         repository,
@@ -187,9 +214,10 @@ const app = createApp({
     {
       id: "tinker",
       name: "Tinker",
-      status: "recorded",
-      detail:
-        "Real training run on synthetic notes; expired checkpoint, offline evaluation only.",
+      status: tinkerNotes ? "configured" : "unavailable",
+      detail: tinkerNotes
+        ? `Live fine-tuned Qwen3 field-note interpretation. Synthetic training data; notes are user reports, not visual evidence. Checkpoint expires ${config.TINKER_CHECKPOINT_EXPIRES_AT}.`
+        : "Trained note interpretation is not configured.",
     },
     {
       id: "elevenlabs",
@@ -215,16 +243,17 @@ const app = createApp({
     {
       id: "entire",
       name: "Entire",
-      status: "local_evidence",
+      status: "documented",
       detail:
-        "Actual Claude frontend session attached to the V2 commit; reviewed provenance is in docs/verification/entire-v2-2026-10-08.md. Raw transcript stays private.",
+        "Actual Entire checkpoint with a reviewed nine-message transcript excerpt in docs/verification/entire-v2-curated-session.json. Full session remains private.",
     },
     {
       id: "tabpfn",
       name: "TabPFN",
-      status: "experimental",
-      detail:
-        "Disabled without genuine labeled revisit history, runtime and evaluation.",
+      status: tabpfnDemo ? "configured" : "unavailable",
+      detail: tabpfnDemo
+        ? "Real TabPFN-3.5 inference in the synthetic scenario tester. 96 invented training rows; not calibrated for real revisit scheduling."
+        : "Synthetic scenario demo is not configured.",
     },
   ],
   service,

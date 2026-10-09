@@ -1,3 +1,5 @@
+import { TabPFNDemo } from "@/components/field/tabpfn-demo";
+import { TinkerNote } from "@/components/field/tinker-note";
 import { Link } from "react-router";
 import { ArrowUpRightIcon, BeakerIcon, CircleDotIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -83,7 +85,7 @@ function EvaluationCard({ evaluation }: { evaluation: Evaluation }) {
     <Card>
       <CardHeader>
         <div className="flex flex-wrap gap-2">
-          <Badge variant="outline">Recorded experiment</Badge>
+          <Badge variant="outline">{evaluation.serving ? "Serving checkpoint evaluation" : "Historical evaluation"}</Badge>
           {!evaluation.serving ? <Badge variant="secondary">Not serving in production</Badge> : null}
         </div>
         <CardTitle className="mt-2 text-xl">{evaluation.title}</CardTitle>
@@ -211,6 +213,11 @@ export function LabPage() {
         <GemmaEvidence latest={latest} />
       </section>
 
+      <section className="flex flex-col gap-4" aria-labelledby="tinker-live">
+        <h2 id="tinker-live" className="text-2xl font-bold uppercase">Trained field-note interpretation</h2>
+        <TinkerNote key={latestObservationId} observationId={latestObservationId} note={latest.data?.observations.at(-1)?.note} available={byId.get("tinker")?.status === "configured"} canManage={latest.data?.permissions?.manage !== false} />
+      </section>
+
       <section className="flex flex-col gap-4" aria-labelledby="backboard">
         <h2 id="backboard" className="text-2xl font-bold uppercase">
           Backboard comparison
@@ -223,6 +230,17 @@ export function LabPage() {
           Semantic issue search
         </h2>
         {integrations.data ? <SemanticSearchPanel integration={tiger} /> : <Skeleton className="h-24" />}
+      </section>
+
+      <section className="flex flex-col gap-4" aria-labelledby="tabpfn-demo">
+        <h2 id="tabpfn-demo" className="text-2xl font-bold uppercase">Revisit scenario tester</h2>
+        <TabPFNDemo available={byId.get("tabpfn")?.status === "configured"} />
+      </section>
+
+      <section className="flex flex-col gap-3" aria-labelledby="entire-evidence">
+        <h2 id="entire-evidence" className="text-2xl font-bold uppercase">Entire development record</h2>
+        <p className="max-w-2xl text-muted-foreground">Read nine actual messages from Claude's frontend implementation session, captured by Entire. Private paths and tool context were removed. This record documents development; live acceptance checks are recorded separately.</p>
+        <a className="underline min-h-11 inline-flex items-center gap-2" href="https://github.com/himanshu748/fieldissue/blob/main/docs/verification/entire-v2-curated-session.json" target="_blank" rel="noreferrer">Read the reviewed session excerpt <ArrowUpRightIcon aria-hidden className="size-4" /></a>
       </section>
 
       <section className="flex flex-col gap-4" aria-labelledby="evals">

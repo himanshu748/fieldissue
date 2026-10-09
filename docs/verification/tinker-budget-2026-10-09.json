@@ -1,0 +1,9 @@
+{
+  "priorEstimatedUsd": 0.1071,
+  "maximumTotalUsd": 0.6462488000000001,
+  "cashUsd": 0,
+  "liveCalls": 200,
+  "checkpointTtlSeconds": 2592000,
+  "storageReserveUsd": 0.2,
+  "verificationCallsReserved": 10
+}

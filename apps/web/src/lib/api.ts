@@ -198,6 +198,11 @@ export const api = {
     ),
   semanticSearch: (q: string, signal?: AbortSignal) =>
     request<SemanticResult>(`/v1/search/semantic?${new URLSearchParams({ q, limit: "10" })}`, { signal }),
+  revisitDemo: (features: Record<string, number>) => request<{probability:number;model:string;trainingRows:number;createdAt:string;latencyMs:number;cached:boolean}>("/v1/model-lab/revisit-demo",{method:"POST",json:{features,syntheticDemoAcknowledged:true}}),
+  interpretNote: (observationId: string) => request<{
+    result: { category: string; object: string; condition: string; severity: string; evidence: string[] };
+    modelVersion: string; createdAt: string; latencyMs: number; cached: boolean;
+  }>("/v1/model-lab/interpret-note", { method: "POST", json: { observationId, consentToExternalProcessing: true } }),
   compareModels: (observationId: string, models: readonly string[]) =>
     request<ModelComparisonResult>("/v1/model-lab/compare", {
       method: "POST",

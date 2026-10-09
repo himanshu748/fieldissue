@@ -1,0 +1,1317 @@
+{
+  "kind": "fieldissue-tinker-evaluation",
+  "dataStatus": "synthetic-annotation-demo",
+  "createdAt": "2026-10-09T04:58:03.491641+00:00",
+  "provenance": {
+    "baseModel": "Qwen/Qwen3-8B",
+    "models": {
+      "base": {
+        "model": "Qwen/Qwen3-8B",
+        "modelVersion": "base"
+      },
+      "fineTuned": {
+        "model": "Qwen/Qwen3-8B",
+        "modelVersion": "tinker://efb40129-33b1-57e0-9f76-6524f961de35:train:0/sampler_weights/fieldissue-note-json-20261009-045450"
+      }
+    },
+    "checkpoint": "tinker://efb40129-33b1-57e0-9f76-6524f961de35:train:0/sampler_weights/fieldissue-note-json-20261009-045450",
+    "promptVersion": "fieldissue-note-json-v2",
+    "annotationVersion": "annotation-v2",
+    "datasetSha256": "e0df917ba8dd25c7911d435248283a4a8e0a33a6015d3c55378733aebf6877a3",
+    "testIds": [
+      "test-cleanliness-01",
+      "test-cleanliness-02",
+      "test-infrastructure-01",
+      "test-infrastructure-02",
+      "test-accessibility-01",
+      "test-accessibility-02",
+      "test-safety-01",
+      "test-safety-02",
+      "test-environment-01",
+      "test-environment-02",
+      "test-signage-01",
+      "test-signage-02",
+      "test-lighting-01",
+      "test-lighting-02",
+      "test-trail-01",
+      "test-trail-02",
+      "test-other-01",
+      "test-other-02"
+    ],
+    "temperature": 0.0,
+    "maxTokens": 512,
+    "seed": 42,
+    "splitLeakageCheck": "training-manifest"
+  },
+  "base": {
+    "exampleCount": 18,
+    "validJsonCount": 18,
+    "strictSchemaCount": 18,
+    "validJsonRate": 1.0,
+    "strictSchemaRate": 1.0,
+    "categoryAccuracy": 0.9444444444444444,
+    "severityAccuracy": 0.7222222222222222,
+    "evidenceClaimCount": 20,
+    "unsupportedEvidenceCount": 19,
+    "evidenceEvaluableExamples": 18,
+    "evidenceHallucinationRate": 0.95,
+    "evidenceRecall": 0.045454545454545456,
+    "perExample": [
+      {
+        "id": "test-cleanliness-01",
+        "validJson": true,
+        "schemaValid": true,
+        "categoryCorrect": true,
+        "severityCorrect": false,
+        "unsupportedEvidence": [
+          "food scraps scattered underneath"
+        ],
+        "evidenceClaimCount": 1
+      },
+      {
+        "id": "test-cleanliness-02",
+        "validJson": true,
+        "schemaValid": true,
+        "categoryCorrect": true,
+        "severityCorrect": false,
+        "unsupportedEvidence": [
+          "Dustbin bhara hai aur kachra bahar gira hai"
+        ],
+        "evidenceClaimCount": 1
+      },
+      {
+        "id": "test-infrastructure-01",
+        "validJson": true,
+        "schemaValid": true,
+        "categoryCorrect": true,
+        "severityCorrect": true,
+        "unsupportedEvidence": [
+          "large hole in the pavement",
+          "makes most of the lane unusable"
+        ],
+        "evidenceClaimCount": 2
+      },
+      {
+        "id": "test-infrastructure-02",
+        "validJson": true,
+        "schemaValid": true,
+        "categoryCorrect": true,
+        "severityCorrect": false,
+        "unsupportedEvidence": [
+          "Drain covr crackd but still in place."
+        ],
+        "evidenceClaimCount": 1
+      },
+      {
+        "id": "test-accessibility-01",
+        "validJson": true,
+        "schemaValid": true,
+        "categoryCorrect": true,
+        "severityCorrect": true,
+        "unsupportedEvidence": [
+          "accessible entrance is locked"
+        ],
+        "evidenceClaimCount": 2
+      },
+      {
+        "id": "test-accessibility-02",
+        "validJson": true,
+        "schemaValid": true,
+        "categoryCorrect": true,
+        "severityCorrect": true,
+        "unsupportedEvidence": [
+          "curb ramp surface rough"
+        ],
+        "evidenceClaimCount": 1
+      },
+      {
+        "id": "test-safety-01",
+        "validJson": true,
+        "schemaValid": true,
+        "categoryCorrect": true,
+        "severityCorrect": true,
+        "unsupportedEvidence": [
+          "Exposed live electrical cables are sparking where people are walking now."
+        ],
+        "evidenceClaimCount": 1
+      },
+      {
+        "id": "test-safety-02",
+        "validJson": true,
+        "schemaValid": true,
+        "categoryCorrect": true,
+        "severityCorrect": true,
+        "unsupportedEvidence": [
+          "khula manhole walkway par hai",
+          "koi barrier nahi"
+        ],
+        "evidenceClaimCount": 2
+      },
+      {
+        "id": "test-environment-01",
+        "validJson": true,
+        "schemaValid": true,
+        "categoryCorrect": true,
+        "severityCorrect": true,
+        "unsupportedEvidence": [
+          "oily patch is visible across the small pond surface"
+        ],
+        "evidenceClaimCount": 1
+      },
+      {
+        "id": "test-environment-02",
+        "validJson": true,
+        "schemaValid": true,
+        "categoryCorrect": false,
+        "severityCorrect": false,
+        "unsupportedEvidence": [
+          "tree brnch broke and hangs frm trunk"
+        ],
+        "evidenceClaimCount": 1
+      },
+      {
+        "id": "test-signage-01",
+        "validJson": true,
+        "schemaValid": true,
+        "categoryCorrect": true,
+        "severityCorrect": true,
+        "unsupportedEvidence": [
+          "exit board is blank",
+          "lettering has worn away"
+        ],
+        "evidenceClaimCount": 2
+      },
+      {
+        "id": "test-signage-02",
+        "validJson": true,
+        "schemaValid": true,
+        "categoryCorrect": true,
+        "severityCorrect": true,
+        "unsupportedEvidence": [
+          "trail sign faded"
+        ],
+        "evidenceClaimCount": 1
+      },
+      {
+        "id": "test-lighting-01",
+        "validJson": true,
+        "schemaValid": true,
+        "categoryCorrect": true,
+        "severityCorrect": true,
+        "unsupportedEvidence": [
+          "Three lamps along the path remain dark every evening"
+        ],
+        "evidenceClaimCount": 1
+      },
+      {
+        "id": "test-lighting-02",
+        "validJson": true,
+        "schemaValid": true,
+        "categoryCorrect": true,
+        "severityCorrect": true,
+        "unsupportedEvidence": [
+          "Entrance ka lamp raat mein band rehta hai"
+        ],
+        "evidenceClaimCount": 1
+      },
+      {
+        "id": "test-trail-01",
+        "validJson": true,
+        "schemaValid": true,
+        "categoryCorrect": true,
+        "severityCorrect": true,
+        "unsupportedEvidence": [
+          "A fallen trunk spans the trail and leaves no room to pass"
+        ],
+        "evidenceClaimCount": 1
+      },
+      {
+        "id": "test-trail-02",
+        "validJson": true,
+        "schemaValid": true,
+        "categoryCorrect": true,
+        "severityCorrect": false,
+        "unsupportedEvidence": [
+          "Hikng tral muddy after heavy rain."
+        ],
+        "evidenceClaimCount": 1
+      },
+      {
+        "id": "test-other-01",
+        "validJson": true,
+        "schemaValid": true,
+        "categoryCorrect": true,
+        "severityCorrect": true,
+        "unsupportedEvidence": [],
+        "evidenceClaimCount": 0
+      },
+      {
+        "id": "test-other-02",
+        "validJson": true,
+        "schemaValid": true,
+        "categoryCorrect": true,
+        "severityCorrect": true,
+        "unsupportedEvidence": [],
+        "evidenceClaimCount": 0
+      }
+    ]
+  },
+  "fineTuned": {
+    "exampleCount": 18,
+    "validJsonCount": 18,
+    "strictSchemaCount": 18,
+    "validJsonRate": 1.0,
+    "strictSchemaRate": 1.0,
+    "categoryAccuracy": 0.9444444444444444,
+    "severityAccuracy": 0.9444444444444444,
+    "evidenceClaimCount": 20,
+    "unsupportedEvidenceCount": 16,
+    "evidenceEvaluableExamples": 18,
+    "evidenceHallucinationRate": 0.8,
+    "evidenceRecall": 0.18181818181818182,
+    "perExample": [
+      {
+        "id": "test-cleanliness-01",
+        "validJson": true,
+        "schemaValid": true,
+        "categoryCorrect": true,
+        "severityCorrect": true,
+        "unsupportedEvidence": [
+          "food scraps under picnic table"
+        ],
+        "evidenceClaimCount": 1
+      },
+      {
+        "id": "test-cleanliness-02",
+        "validJson": true,
+        "schemaValid": true,
+        "categoryCorrect": true,
+        "severityCorrect": true,
+        "unsupportedEvidence": [
+          "overflowing waste bin",
+          "spilled garbage"
+        ],
+        "evidenceClaimCount": 2
+      },
+      {
+        "id": "test-infrastructure-01",
+        "validJson": true,
+        "schemaValid": true,
+        "categoryCorrect": true,
+        "severityCorrect": true,
+        "unsupportedEvidence": [
+          "lane partially unusable"
+        ],
+        "evidenceClaimCount": 2
+      },
+      {
+        "id": "test-infrastructure-02",
+        "validJson": true,
+        "schemaValid": true,
+        "categoryCorrect": true,
+        "severityCorrect": true,
+        "unsupportedEvidence": [],
+        "evidenceClaimCount": 1
+      },
+      {
+        "id": "test-accessibility-01",
+        "validJson": true,
+        "schemaValid": true,
+        "categoryCorrect": true,
+        "severityCorrect": true,
+        "unsupportedEvidence": [
+          "locked accessible entrance",
+          "wheelchair users unable to enter"
+        ],
+        "evidenceClaimCount": 2
+      },
+      {
+        "id": "test-accessibility-02",
+        "validJson": true,
+        "schemaValid": true,
+        "categoryCorrect": true,
+        "severityCorrect": true,
+        "unsupportedEvidence": [
+          "rough surface on curb ramp"
+        ],
+        "evidenceClaimCount": 1
+      },
+      {
+        "id": "test-safety-01",
+        "validJson": true,
+        "schemaValid": true,
+        "categoryCorrect": true,
+        "severityCorrect": true,
+        "unsupportedEvidence": [
+          "sparking live cables on walkway"
+        ],
+        "evidenceClaimCount": 1
+      },
+      {
+        "id": "test-safety-02",
+        "validJson": true,
+        "schemaValid": true,
+        "categoryCorrect": true,
+        "severityCorrect": true,
+        "unsupportedEvidence": [
+          "uncovered manhole on walkway"
+        ],
+        "evidenceClaimCount": 1
+      },
+      {
+        "id": "test-environment-01",
+        "validJson": true,
+        "schemaValid": true,
+        "categoryCorrect": true,
+        "severityCorrect": true,
+        "unsupportedEvidence": [],
+        "evidenceClaimCount": 1
+      },
+      {
+        "id": "test-environment-02",
+        "validJson": true,
+        "schemaValid": true,
+        "categoryCorrect": false,
+        "severityCorrect": true,
+        "unsupportedEvidence": [
+          "branch hanging from trunk"
+        ],
+        "evidenceClaimCount": 1
+      },
+      {
+        "id": "test-signage-01",
+        "validJson": true,
+        "schemaValid": true,
+        "categoryCorrect": true,
+        "severityCorrect": true,
+        "unsupportedEvidence": [
+          "exit board has no lettering",
+          "lettering on exit board worn away"
+        ],
+        "evidenceClaimCount": 2
+      },
+      {
+        "id": "test-signage-02",
+        "validJson": true,
+        "schemaValid": true,
+        "categoryCorrect": true,
+        "severityCorrect": false,
+        "unsupportedEvidence": [],
+        "evidenceClaimCount": 1
+      },
+      {
+        "id": "test-lighting-01",
+        "validJson": true,
+        "schemaValid": true,
+        "categoryCorrect": true,
+        "severityCorrect": true,
+        "unsupportedEvidence": [
+          "three lamps not working"
+        ],
+        "evidenceClaimCount": 1
+      },
+      {
+        "id": "test-lighting-02",
+        "validJson": true,
+        "schemaValid": true,
+        "categoryCorrect": true,
+        "severityCorrect": true,
+        "unsupportedEvidence": [
+          "light not working at entrance"
+        ],
+        "evidenceClaimCount": 1
+      },
+      {
+        "id": "test-trail-01",
+        "validJson": true,
+        "schemaValid": true,
+        "categoryCorrect": true,
+        "severityCorrect": true,
+        "unsupportedEvidence": [
+          "fallen trunk blocking trail"
+        ],
+        "evidenceClaimCount": 1
+      },
+      {
+        "id": "test-trail-02",
+        "validJson": true,
+        "schemaValid": true,
+        "categoryCorrect": true,
+        "severityCorrect": true,
+        "unsupportedEvidence": [
+          "muddy trail after heavy rain"
+        ],
+        "evidenceClaimCount": 1
+      },
+      {
+        "id": "test-other-01",
+        "validJson": true,
+        "schemaValid": true,
+        "categoryCorrect": true,
+        "severityCorrect": true,
+        "unsupportedEvidence": [],
+        "evidenceClaimCount": 0
+      },
+      {
+        "id": "test-other-02",
+        "validJson": true,
+        "schemaValid": true,
+        "categoryCorrect": true,
+        "severityCorrect": true,
+        "unsupportedEvidence": [],
+        "evidenceClaimCount": 0
+      }
+    ]
+  },
+  "samples": [
+    {
+      "id": "test-cleanliness-01",
+      "style": "english",
+      "note": "The picnic table has food scraps scattered underneath it.",
+      "target": {
+        "category": "CLEANLINESS",
+        "object": "picnic_table",
+        "condition": "scraps_scattered_underneath_table",
+        "severity": "MEDIUM",
+        "evidence": [
+          "food scraps underneath picnic table"
+        ]
+      },
+      "supportedEvidence": [
+        {
+          "description": "food scraps underneath picnic table",
+          "quote": "picnic table has food scraps scattered underneath it",
+          "source": "note"
+        }
+      ],
+      "baseRaw": "{\n  \"category\": \"CLEANLINESS\",\n  \"object\": \"picnic_table\",\n  \"condition\": \"food_scattered\",\n  \"severity\": \"LOW\",\n  \"evidence\": [\"food scraps scattered underneath\"]\n}",
+      "fineTunedRaw": "{\"category\":\"CLEANLINESS\",\"object\":\"picnic_table\",\"condition\":\"food_scattered\",\"severity\":\"MEDIUM\",\"evidence\":[\"food scraps under picnic table\"]}",
+      "basePrediction": {
+        "category": "CLEANLINESS",
+        "object": "picnic_table",
+        "condition": "food_scattered",
+        "severity": "LOW",
+        "evidence": [
+          "food scraps scattered underneath"
+        ]
+      },
+      "fineTunedPrediction": {
+        "category": "CLEANLINESS",
+        "object": "picnic_table",
+        "condition": "food_scattered",
+        "severity": "MEDIUM",
+        "evidence": [
+          "food scraps under picnic table"
+        ]
+      },
+      "annotationProvenance": {
+        "source": "assistant-authored-synthetic",
+        "annotationVersion": "annotation-v2",
+        "inputSource": "note"
+      }
+    },
+    {
+      "id": "test-cleanliness-02",
+      "style": "hinglish",
+      "note": "Dustbin bhara hai aur kachra bahar gira hai.",
+      "target": {
+        "category": "CLEANLINESS",
+        "object": "waste_bin",
+        "condition": "full",
+        "severity": "MEDIUM",
+        "evidence": [
+          "full dustbin",
+          "garbage fallen outside bin"
+        ]
+      },
+      "supportedEvidence": [
+        {
+          "description": "full dustbin",
+          "quote": "Dustbin bhara hai",
+          "source": "note"
+        },
+        {
+          "description": "garbage fallen outside bin",
+          "quote": "kachra bahar gira hai",
+          "source": "note"
+        }
+      ],
+      "baseRaw": "{\"category\": \"CLEANLINESS\", \"object\": \"waste_bin\", \"condition\": \"overflowing\", \"severity\": \"HIGH\", \"evidence\": [\"Dustbin bhara hai aur kachra bahar gira hai\"]}",
+      "fineTunedRaw": "{\"category\":\"CLEANLINESS\",\"object\":\"waste_bin\",\"condition\":\"overflowing\",\"severity\":\"MEDIUM\",\"evidence\":[\"overflowing waste bin\",\"spilled garbage\"]}",
+      "basePrediction": {
+        "category": "CLEANLINESS",
+        "object": "waste_bin",
+        "condition": "overflowing",
+        "severity": "HIGH",
+        "evidence": [
+          "Dustbin bhara hai aur kachra bahar gira hai"
+        ]
+      },
+      "fineTunedPrediction": {
+        "category": "CLEANLINESS",
+        "object": "waste_bin",
+        "condition": "overflowing",
+        "severity": "MEDIUM",
+        "evidence": [
+          "overflowing waste bin",
+          "spilled garbage"
+        ]
+      },
+      "annotationProvenance": {
+        "source": "assistant-authored-synthetic",
+        "annotationVersion": "annotation-v2",
+        "inputSource": "note"
+      }
+    },
+    {
+      "id": "test-infrastructure-01",
+      "style": "english",
+      "note": "A large hole in the pavement makes most of the lane unusable.",
+      "target": {
+        "category": "INFRASTRUCTURE",
+        "object": "pavement",
+        "condition": "damaged",
+        "severity": "HIGH",
+        "evidence": [
+          "large hole in pavement",
+          "most of lane unusable"
+        ]
+      },
+      "supportedEvidence": [
+        {
+          "description": "large hole in pavement",
+          "quote": "large hole in the pavement",
+          "source": "note"
+        },
+        {
+          "description": "most of lane unusable",
+          "quote": "most of the lane unusable",
+          "source": "note"
+        }
+      ],
+      "baseRaw": "{\"category\": \"INFRASTRUCTURE\", \"object\": \"pavement\", \"condition\": \"large hole\", \"severity\": \"HIGH\", \"evidence\": [\"large hole in the pavement\", \"makes most of the lane unusable\"]}",
+      "fineTunedRaw": "{\"category\":\"INFRASTRUCTURE\",\"object\":\"pavement\",\"condition\":\"cracked\",\"severity\":\"HIGH\",\"evidence\":[\"large hole in pavement\",\"lane partially unusable\"]}",
+      "basePrediction": {
+        "category": "INFRASTRUCTURE",
+        "object": "pavement",
+        "condition": "large hole",
+        "severity": "HIGH",
+        "evidence": [
+          "large hole in the pavement",
+          "makes most of the lane unusable"
+        ]
+      },
+      "fineTunedPrediction": {
+        "category": "INFRASTRUCTURE",
+        "object": "pavement",
+        "condition": "cracked",
+        "severity": "HIGH",
+        "evidence": [
+          "large hole in pavement",
+          "lane partially unusable"
+        ]
+      },
+      "annotationProvenance": {
+        "source": "assistant-authored-synthetic",
+        "annotationVersion": "annotation-v2",
+        "inputSource": "note"
+      }
+    },
+    {
+      "id": "test-infrastructure-02",
+      "style": "typos",
+      "note": "Drain covr crackd but still in place.",
+      "target": {
+        "category": "INFRASTRUCTURE",
+        "object": "drain_cover",
+        "condition": "cracked",
+        "severity": "MEDIUM",
+        "evidence": [
+          "cracked drain cover",
+          "cover still in place"
+        ]
+      },
+      "supportedEvidence": [
+        {
+          "description": "cracked drain cover",
+          "quote": "Drain covr crackd",
+          "source": "note"
+        },
+        {
+          "description": "cover still in place",
+          "quote": "still in place",
+          "source": "note"
+        }
+      ],
+      "baseRaw": "{\"category\": \"INFRASTRUCTURE\", \"object\": \"drain_cover\", \"condition\": \"cracked\", \"severity\": \"LOW\", \"evidence\": [\"Drain covr crackd but still in place.\"]}",
+      "fineTunedRaw": "{\"category\":\"INFRASTRUCTURE\",\"object\":\"drain_cover\",\"condition\":\"cracked\",\"severity\":\"MEDIUM\",\"evidence\":[\"cracked drain cover\"]}",
+      "basePrediction": {
+        "category": "INFRASTRUCTURE",
+        "object": "drain_cover",
+        "condition": "cracked",
+        "severity": "LOW",
+        "evidence": [
+          "Drain covr crackd but still in place."
+        ]
+      },
+      "fineTunedPrediction": {
+        "category": "INFRASTRUCTURE",
+        "object": "drain_cover",
+        "condition": "cracked",
+        "severity": "MEDIUM",
+        "evidence": [
+          "cracked drain cover"
+        ]
+      },
+      "annotationProvenance": {
+        "source": "assistant-authored-synthetic",
+        "annotationVersion": "annotation-v2",
+        "inputSource": "note"
+      }
+    },
+    {
+      "id": "test-accessibility-01",
+      "style": "english",
+      "note": "The accessible entrance is locked and wheelchair users cannot enter.",
+      "target": {
+        "category": "ACCESSIBILITY",
+        "object": "accessible_entrance",
+        "condition": "locked",
+        "severity": "HIGH",
+        "evidence": [
+          "accessible entrance locked",
+          "wheelchair users cannot enter"
+        ]
+      },
+      "supportedEvidence": [
+        {
+          "description": "accessible entrance locked",
+          "quote": "accessible entrance is locked",
+          "source": "note"
+        },
+        {
+          "description": "wheelchair users cannot enter",
+          "quote": "wheelchair users cannot enter",
+          "source": "note"
+        }
+      ],
+      "baseRaw": "{\"category\": \"ACCESSIBILITY\", \"object\": \"entrance\", \"condition\": \"locked\", \"severity\": \"HIGH\", \"evidence\": [\"accessible entrance is locked\", \"wheelchair users cannot enter\"]}",
+      "fineTunedRaw": "{\"category\":\"ACCESSIBILITY\",\"object\":\"entrance\",\"condition\":\"locked\",\"severity\":\"HIGH\",\"evidence\":[\"locked accessible entrance\",\"wheelchair users unable to enter\"]}",
+      "basePrediction": {
+        "category": "ACCESSIBILITY",
+        "object": "entrance",
+        "condition": "locked",
+        "severity": "HIGH",
+        "evidence": [
+          "accessible entrance is locked",
+          "wheelchair users cannot enter"
+        ]
+      },
+      "fineTunedPrediction": {
+        "category": "ACCESSIBILITY",
+        "object": "entrance",
+        "condition": "locked",
+        "severity": "HIGH",
+        "evidence": [
+          "locked accessible entrance",
+          "wheelchair users unable to enter"
+        ]
+      },
+      "annotationProvenance": {
+        "source": "assistant-authored-synthetic",
+        "annotationVersion": "annotation-v2",
+        "inputSource": "note"
+      }
+    },
+    {
+      "id": "test-accessibility-02",
+      "style": "short",
+      "note": "Curb ramp surface rough.",
+      "target": {
+        "category": "ACCESSIBILITY",
+        "object": "curb_ramp",
+        "condition": "rough_surface",
+        "severity": "MEDIUM",
+        "evidence": [
+          "rough curb ramp surface"
+        ]
+      },
+      "supportedEvidence": [
+        {
+          "description": "rough curb ramp surface",
+          "quote": "Curb ramp surface rough",
+          "source": "note"
+        }
+      ],
+      "baseRaw": "{\n  \"category\": \"ACCESSIBILITY\",\n  \"object\": \"curb_ramp\",\n  \"condition\": \"rough_surface\",\n  \"severity\": \"MEDIUM\",\n  \"evidence\": [\"curb ramp surface rough\"]\n}",
+      "fineTunedRaw": "{\"category\":\"ACCESSIBILITY\",\"object\":\"curb_ramp\",\"condition\":\"rough_surface\",\"severity\":\"MEDIUM\",\"evidence\":[\"rough surface on curb ramp\"]}",
+      "basePrediction": {
+        "category": "ACCESSIBILITY",
+        "object": "curb_ramp",
+        "condition": "rough_surface",
+        "severity": "MEDIUM",
+        "evidence": [
+          "curb ramp surface rough"
+        ]
+      },
+      "fineTunedPrediction": {
+        "category": "ACCESSIBILITY",
+        "object": "curb_ramp",
+        "condition": "rough_surface",
+        "severity": "MEDIUM",
+        "evidence": [
+          "rough surface on curb ramp"
+        ]
+      },
+      "annotationProvenance": {
+        "source": "assistant-authored-synthetic",
+        "annotationVersion": "annotation-v2",
+        "inputSource": "note"
+      }
+    },
+    {
+      "id": "test-safety-01",
+      "style": "english",
+      "note": "Exposed live electrical cables are sparking where people are walking now.",
+      "target": {
+        "category": "SAFETY",
+        "object": "electrical_cable",
+        "condition": "exposed",
+        "severity": "CRITICAL",
+        "evidence": [
+          "exposed live cables sparking where people walk now"
+        ]
+      },
+      "supportedEvidence": [
+        {
+          "description": "exposed live cables sparking where people walk now",
+          "quote": "Exposed live electrical cables are sparking where people are walking now",
+          "source": "note"
+        }
+      ],
+      "baseRaw": "{\"category\": \"SAFETY\", \"object\": \"electrical_cable\", \"condition\": \"sparking\", \"severity\": \"CRITICAL\", \"evidence\": [\"Exposed live electrical cables are sparking where people are walking now.\"]}",
+      "fineTunedRaw": "{\"category\":\"SAFETY\",\"object\":\"electrical_cable\",\"condition\":\"sparking\",\"severity\":\"CRITICAL\",\"evidence\":[\"sparking live cables on walkway\"]}",
+      "basePrediction": {
+        "category": "SAFETY",
+        "object": "electrical_cable",
+        "condition": "sparking",
+        "severity": "CRITICAL",
+        "evidence": [
+          "Exposed live electrical cables are sparking where people are walking now."
+        ]
+      },
+      "fineTunedPrediction": {
+        "category": "SAFETY",
+        "object": "electrical_cable",
+        "condition": "sparking",
+        "severity": "CRITICAL",
+        "evidence": [
+          "sparking live cables on walkway"
+        ]
+      },
+      "annotationProvenance": {
+        "source": "assistant-authored-synthetic",
+        "annotationVersion": "annotation-v2",
+        "inputSource": "note"
+      }
+    },
+    {
+      "id": "test-safety-02",
+      "style": "hinglish",
+      "note": "Khula manhole walkway par hai, koi barrier nahi.",
+      "target": {
+        "category": "SAFETY",
+        "object": "manhole",
+        "condition": "open",
+        "severity": "HIGH",
+        "evidence": [
+          "open manhole on walkway",
+          "no barrier"
+        ]
+      },
+      "supportedEvidence": [
+        {
+          "description": "open manhole on walkway",
+          "quote": "Khula manhole walkway par hai",
+          "source": "note"
+        },
+        {
+          "description": "no barrier",
+          "quote": "koi barrier nahi",
+          "source": "note"
+        }
+      ],
+      "baseRaw": "{\"category\": \"SAFETY\", \"object\": \"manhole\", \"condition\": \"unprotected\", \"severity\": \"HIGH\", \"evidence\": [\"khula manhole walkway par hai\", \"koi barrier nahi\"]}",
+      "fineTunedRaw": "{\"category\":\"SAFETY\",\"object\":\"manhole\",\"condition\":\"uncovered\",\"severity\":\"HIGH\",\"evidence\":[\"uncovered manhole on walkway\"]}",
+      "basePrediction": {
+        "category": "SAFETY",
+        "object": "manhole",
+        "condition": "unprotected",
+        "severity": "HIGH",
+        "evidence": [
+          "khula manhole walkway par hai",
+          "koi barrier nahi"
+        ]
+      },
+      "fineTunedPrediction": {
+        "category": "SAFETY",
+        "object": "manhole",
+        "condition": "uncovered",
+        "severity": "HIGH",
+        "evidence": [
+          "uncovered manhole on walkway"
+        ]
+      },
+      "annotationProvenance": {
+        "source": "assistant-authored-synthetic",
+        "annotationVersion": "annotation-v2",
+        "inputSource": "note"
+      }
+    },
+    {
+      "id": "test-environment-01",
+      "style": "english",
+      "note": "An oily patch is visible across the small pond surface.",
+      "target": {
+        "category": "ENVIRONMENT",
+        "object": "pond",
+        "condition": "oily_film",
+        "severity": "MEDIUM",
+        "evidence": [
+          "oily patch on pond surface"
+        ]
+      },
+      "supportedEvidence": [
+        {
+          "description": "oily patch on pond surface",
+          "quote": "An oily patch is visible across the small pond surface",
+          "source": "note"
+        }
+      ],
+      "baseRaw": "{\"category\": \"ENVIRONMENT\", \"object\": \"pond\", \"condition\": \"oily_patch\", \"severity\": \"MEDIUM\", \"evidence\": [\"oily patch is visible across the small pond surface\"]}",
+      "fineTunedRaw": "{\"category\":\"ENVIRONMENT\",\"object\":\"pond\",\"condition\":\"oily_patch\",\"severity\":\"MEDIUM\",\"evidence\":[\"oily patch on pond surface\"]}",
+      "basePrediction": {
+        "category": "ENVIRONMENT",
+        "object": "pond",
+        "condition": "oily_patch",
+        "severity": "MEDIUM",
+        "evidence": [
+          "oily patch is visible across the small pond surface"
+        ]
+      },
+      "fineTunedPrediction": {
+        "category": "ENVIRONMENT",
+        "object": "pond",
+        "condition": "oily_patch",
+        "severity": "MEDIUM",
+        "evidence": [
+          "oily patch on pond surface"
+        ]
+      },
+      "annotationProvenance": {
+        "source": "assistant-authored-synthetic",
+        "annotationVersion": "annotation-v2",
+        "inputSource": "note"
+      }
+    },
+    {
+      "id": "test-environment-02",
+      "style": "typos",
+      "note": "Tree brnch broke and hangs frm trunk.",
+      "target": {
+        "category": "ENVIRONMENT",
+        "object": "tree_branch",
+        "condition": "broken",
+        "severity": "MEDIUM",
+        "evidence": [
+          "broken tree branch hanging from trunk"
+        ]
+      },
+      "supportedEvidence": [
+        {
+          "description": "broken tree branch hanging from trunk",
+          "quote": "Tree brnch broke and hangs frm trunk",
+          "source": "note"
+        }
+      ],
+      "baseRaw": "{\n  \"category\": \"SAFETY\",\n  \"object\": \"tree\",\n  \"condition\": \"branch_hanging\",\n  \"severity\": \"HIGH\",\n  \"evidence\": [\n    \"tree brnch broke and hangs frm trunk\"\n  ]\n}",
+      "fineTunedRaw": "{\"category\":\"SAFETY\",\"object\":\"tree\",\"condition\":\"branch_hanging\",\"severity\":\"MEDIUM\",\"evidence\":[\"branch hanging from trunk\"]}",
+      "basePrediction": {
+        "category": "SAFETY",
+        "object": "tree",
+        "condition": "branch_hanging",
+        "severity": "HIGH",
+        "evidence": [
+          "tree brnch broke and hangs frm trunk"
+        ]
+      },
+      "fineTunedPrediction": {
+        "category": "SAFETY",
+        "object": "tree",
+        "condition": "branch_hanging",
+        "severity": "MEDIUM",
+        "evidence": [
+          "branch hanging from trunk"
+        ]
+      },
+      "annotationProvenance": {
+        "source": "assistant-authored-synthetic",
+        "annotationVersion": "annotation-v2",
+        "inputSource": "note"
+      }
+    },
+    {
+      "id": "test-signage-01",
+      "style": "english",
+      "note": "The exit board is blank; its lettering has worn away.",
+      "target": {
+        "category": "SIGNAGE",
+        "object": "exit_sign",
+        "condition": "blank",
+        "severity": "MEDIUM",
+        "evidence": [
+          "blank exit board",
+          "lettering worn away"
+        ]
+      },
+      "supportedEvidence": [
+        {
+          "description": "blank exit board",
+          "quote": "exit board is blank",
+          "source": "note"
+        },
+        {
+          "description": "lettering worn away",
+          "quote": "lettering has worn away",
+          "source": "note"
+        }
+      ],
+      "baseRaw": "{\n  \"category\": \"SIGNAGE\",\n  \"object\": \"exit_board\",\n  \"condition\": \"unreadable\",\n  \"severity\": \"MEDIUM\",\n  \"evidence\": [\n    \"exit board is blank\",\n    \"lettering has worn away\"\n  ]\n}",
+      "fineTunedRaw": "{\"category\":\"SIGNAGE\",\"object\":\"exit_board\",\"condition\":\"blank\",\"severity\":\"MEDIUM\",\"evidence\":[\"exit board has no lettering\",\"lettering on exit board worn away\"]}",
+      "basePrediction": {
+        "category": "SIGNAGE",
+        "object": "exit_board",
+        "condition": "unreadable",
+        "severity": "MEDIUM",
+        "evidence": [
+          "exit board is blank",
+          "lettering has worn away"
+        ]
+      },
+      "fineTunedPrediction": {
+        "category": "SIGNAGE",
+        "object": "exit_board",
+        "condition": "blank",
+        "severity": "MEDIUM",
+        "evidence": [
+          "exit board has no lettering",
+          "lettering on exit board worn away"
+        ]
+      },
+      "annotationProvenance": {
+        "source": "assistant-authored-synthetic",
+        "annotationVersion": "annotation-v2",
+        "inputSource": "note"
+      }
+    },
+    {
+      "id": "test-signage-02",
+      "style": "short",
+      "note": "Trail sign faded.",
+      "target": {
+        "category": "SIGNAGE",
+        "object": "trail_sign",
+        "condition": "faded",
+        "severity": "LOW",
+        "evidence": [
+          "faded trail sign"
+        ]
+      },
+      "supportedEvidence": [
+        {
+          "description": "faded trail sign",
+          "quote": "Trail sign faded",
+          "source": "note"
+        }
+      ],
+      "baseRaw": "{\"category\": \"SIGNAGE\", \"object\": \"trail_sign\", \"condition\": \"faded\", \"severity\": \"LOW\", \"evidence\": [\"trail sign faded\"]}",
+      "fineTunedRaw": "{\"category\":\"SIGNAGE\",\"object\":\"trail_sign\",\"condition\":\"faded\",\"severity\":\"MEDIUM\",\"evidence\":[\"faded trail sign\"]}",
+      "basePrediction": {
+        "category": "SIGNAGE",
+        "object": "trail_sign",
+        "condition": "faded",
+        "severity": "LOW",
+        "evidence": [
+          "trail sign faded"
+        ]
+      },
+      "fineTunedPrediction": {
+        "category": "SIGNAGE",
+        "object": "trail_sign",
+        "condition": "faded",
+        "severity": "MEDIUM",
+        "evidence": [
+          "faded trail sign"
+        ]
+      },
+      "annotationProvenance": {
+        "source": "assistant-authored-synthetic",
+        "annotationVersion": "annotation-v2",
+        "inputSource": "note"
+      }
+    },
+    {
+      "id": "test-lighting-01",
+      "style": "english",
+      "note": "Three lamps along the path remain dark every evening.",
+      "target": {
+        "category": "LIGHTING",
+        "object": "light",
+        "condition": "not_working",
+        "severity": "MEDIUM",
+        "evidence": [
+          "three path lamps dark every evening"
+        ]
+      },
+      "supportedEvidence": [
+        {
+          "description": "three path lamps dark every evening",
+          "quote": "Three lamps along the path remain dark every evening",
+          "source": "note"
+        }
+      ],
+      "baseRaw": "{\"category\": \"LIGHTING\", \"object\": \"lamp\", \"condition\": \"not functioning\", \"severity\": \"MEDIUM\", \"evidence\": [\"Three lamps along the path remain dark every evening\"]}",
+      "fineTunedRaw": "{\"category\":\"LIGHTING\",\"object\":\"lighting\",\"condition\":\"non_functioning\",\"severity\":\"MEDIUM\",\"evidence\":[\"three lamps not working\"]}",
+      "basePrediction": {
+        "category": "LIGHTING",
+        "object": "lamp",
+        "condition": "not functioning",
+        "severity": "MEDIUM",
+        "evidence": [
+          "Three lamps along the path remain dark every evening"
+        ]
+      },
+      "fineTunedPrediction": {
+        "category": "LIGHTING",
+        "object": "lighting",
+        "condition": "non_functioning",
+        "severity": "MEDIUM",
+        "evidence": [
+          "three lamps not working"
+        ]
+      },
+      "annotationProvenance": {
+        "source": "assistant-authored-synthetic",
+        "annotationVersion": "annotation-v2",
+        "inputSource": "note"
+      }
+    },
+    {
+      "id": "test-lighting-02",
+      "style": "hinglish",
+      "note": "Entrance ka lamp raat mein band rehta hai.",
+      "target": {
+        "category": "LIGHTING",
+        "object": "light",
+        "condition": "not_working",
+        "severity": "MEDIUM",
+        "evidence": [
+          "entrance lamp off at night"
+        ]
+      },
+      "supportedEvidence": [
+        {
+          "description": "entrance lamp off at night",
+          "quote": "Entrance ka lamp raat mein band rehta hai",
+          "source": "note"
+        }
+      ],
+      "baseRaw": "{\"category\": \"LIGHTING\", \"object\": \"light\", \"condition\": \"not functioning\", \"severity\": \"MEDIUM\", \"evidence\": [\"Entrance ka lamp raat mein band rehta hai\"]}",
+      "fineTunedRaw": "{\"category\":\"LIGHTING\",\"object\":\"light\",\"condition\":\"not working\",\"severity\":\"MEDIUM\",\"evidence\":[\"light not working at entrance\"]}",
+      "basePrediction": {
+        "category": "LIGHTING",
+        "object": "light",
+        "condition": "not functioning",
+        "severity": "MEDIUM",
+        "evidence": [
+          "Entrance ka lamp raat mein band rehta hai"
+        ]
+      },
+      "fineTunedPrediction": {
+        "category": "LIGHTING",
+        "object": "light",
+        "condition": "not working",
+        "severity": "MEDIUM",
+        "evidence": [
+          "light not working at entrance"
+        ]
+      },
+      "annotationProvenance": {
+        "source": "assistant-authored-synthetic",
+        "annotationVersion": "annotation-v2",
+        "inputSource": "note"
+      }
+    },
+    {
+      "id": "test-trail-01",
+      "style": "english",
+      "note": "A fallen trunk spans the trail and leaves no room to pass.",
+      "target": {
+        "category": "TRAIL",
+        "object": "trail",
+        "condition": "blocked",
+        "severity": "HIGH",
+        "evidence": [
+          "fallen trunk blocks trail passage"
+        ]
+      },
+      "supportedEvidence": [
+        {
+          "description": "fallen trunk blocks trail passage",
+          "quote": "A fallen trunk spans the trail and leaves no room to pass",
+          "source": "note"
+        }
+      ],
+      "baseRaw": "{\"category\": \"TRAIL\", \"object\": \"trunk\", \"condition\": \"blocking\", \"severity\": \"HIGH\", \"evidence\": [\"A fallen trunk spans the trail and leaves no room to pass\"]}",
+      "fineTunedRaw": "{\"category\":\"TRAIL\",\"object\":\"obstruction\",\"condition\":\"blocking\",\"severity\":\"HIGH\",\"evidence\":[\"fallen trunk blocking trail\"]}",
+      "basePrediction": {
+        "category": "TRAIL",
+        "object": "trunk",
+        "condition": "blocking",
+        "severity": "HIGH",
+        "evidence": [
+          "A fallen trunk spans the trail and leaves no room to pass"
+        ]
+      },
+      "fineTunedPrediction": {
+        "category": "TRAIL",
+        "object": "obstruction",
+        "condition": "blocking",
+        "severity": "HIGH",
+        "evidence": [
+          "fallen trunk blocking trail"
+        ]
+      },
+      "annotationProvenance": {
+        "source": "assistant-authored-synthetic",
+        "annotationVersion": "annotation-v2",
+        "inputSource": "note"
+      }
+    },
+    {
+      "id": "test-trail-02",
+      "style": "typos",
+      "note": "Hikng tral muddy after heavy rain.",
+      "target": {
+        "category": "TRAIL",
+        "object": "trail",
+        "condition": "muddy",
+        "severity": "MEDIUM",
+        "evidence": [
+          "hiking trail muddy after heavy rain"
+        ]
+      },
+      "supportedEvidence": [
+        {
+          "description": "hiking trail muddy after heavy rain",
+          "quote": "Hikng tral muddy after heavy rain",
+          "source": "note"
+        }
+      ],
+      "baseRaw": "{\"category\": \"TRAIL\", \"object\": \"trail\", \"condition\": \"muddy\", \"severity\": \"HIGH\", \"evidence\": [\"Hikng tral muddy after heavy rain.\"]}",
+      "fineTunedRaw": "{\"category\":\"TRAIL\",\"object\":\"trail\",\"condition\":\"muddy\",\"severity\":\"MEDIUM\",\"evidence\":[\"muddy trail after heavy rain\"]}",
+      "basePrediction": {
+        "category": "TRAIL",
+        "object": "trail",
+        "condition": "muddy",
+        "severity": "HIGH",
+        "evidence": [
+          "Hikng tral muddy after heavy rain."
+        ]
+      },
+      "fineTunedPrediction": {
+        "category": "TRAIL",
+        "object": "trail",
+        "condition": "muddy",
+        "severity": "MEDIUM",
+        "evidence": [
+          "muddy trail after heavy rain"
+        ]
+      },
+      "annotationProvenance": {
+        "source": "assistant-authored-synthetic",
+        "annotationVersion": "annotation-v2",
+        "inputSource": "note"
+      }
+    },
+    {
+      "id": "test-other-01",
+      "style": "english",
+      "note": "Please inspect this spot; I cannot describe the issue.",
+      "target": {
+        "category": "OTHER",
+        "object": "unknown",
+        "condition": "unspecified",
+        "severity": "LOW",
+        "evidence": []
+      },
+      "supportedEvidence": [],
+      "baseRaw": "{\"category\": \"OTHER\", \"object\": \"unknown\", \"condition\": \"unspecified\", \"severity\": \"LOW\", \"evidence\": []}",
+      "fineTunedRaw": "{\"category\":\"OTHER\",\"object\":\"unknown\",\"condition\":\"unspecified\",\"severity\":\"LOW\",\"evidence\":[]}",
+      "basePrediction": {
+        "category": "OTHER",
+        "object": "unknown",
+        "condition": "unspecified",
+        "severity": "LOW",
+        "evidence": []
+      },
+      "fineTunedPrediction": {
+        "category": "OTHER",
+        "object": "unknown",
+        "condition": "unspecified",
+        "severity": "LOW",
+        "evidence": []
+      },
+      "annotationProvenance": {
+        "source": "assistant-authored-synthetic",
+        "annotationVersion": "annotation-v2",
+        "inputSource": "note"
+      }
+    },
+    {
+      "id": "test-other-02",
+      "style": "short",
+      "note": "Issue?",
+      "target": {
+        "category": "OTHER",
+        "object": "unknown",
+        "condition": "unspecified",
+        "severity": "LOW",
+        "evidence": []
+      },
+      "supportedEvidence": [],
+      "baseRaw": "{\"category\": \"OTHER\", \"object\": \"unknown\", \"condition\": \"unspecified\", \"severity\": \"LOW\", \"evidence\": []}",
+      "fineTunedRaw": "{\"category\":\"OTHER\",\"object\":\"unknown\",\"condition\":\"unspecified\",\"severity\":\"LOW\",\"evidence\":[]}",
+      "basePrediction": {
+        "category": "OTHER",
+        "object": "unknown",
+        "condition": "unspecified",
+        "severity": "LOW",
+        "evidence": []
+      },
+      "fineTunedPrediction": {
+        "category": "OTHER",
+        "object": "unknown",
+        "condition": "unspecified",
+        "severity": "LOW",
+        "evidence": []
+      },
+      "annotationProvenance": {
+        "source": "assistant-authored-synthetic",
+        "annotationVersion": "annotation-v2",
+        "inputSource": "note"
+      }
+    }
+  ],
+  "limitations": "Tiny synthetic held-out demo, not an independent real-world benchmark. No generalization, improvement, safety, or calibration claims. Evidence hallucination is conservative exact matching after NFKC, casefold, and whitespace normalization against synthetic annotated supported descriptions; supported paraphrases can be marked unsupported. Invalid schema outputs are excluded from evidence-claim denominators, count as wrong for accuracy, and contribute zero evidence recall. Null hallucination rate means no evaluable claims. Targets and predictions contain only the compact five fields; authoritative model/checkpoint provenance is report metadata from verified clients. All fixture evidence is a note-based report, never independent image inspection."
+}

@@ -1,0 +1,23 @@
+{
+  "result": {
+    "category": "CLEANLINESS",
+    "object": "waste_bin",
+    "condition": "overflowing",
+    "severity": "MEDIUM",
+    "evidence": [
+      "overflowing waste bin at park gate"
+    ]
+  },
+  "model": "Qwen/Qwen3-8B",
+  "modelVersion": "tinker://efb40129-33b1-57e0-9f76-6524f961de35:train:0/sampler_weights/fieldissue-note-json-20261009-045450",
+  "provider": "Tinker",
+  "promptVersion": "fieldissue-note-json-v2",
+  "inputModality": "text",
+  "trainingData": "synthetic",
+  "evidenceSource": "user_report",
+  "changesIssueStatus": false,
+  "latencyMs": 1349,
+  "createdAt": "2026-10-09T04:57:36.459Z",
+  "inputTokens": 252,
+  "outputTokens": 36
+}

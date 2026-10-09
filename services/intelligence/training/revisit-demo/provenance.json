@@ -1,0 +1,44 @@
+{
+  "source": "assistant-generated-synthetic",
+  "seed": 42,
+  "trainRows": 96,
+  "heldOutRows": 24,
+  "features": [
+    "days_since_last_observation",
+    "previous_observation_count",
+    "issue_age_days",
+    "severity",
+    "category",
+    "nearby_issue_count",
+    "previous_change_count",
+    "status"
+  ],
+  "labels": "Invented stochastic scenario outcomes, not human-reviewed field history.",
+  "purpose": "Exercise real TabPFN classification on synthetic data. Not calibrated for scheduling real visits.",
+  "categoryEncoding": [
+    "CLEANLINESS",
+    "INFRASTRUCTURE",
+    "ACCESSIBILITY",
+    "SAFETY",
+    "ENVIRONMENT",
+    "SIGNAGE",
+    "LIGHTING",
+    "TRAIL",
+    "OTHER"
+  ],
+  "severityEncoding": [
+    "LOW",
+    "MEDIUM",
+    "HIGH",
+    "CRITICAL"
+  ],
+  "statusEncoding": [
+    "OPEN",
+    "ACKNOWLEDGED",
+    "IN_PROGRESS"
+  ],
+  "sha256": {
+    "train.csv": "c16fe4e356e2a9350c0c17cb149a57bc6de400d997aabb2c6d241e913e229e5f",
+    "test.csv": "14ee4652cb44e27599d96391db9026b7925dc7ec2eb9038f87722a373981d7c1"
+  }
+}

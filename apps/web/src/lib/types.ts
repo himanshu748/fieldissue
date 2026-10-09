@@ -131,6 +131,7 @@ export interface AppConfig {
   storage: string;
   retentionNotice: string;
   audio: boolean;
+  tinkerNotes?: boolean;
   mock: boolean;
 }
 

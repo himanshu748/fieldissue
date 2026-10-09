@@ -1,3 +1,4 @@
+import { TinkerNote } from "@/components/field/tinker-note";
 import { ShareSummary } from "@/components/field/share-summary";
 import { useState } from "react";
 import { Link, useParams } from "react-router";
@@ -345,6 +346,11 @@ export function IssueDetailPage() {
           <section className="flex flex-col gap-3">
             <h2 className="eyebrow">Field briefing</h2>
             <AudioBriefing key={`${data.publicId}:${data.updatedAt}`} issueId={data.publicId} available={config?.audio} />
+          </section>
+
+          <section className="flex flex-col gap-3">
+            <h2 className="eyebrow">Understand the field note</h2>
+            <TinkerNote key={latest?.id} observationId={latest?.id} note={latest?.note} available={config?.tinkerNotes} canManage={data.permissions?.manage !== false} />
           </section>
 
           <section aria-labelledby="history" className="flex flex-col gap-4">

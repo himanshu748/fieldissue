@@ -1,0 +1,23 @@
+{
+  "probability": 0.49516406655311584,
+  "model": "TabPFN-3.5",
+  "provider": "Prior Labs",
+  "trainingData": "synthetic",
+  "trainingRows": 96,
+  "datasetVersion": "fieldissue-synthetic-revisit-v1",
+  "features": {
+    "days_since_last_observation": 7,
+    "previous_observation_count": 3,
+    "issue_age_days": 21,
+    "severity": 1,
+    "category": 0,
+    "nearby_issue_count": 4,
+    "previous_change_count": 1,
+    "status": 0
+  },
+  "changesIssueStatus": false,
+  "usedForWalkRanking": false,
+  "latencyMs": 5567,
+  "createdAt": "2026-10-09T05:05:34.836Z",
+  "estimatedTokens": 10000
+}

@@ -111,7 +111,7 @@ export function PrivacyPage() {
       </Section>
       <Section n="03" title="Optional services and storage">
         <p>Render stores reports, photos and the audit history. When enabled, Tiger Data keeps a secondary search index of report text and coordinates; local open-model embeddings turn the text into search vectors. SerpApi may receive report coordinates to look up nearby places.</p>
-        <p>Backboard receives the stored note and analysis only after you consent to a comparison. ElevenLabs receives an issue briefing when you request spoken audio. Neither service can change an issue’s status.</p>
+        <p>The synthetic scenario tester sends only the entered numeric scenario values to Prior Labs for TabPFN inference. It never uploads real reports and does not rank actual walks. Tinker receives only the selected written note after you consent to interpretation. Its model was fine-tuned on synthetic notes; its interpretations are not verified photo evidence. Backboard receives the stored note and analysis only after you consent to a comparison. ElevenLabs receives an issue briefing when you request spoken audio. These services cannot change an issue’s status.</p>
       </Section>
       <Section n="04" title="Maps">
         <p>
