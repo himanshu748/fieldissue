@@ -10,8 +10,8 @@ Built for the DEV **Hacktoberfest Open-Source AI Challenge, Week 1: Touch Grass*
 | --- | --- |
 | Try it in a browser | Open `/` for the landing page and `/app` for the separate workspace on any running FieldIssue API (local: <http://127.0.0.1:3000/>). Walkthrough and video shot list: [DEMO.md](DEMO.md) |
 | Hosted demo | [Landing](https://fieldissue-demo.onrender.com/) · [Workspace](https://fieldissue-demo.onrender.com/app), public guest access, with optional accounts for report ownership and saved walks across devices |
-| DEV post | _add after publishing_ |
-| Demo video | _add link_ |
+| DEV entry | [Submission draft](docs/submission/fieldissue-dev-draft.md), not yet published |
+| Demo video | Not yet recorded; the live demo and [walkthrough](DEMO.md) are available |
 | Verified live provider runs | [docs/zero-cost-stack.md](docs/zero-cost-stack.md) and [docs/verification/](docs/verification/) |
 
 ## How it gets people outside
@@ -48,14 +48,14 @@ No Docker? See [Native development](#native-development-and-docker-free-verifica
 
 - **Window:** first commit 6 October 2026; all work is inside the challenge window. **Commits after the 11 October 23:59 PDT deadline:** none so far. Any later commit will be listed here, as the challenge rules require.
 - **AI tools:** the October 8 redesign and reliability fixes used Codex; Claude Opus 5.5 drafted the landing page and independently reviewed the changes. The marketing park illustration was generated with Codex and is visibly labeled as illustration, never field evidence. Built with AI coding assistance (Codex sessions, checkpointed with the Entire CLI per [docs/zero-cost-stack.md](docs/zero-cost-stack.md)). The browser demo page, the Render judge-demo profile and DEMO.md (8 October) were drafted with an AI assistant (Hark) and checked with the test suite and a headless-browser run. _Author: confirm or complete this list._
-- **Demo data** is fictional and labelled `DEMO FIXTURE` in every image.
+- **Demo data:** seeded fixtures are labeled `DEMO FIXTURE`. Public integration control FI-000005 instead uses a CC0 sample photo, a `DEMO TEST` title and an explicit synthetic 0,0 location note; it is not a real field report.
 - **License:** MIT, see [LICENSE](LICENSE).
 
 ---
 
 ## Backend reference
 
-A backend for geotagged field observations, chronological evidence, explicit issue resolution, and before/after real-world diffs. This repository contains the TypeScript API, private Python intelligence service, database migrations, local tooling, and live opt-in Tinker note interpretation plus a synthetic TabPFN scenario tester. The V2 frontend in `apps/web` uses React, Vite, Tailwind, shadcn/ui, Motion and Leaflet. The API serves its build at `/` with distinct workspace routes under `/app`; the judge demo supports public guest access with browser-owned reports and a private operator token. These are not personal accounts. See [V2 architecture](docs/v2-implementation.md) and [DEMO.md](DEMO.md). A validated Render deployment scaffold and its remaining gates are documented in [docs/render-deployment.md](docs/render-deployment.md).
+A backend for geotagged field observations, chronological evidence, explicit issue resolution, and before/after real-world diffs. This repository contains the TypeScript API, private Python intelligence service, database migrations, local tooling, and live opt-in Tinker note interpretation plus a synthetic TabPFN scenario tester. The V2 frontend in `apps/web` uses React, Vite, Tailwind, shadcn/ui, Motion and Leaflet. The API serves its build at `/` with distinct workspace routes under `/app`; the judge demo supports public guest access with browser-owned reports, optional nickname/password accounts, and separate private operator access. Accounts support ownership and private walks across devices; nicknames are not verified identities. See [V2 architecture](docs/v2-implementation.md) and [DEMO.md](DEMO.md). A validated Render deployment scaffold and its remaining gates are documented in [docs/render-deployment.md](docs/render-deployment.md).
 
 ### Architecture
 
