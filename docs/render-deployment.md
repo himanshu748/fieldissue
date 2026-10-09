@@ -1,141 +1,32 @@
 # Render deployment
 
-`render.yaml` describes one **free** Docker web service. The Node API and Python
-intelligence boundary run together; Python binds only `127.0.0.1:8000`. Node
-listens on Render's `PORT`. If either process exits, the supervisor terminates
-the other. No model weights are included in this lightweight image.
+## Current hosted service
 
-The API runs the existing Mastra workflows and calls real Gemma from Python.
-This makes Render part of the actual AI request path. No hosted deployment or
-prize eligibility is implied by a validated Blueprint alone.
+`fieldissue-demo` runs the Node API and Python intelligence service in one free Render web service. Python binds only to loopback; the supervisor stops both processes if either exits. CI must pass before Render deploys `main`.
 
-## Deployment gates
+The live database is the credit-backed Tiger Data service, with certificate-verified TLS, PostGIS and pgvector. Media uses bounded PostgreSQL storage and survives web restarts. The original Render database expiry notice does not describe this database. Sponsor credit and service lifetime are finite; this is not archival storage.
 
-Do not apply the Blueprint until all of these are satisfied:
+The public demo requires no access token. Public issues are readable, guest cookies protect report ownership, and optional accounts preserve ownership across devices. Private reports remain protected. The operator bearer token is a server-side administrative credential and must not be distributed to judges. See [public access](public-guests.md) and [data lifecycle](data-lifecycle.md).
 
-1. A PostgreSQL service with PostGIS and pgvector, migrated using the checked-in
-   migrations and reachable with certificate-verified TLS. `DATABASE_SSL=true`
-   never disables certificate checks. The current Tiger free service's direct
-   connection still fails certificate verification as of October 7, 2026.
-2. A durable S3-compatible bucket and narrowly scoped credentials. Set
-   `MEDIA_BASE_URL` to the deployed API's `/media` URL. The free instance has no
-   persistent disk; the supervisor deliberately refuses local media storage.
-3. Real Gemma configuration. The verified Google free-tier endpoint is
-   `https://generativelanguage.googleapis.com/v1beta/openai`, exact advertised
-   model `models/gemma-4-26b-a4b-it`, reported version `001`. This is a hosted
-   provider version, **not** a cryptographic checkpoint pin. Recheck metadata
-   when upgrading. Free-tier content is subject to Google's data-use terms;
-   the live smoke test used a public CC0 photograph.
-4. Optional only: genuine labeled revisit history and a provisioned TabPFN runtime.
-   **This last gate is not satisfied by the lightweight free image.** It omits
-   PyTorch/TabPFN and model weights. A paid, sufficiently sized private worker
-   with the optional TabPFN dependency and mounted trusted weights/data, or an
-   explicitly implemented remote TabPFN provider, is needed before enabling the optional prediction capability.
-   No synthetic labels or heuristic production predictions are substituted.
+Core readiness (`/ready`) checks the database and real Gemma service. `/health` is process liveness only. Optional providers cannot be inferred from either endpoint: check their actual results and the dated evidence in `docs/verification/`.
 
-The Blueprint uses `/ready`, which requires Gemma and database access. Missing core providers return 503. TabPFN is optional and does not gate core readiness.
-Do not change the health check to `/health` to present an incomplete backend as
-ready. The Blueprint is a reviewed starting configuration, not a claim that
-the free tier supports the full local TabPFN stack.
+The current integration set includes real Gemma, ElevenLabs, SerpApi, Backboard, Tinker and Prior Labs TabPFN APIs. Tinker uses a trained, expiring checkpoint. TabPFN is an explicitly synthetic scenario demo; real-history walk ranking remains disabled. Tiger semantic search uses bundled local embeddings and pgvector. Sentry records sanitized operation events. Entire evidence concerns development provenance, not a runtime service.
 
-## Judge demo profile (`render.demo.yaml`)
+## Reproducible profiles
 
-The production Blueprint above stays gated. For a short-lived hackathon demo,
-`render.demo.yaml` describes a smaller, clearly labelled profile:
+- `render.yaml` is the external TLS database/S3 profile. It requires configured secrets and provisioned storage before use.
+- `render.demo.yaml` is the original smaller Render database/PostgreSQL-media profile. It does not replicate the current Tiger-backed deployment or its full provider configuration. Its generated administrative token is not a public demo credential. Do not apply it over the existing service to recreate the current deployment.
 
-| | Production (`render.yaml`) | Judge demo (`render.demo.yaml`) |
-| --- | --- | --- |
-| Vision | Real Gemma | Real Gemma (mocks are still refused) |
-| TabPFN | Optional experimental capability | Not configured; revisit predictions return `available=false` |
-| Database | External PostGIS/pgvector, verified TLS | Free Render Postgres 17 on the private network; migrations run at start |
-| Media | S3-compatible bucket | PostgreSQL byte storage, retained across web restarts; 200 MiB capacity cap (or use S3) |
-| Health check | `/ready` | `/ready` for core readiness; `/health` is liveness only |
-| Access | Shared bearer token | Same shared bearer token, pasted into the demo page |
+For a fresh service, supply only verified free or sponsor-credit providers, keep mock mode off, preserve certificate verification, configure bounded provider quotas and media capacity, and add no paid plan or payment method. Use `/ready` as the deployment readiness gate. After deploy, verify the exact runtime commit, public/private access, report/revisit behavior and durable media. Preserve existing records when migrating databases.
 
-What a judge gets: the public landing page at `/` and a separate workspace at
-`/app`, with report capture, real Gemma comparisons, saved issue links, filters,
-map, persistent comparison history, manual resolution and reopening. Photos
-survive web service restarts because they are in the database. The database
-itself expires after 30 days: this is a time-limited demo, not archival storage.
-TabPFN predictions remain unavailable until genuine history, weights and runtime are validated. Core readiness is independent.
+## Secrets and limits
 
-Steps:
+Store secrets in Render private environment settings and ignored local files. Never commit `.env`, provider keys, session cookies or recovery codes. Keep public and internal service credentials distinct.
 
-1. Get a Gemma API key from Google AI Studio (free tier). Free-tier content is
-   subject to Google's data-use terms, so only upload photos you are happy to
-   share.
-2. Merge the branch to `main` (the Blueprint deploys from `main`).
-3. Render dashboard → **New → Blueprint** → pick `himanshu748/fieldissue`, set
-   **Blueprint Path** to `render.demo.yaml`. It creates `fieldissue-demo-db`
-   (free Postgres) and the `fieldissue-demo` free web service.
-4. When prompted, paste `GEMMA_API_KEY`. Leave everything else as generated.
-5. After the deploy: open the service → **Environment** → copy `API_ACCESS_TOKEN`.
-   Open `https://<service>.onrender.com/app`, paste the token, and run the full
-   flow once with a real photo. `/health` passing proves only that the process
-   is up; this manual run is the real check.
-6. Share the URL publicly and provide the shared access token privately to judges.
-   Anyone with the token can upload, so rotate or delete the service after
-   judging.
+The API bounds concurrent work and provider starts. Database-backed provider accounting survives restarts; actual provider calls reserve units, cached responses and committed idempotent retries do not. Failed provider calls consume units. Unit caps are not dollar budgets, so cash-free usage also depends on provider billing settings and available credit.
 
-Free-tier facts that affect the demo ([Render free limits](https://render.com/docs/free)):
-the web service sleeps after 15 minutes without traffic and takes about a minute
-to wake; local files are lost when it sleeps; the free database expires 30 days
-after creation; only one free database per workspace. PostGIS and pgvector are
-enabled with `CREATE EXTENSION`, which the first migration does
-([Render Postgres extensions](https://render.com/docs/postgresql-extensions)).
+PostgreSQL media capacity is bounded; exhausting it rejects new media without deleting existing evidence. `DATABASE_CA_FILE` can supply an official CA where needed; TLS verification must remain enabled.
 
-Before the October 8 durability update, the demo profile was exercised locally: `scripts/render-start.mjs`
-with `FIELDISSUE_DEMO_PROFILE=true` against a fresh PostGIS database and a local
-OpenAI-compatible stub in place of Gemma (plumbing, not model quality). See the latest dated verification record for hosted deployment status.
+## Evidence
 
-## Access and secrets
-
-Render generates separate `API_ACCESS_TOKEN` and `INTERNAL_SERVICE_TOKEN` values.
-Every public API and media request needs `Authorization: Bearer <API_ACCESS_TOKEN>`;
-the landing/workspace shell, static assets, safe `/app-config`, `/health` and
-`/ready` are public. Issue data and media remain protected. Protected responses and media
-use private/no-store caching. This is a shared demo gateway, not user accounts,
-tenant isolation, or reporter authentication. Keep the token server-side and
-out of public frontend bundles and URLs.
-
-Other secrets are `sync: false`; store them in Render's environment settings.
-Never commit `.env` or downloaded provider credentials. The API rejects mock
-mode in production. The combined supervisor also refuses missing credentials,
-shared gateway/internal tokens, non-TLS database configuration, or local uploads.
-
-## Validation and deployment
-
-```sh
-render whoami -o json
-render blueprints validate render.yaml -o json
-```
-
-After satisfying the gates, push the reviewed configuration and use
-<https://dashboard.render.com/blueprint/new?repo=https://github.com/himanshu748/fieldissue>.
-Fill the secrets, review the **free** service plan, and apply. Automatic deploys
-wait for repository checks. Verify `/ready`, rejected anonymous requests,
-authenticated upload/retrieval/comparison, durable media across a restart, and
-provider failure responses before calling the deployment complete.
-
-Official references:
-[Render free limits](https://render.com/docs/free),
-[Blueprint schema](https://render.com/docs/blueprint-spec),
-[Gemma API and images](https://ai.google.dev/gemma/docs/core/gemma_on_gemini_api),
-[Google API pricing](https://ai.google.dev/gemini-api/docs/pricing), and
-[Week 1 challenge](https://dev.to/challenges/hacktoberfest-week1-2026-10-05).
-
-## Capacity and provider limits
-
-The production entrypoint bounds writes globally to 30 starts per minute and
-two concurrent operations. PostgreSQL atomically records at most 60 provider
-operations per UTC day across restarts. Each actual analysis, comparison,
-place lookup, prediction or new audio generation reserves one unit immediately
-before the call; committed idempotent replays and cached results reserve none.
-Failed provider attempts consume units. This is an application safety limit,
-not a dollar budget: configure only verified free accounts or credit-only
-accounts without top-up, and leave provider retries disabled in the free profile.
-
-PostgreSQL media storage rejects additions beyond 200 MiB without deleting
-existing evidence. Free database expiry still removes all records and media.
-`DATABASE_CA_FILE` can supply an official provider CA when system trust is not
-sufficient; certificate verification is never disabled.
+See [current P1/P2 acceptance](verification/p2-acceptance-2026-10-09.md), [live model evidence](verification/live-models-2026-10-09.md), and the dated JSON records in `docs/verification/`. Health checks, configuration flags and CI fixtures do not independently prove successful live inference.

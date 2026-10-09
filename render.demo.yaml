@@ -21,9 +21,8 @@ services:
     dockerfilePath: ./Dockerfile.render
     dockerContext: .
     autoDeployTrigger: checksPass
-    # /ready also requires TabPFN, which this profile deliberately omits.
-    # /health is liveness only; check a real upload after every deploy.
-    healthCheckPath: /health
+    # Core readiness requires the database and real Gemma; TabPFN is optional.
+    healthCheckPath: /ready
     envVars:
       - key: FIELDISSUE_DEMO_PROFILE
         value: "true"

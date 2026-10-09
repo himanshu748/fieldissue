@@ -8,7 +8,7 @@ services:
     dockerfilePath: ./Dockerfile.render
     dockerContext: .
     autoDeployTrigger: checksPass
-    # Keep full readiness: missing real Gemma or TabPFN must block a live deploy.
+    # Core readiness: missing database or real Gemma blocks a live deploy.
     healthCheckPath: /ready
     envVars:
       - key: PORT

@@ -41,7 +41,14 @@ export function WalkSync() {
   async function save() {
     if (!walk || remote === undefined) return;
     const data = {
-      ...walk,
+      version: walk.version,
+      createdAt: walk.createdAt,
+      startedAt: walk.startedAt,
+      origin: {
+        latitude: walk.origin.latitude,
+        longitude: walk.origin.longitude,
+      },
+      radiusMeters: walk.radiusMeters,
       items: walk.items.map(({ issueId, state, observationId }) => ({
         issueId,
         state,

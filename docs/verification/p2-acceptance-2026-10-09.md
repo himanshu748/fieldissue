@@ -23,6 +23,8 @@ Local browser acceptance used an isolated database schema and explicitly synthet
 - Server stopped: the app reloaded from the service worker, restored a photo draft, saved it to IndexedDB, navigated to its queue and survived another reload.
 - The first upload failed because the local test harness targeted an unrelated local service. The capture remained intact. After correcting the harness, retry created one issue using real `models/gemma-4-26b-a4b-it`, version `001`, and removed the queued item. Synthetic location and sample-photo origin were explicit in the record.
 
+Browser testing also caught and fixed a walk-save contract mismatch: location-picker metadata is now stripped before sending the strict private walk payload. Saving the corrected walk returned a persisted account copy. Directions stay hidden until explicit consent; the generated URL contains the two selected coordinates and walking mode. Synthetic 0,0 test coordinates do not establish a routable outdoor journey.
+
 Additional browser checks passed: PNG summary download, redacted Open311 JSON download, calendar download with valid CRLF framing, and a persisted in-app reminder. The native date input needed a committed keyboard change before its action enabled.
 
 Local validation: type/format checks and production build passed. The final focused suite passed 13/13 against a fresh isolated Tiger schema. A broader earlier run passed 160/163; the three failures were the existing service-boundary readiness checks exceeding their 500 ms database connection timeout over remote TLS. CI uses local PostGIS and remains the release gate for those checks. No timeout assertion was weakened.
