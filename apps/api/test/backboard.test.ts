@@ -1,5 +1,10 @@
 import { it, expect, vi } from "vitest";
-import { BackboardProvider, comparisonModels } from "../src/backboard.js";
+import {
+  BackboardProvider,
+  ModelComparisonService,
+  comparisonModels,
+} from "../src/backboard.js";
+import { AppError } from "../src/errors.js";
 import { createApp } from "../src/app.js";
 const output = {
   category: "OTHER",
@@ -96,4 +101,68 @@ it("requires access, explicit consent and two distinct allowed models before any
   expect(compare).not.toHaveBeenCalled();
   expect((await send(base)).status).toBe(200);
   expect(compare).toHaveBeenCalledTimes(1);
+});
+
+function comparisonFixture(
+  interpret: ReturnType<typeof vi.fn>,
+  consume = vi.fn(async (_units: number) => {}),
+) {
+  const query = vi.fn(async (sql: string) => {
+    if (sql.startsWith("SELECT note"))
+      return { rows: [{ note: "broken bench", ai_analysis: {} }] };
+    if (sql.startsWith("SELECT *")) return { rows: [] };
+    return { rows: [], rowCount: 1 };
+  });
+  const service = new ModelComparisonService(
+    { pool: { query } } as any,
+    { interpret } as any,
+    consume,
+  );
+  return { service, query, consume };
+}
+it("recovers once from invalid model output and charges quota for both attempts", async () => {
+  const interpret = vi
+    .fn()
+    .mockRejectedValueOnce(new AppError("INVALID_MODEL_OUTPUT", 502, "invalid"))
+    .mockResolvedValue({ model: comparisonModels[0], result: output });
+  const { service, consume } = comparisonFixture(interpret);
+  const result = await service.compare("observation", [comparisonModels[0]]);
+  expect(result.results).toMatchObject([
+    { status: "complete", cached: false, result: output },
+  ]);
+  expect(interpret).toHaveBeenCalledTimes(2);
+  expect(consume.mock.calls).toEqual([[1], [1]]);
+});
+it("stops after two invalid outputs without saving fabricated success", async () => {
+  const interpret = vi
+    .fn()
+    .mockRejectedValue(new AppError("INVALID_MODEL_OUTPUT", 502, "invalid"));
+  const { service, query } = comparisonFixture(interpret);
+  const result = await service.compare("observation", [comparisonModels[0]]);
+  expect(result.results).toEqual([
+    {
+      model: comparisonModels[0],
+      status: "failed",
+      error: "INVALID_MODEL_OUTPUT",
+    },
+  ]);
+  expect(interpret).toHaveBeenCalledTimes(2);
+  expect(
+    query.mock.calls.some(([sql]) => sql.includes("SET status='complete'")),
+  ).toBe(false);
+});
+it("does not send the retry if its provider allowance is exhausted", async () => {
+  const interpret = vi
+    .fn()
+    .mockRejectedValue(new AppError("INVALID_MODEL_OUTPUT", 502, "invalid"));
+  const consume = vi
+    .fn()
+    .mockResolvedValueOnce(undefined)
+    .mockRejectedValue(new AppError("PROVIDER_LIMIT", 429, "limit"));
+  const { service } = comparisonFixture(interpret, consume);
+  const result = await service.compare("observation", [comparisonModels[0]]);
+  expect(result.results).toMatchObject([
+    { status: "failed", error: "PROVIDER_LIMIT" },
+  ]);
+  expect(interpret).toHaveBeenCalledTimes(1);
 });

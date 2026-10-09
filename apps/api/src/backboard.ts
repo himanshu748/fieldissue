@@ -1,4 +1,4 @@
-import { trace } from "./telemetry.js";
+import { reportFailure, trace } from "./telemetry.js";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { categorySchema, severitySchema } from "@fieldissue/shared";
@@ -135,7 +135,7 @@ export class ModelComparisonService {
       const claimed = await this.repository.pool.query(
         `INSERT INTO model_comparisons(observation_id,model,prompt_version,status,lease_token) VALUES($1,$2,$3,'pending',$4)
     ON CONFLICT(observation_id,model,prompt_version) DO UPDATE SET status='pending',lease_token=$4,updated_at=now(),consented_at=now()
-    WHERE model_comparisons.status='failed' OR (model_comparisons.status='pending' AND model_comparisons.updated_at<now()-interval '2 minutes') RETURNING model`,
+    WHERE model_comparisons.status='failed' OR (model_comparisons.status='pending' AND model_comparisons.updated_at<now()-interval '3 minutes') RETURNING model`,
         [observationId, model, promptVersion, token],
       );
       if (!claimed.rowCount) {
@@ -143,12 +143,26 @@ export class ModelComparisonService {
         continue;
       }
       try {
-        await this.consume(1);
-        const result = await trace(
-          "Backboard interpretation",
-          "ai.backboard",
-          () => this.provider.interpret(model, text),
-        );
+        // A model can occasionally violate the strict schema or quote invented
+        // evidence. Retry once without weakening validation; both calls use quota.
+        const run = async () => {
+          await this.consume(1);
+          return trace("Backboard interpretation", "ai.backboard", () =>
+            this.provider.interpret(model, text),
+          );
+        };
+        let result;
+        try {
+          result = await run();
+        } catch (error) {
+          if (
+            !(error instanceof AppError) ||
+            error.code !== "INVALID_MODEL_OUTPUT"
+          )
+            throw error;
+          reportFailure("INVALID_MODEL_OUTPUT", "backboard");
+          result = await run();
+        }
         await this.repository.pool.query(
           "UPDATE model_comparisons SET status='complete',result=$5,updated_at=now(),error_code=NULL WHERE observation_id=$1 AND model=$2 AND prompt_version=$3 AND lease_token=$4",
           [observationId, model, promptVersion, token, JSON.stringify(result)],
