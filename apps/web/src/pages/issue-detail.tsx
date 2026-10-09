@@ -354,6 +354,7 @@ export function IssueDetailPage() {
           <section className="flex flex-col gap-3">
             <h2 className="eyebrow">Understand the field note</h2>
             <TinkerNote key={latest?.id} observationId={latest?.id} note={latest?.note} available={config?.tinkerNotes} canManage={data.permissions?.manage !== false} />
+            <Link to={`/app/lab?issue=${encodeURIComponent(data.publicId)}#backboard`} className="inline-flex min-h-11 items-center text-sm underline">Inspect this report in the Model Lab</Link>
           </section>
 
           <section aria-labelledby="history" className="flex flex-col gap-4">

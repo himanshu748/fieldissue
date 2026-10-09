@@ -2,7 +2,7 @@ import { TabPFNDemo } from "@/components/field/tabpfn-demo";
 import { TinkerNote } from "@/components/field/tinker-note";
 import { RecordedTinkerExamples } from "@/components/field/tinker-examples";
 import { useEffect } from "react";
-import { Link, useLocation } from "react-router";
+import { Link, useLocation, useSearchParams } from "react-router";
 import { ArrowUpRightIcon, BeakerIcon, CircleDotIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -160,19 +160,29 @@ function GemmaEvidence({ latest }: { latest: Resource<LatestIssue> }) {
 }
 
 export function LabPage() {
+  const [params] = useSearchParams();
+  const issueId = params.get("issue") || undefined;
+  // Remount on selection so consent and model results never carry to another report.
+  return <LabContent key={issueId ?? "latest"} issueId={issueId} />;
+}
+
+function LabContent({ issueId }: { issueId?: string }) {
+  const [, setParams] = useSearchParams();
   const { hash } = useLocation();
   const evaluations = useResource((signal) => api.evaluations(signal), []);
-  useEffect(() => {
-    if (hash === "#tinker-examples" && evaluations.data?.tinkerExamples)
-      document.getElementById("tinker-examples")?.scrollIntoView({ block: "start" });
-  }, [hash, evaluations.data]);
   const integrations = useResource((signal) => api.integrations(signal), []);
+  const reports = useResource((signal) => api.listIssues(new URLSearchParams({ limit: "50" }), signal), []);
   const latest = useResource<LatestIssue>(async (signal) => {
+    if (issueId) return api.issue(issueId, signal);
     const list = await api.listIssues(new URLSearchParams({ limit: "1" }), signal);
     const first = list.items[0];
     return first ? api.issue(first.publicId, signal) : null;
   }, []);
   const latestObservationId = latest.data?.observations.at(-1)?.id;
+  useEffect(() => {
+    if (["#tinker-examples", "#backboard"].includes(hash) && evaluations.data && integrations.data && !latest.loading)
+      document.getElementById(hash.slice(1))?.scrollIntoView({ block: "start" });
+  }, [hash, evaluations.data, integrations.data, latest.loading]);
   const byId = new Map((integrations.data?.integrations ?? []).map((i) => [i.id.toLowerCase(), i]));
   const backboard = byId.get("backboard");
   const tiger = byId.get("tiger");
@@ -213,24 +223,32 @@ export function LabPage() {
       </section>
 
       <section className="flex flex-col gap-4" aria-labelledby="gemma">
+        <label className="flex flex-col gap-2 text-sm font-semibold">Report to inspect
+          <select aria-label="Report to inspect" value={issueId ?? ""} onChange={e => setParams(e.target.value ? { issue: e.target.value } : {})} className="min-h-11 w-full min-w-0 border border-ink bg-paper px-3 font-normal">
+            <option value="">Most recent report</option>
+            {issueId && !reports.data?.items.some(i => i.publicId === issueId) ? <option value={issueId}>{issueId}</option> : null}
+            {reports.data?.items.map(i => <option key={i.id} value={i.publicId}>{i.publicId}: {i.title}{i.permissions?.manage ? " (yours)" : ""}</option>)}
+          </select>
+        </label>
+        {reports.error ? <ErrorNotice error={reports.error} onRetry={reports.reload} title="Report choices unavailable" /> : null}
         <h2 id="gemma" className="text-2xl font-bold uppercase">
           Gemma evidence
         </h2>
-        <p className="max-w-2xl text-muted-foreground">The most recent issue's latest stored analysis, exactly as saved.</p>
+        <p className="max-w-2xl text-muted-foreground">The selected report's latest stored analysis, exactly as saved. Live note interpretation and model comparison require a report you own.</p>
         <GemmaEvidence latest={latest} />
       </section>
 
       <section className="flex flex-col gap-4" aria-labelledby="tinker-live">
         <h2 id="tinker-live" className="text-2xl font-bold uppercase">Trained field-note interpretation</h2>
         {evaluations.data?.tinkerExamples ? <RecordedTinkerExamples data={evaluations.data.tinkerExamples} /> : null}
-        <TinkerNote key={latestObservationId} observationId={latestObservationId} note={latest.data?.observations.at(-1)?.note} available={byId.get("tinker")?.status === "configured"} canManage={latest.data?.permissions?.manage !== false} />
+        {latest.loading ? <Skeleton className="h-24" /> : latest.error ? <ErrorNotice error={latest.error} onRetry={latest.reload} /> : <TinkerNote key={latestObservationId} observationId={latestObservationId} note={latest.data?.observations.at(-1)?.note} available={byId.get("tinker")?.status === "configured"} canManage={!!latest.data && latest.data.permissions?.manage !== false} />}
       </section>
 
       <section className="flex flex-col gap-4" aria-labelledby="backboard">
-        <h2 id="backboard" className="text-2xl font-bold uppercase">
+        <h2 id="backboard" className="scroll-mt-24 text-2xl font-bold uppercase">
           Backboard comparison
         </h2>
-        {integrations.data ? <BackboardPanel integration={backboard} observationId={latestObservationId} /> : <Skeleton className="h-24" />}
+        {latest.error ? <ErrorNotice error={latest.error} onRetry={latest.reload} /> : integrations.data && !latest.loading ? <BackboardPanel key={latestObservationId} integration={backboard} observationId={latestObservationId} canManage={!!latest.data && latest.data.permissions?.manage !== false} /> : <Skeleton className="h-24" />}
       </section>
 
       <section className="flex flex-col gap-4" aria-labelledby="semantic">

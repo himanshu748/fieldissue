@@ -14,7 +14,7 @@ import { COMPARISON_MODELS, type IntegrationStatus, type ModelComparisonResult, 
 
 const available = (i?: IntegrationStatus) => !!i && !["unavailable", "not_configured"].includes(i.status.toLowerCase());
 
-export function BackboardPanel({ integration, observationId }: { integration?: IntegrationStatus; observationId?: string }) {
+export function BackboardPanel({ integration, observationId, canManage = false }: { integration?: IntegrationStatus; observationId?: string; canManage?: boolean }) {
   const [consent, setConsent] = useState(false);
   const [state, setState] = useState<{ result?: ModelComparisonResult; error?: Error; loading?: boolean }>({});
 
@@ -26,9 +26,10 @@ export function BackboardPanel({ integration, observationId }: { integration?: I
       />
     );
   if (!observationId) return <p className="text-muted-foreground">A stored observation is needed before two models can be compared.</p>;
+  if (!canManage) return <p className="text-muted-foreground">Select a report you own to compare its note and analysis with Backboard, or <Link to="/app/report" className="underline">create your own report</Link>. Comparison requires your consent.</p>;
 
   async function run() {
-    if (!observationId) return;
+    if (!observationId || !canManage || !consent) return;
     setState({ loading: true });
     try {
       setState({ result: await api.compareModels(observationId, COMPARISON_MODELS) });
