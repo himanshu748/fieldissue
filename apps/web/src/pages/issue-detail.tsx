@@ -1,3 +1,4 @@
+import { IssueFollowup } from "@/components/field/issue-followup";
 import { TinkerNote } from "@/components/field/tinker-note";
 import { ShareSummary } from "@/components/field/share-summary";
 import { useState } from "react";
@@ -371,6 +372,7 @@ export function IssueDetailPage() {
               Resolved {data.resolvedAt ? formatDate(data.resolvedAt) : ""}. Human-confirmed, not identity-verified.
             </p>
           ) : null}
+          <IssueFollowup key={`follow-${data.publicId}`} id={data.publicId} />
           <ShareSummary key={data.publicId} id={data.publicId} />
         </aside>
       </div>

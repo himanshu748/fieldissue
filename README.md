@@ -9,7 +9,7 @@ Built for the DEV **Hacktoberfest Open-Source AI Challenge, Week 1: Touch Grass*
 | What | Link |
 | --- | --- |
 | Try it in a browser | Open `/` for the landing page and `/app` for the separate workspace on any running FieldIssue API (local: <http://127.0.0.1:3000/>). Walkthrough and video shot list: [DEMO.md](DEMO.md) |
-| Hosted demo | [Landing](https://fieldissue-demo.onrender.com/) · [Workspace](https://fieldissue-demo.onrender.com/app), public guest access with browser-owned reports; free database expires 7 Nov 2026 |
+| Hosted demo | [Landing](https://fieldissue-demo.onrender.com/) · [Workspace](https://fieldissue-demo.onrender.com/app), public guest access, with optional accounts for report ownership and saved walks across devices |
 | DEV post | _add after publishing_ |
 | Demo video | _add link_ |
 | Verified live provider runs | [docs/zero-cost-stack.md](docs/zero-cost-stack.md) and [docs/verification/](docs/verification/) |

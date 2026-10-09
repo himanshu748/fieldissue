@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { NavLink, Outlet } from "react-router";
-import { CameraIcon, CompassIcon, FlaskConicalIcon, FootprintsIcon, LockOpenIcon } from "lucide-react";
+import { Link, NavLink, Outlet } from "react-router";
+import { CameraIcon, CompassIcon, FlaskConicalIcon, FootprintsIcon, LockOpenIcon, UsersIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Toaster } from "@/components/ui/sonner";
@@ -16,6 +16,7 @@ const nav = [
   { to: "/app/explore", label: "Explore", icon: CompassIcon },
   { to: "/app/report", label: "Report", icon: CameraIcon },
   { to: "/app/walk", label: "Walk", icon: FootprintsIcon },
+  { to: "/app/community", label: "Community", icon: UsersIcon },
   { to: "/app/lab", label: "Lab", icon: FlaskConicalIcon },
 ];
 
@@ -83,7 +84,9 @@ export function AppShell() {
           <AccessPanel />
         ) : (
           <>
-            {config.publicAccess && !hasToken ? <p className="mb-6 border-b border-border pb-3 text-sm text-muted-foreground">Public demo · no account needed. You can resolve and reopen reports created in this browser. Keep this browser’s cookies to retain those controls for 30 days.</p> : null}
+            {config.publicAccess && !hasToken ? <p className="mb-6 border-b border-border pb-3 text-sm text-muted-foreground">Public demo · no account needed. You can resolve and reopen reports created in this browser. Keep this browser’s cookies, or sign in under Community to keep ownership across devices.</p> : null}
+            {config.offline?<p role="status" className="mb-4 border border-observe p-3">Offline mode. You can prepare and review captures on this device. Live reports, maps and analysis need a connection.</p>:null}
+            <p className="mb-4 text-sm"><Link className="underline" to="/app/offline">Saved offline captures</Link></p>
             <Outlet />
           </>
         )}
@@ -91,7 +94,7 @@ export function AppShell() {
 
       <nav
         aria-label="Workspace"
-        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-ink bg-paper pb-[env(safe-area-inset-bottom)] md:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-ink bg-paper pb-[env(safe-area-inset-bottom)] md:hidden"
       >
         {nav.map((item) => (
           <NavLink

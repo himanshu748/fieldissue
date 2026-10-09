@@ -234,7 +234,8 @@ export function LabPage() {
 
       <section className="flex flex-col gap-4" aria-labelledby="tabpfn-demo">
         <h2 id="tabpfn-demo" className="text-2xl font-bold uppercase">Revisit scenario tester</h2>
-        <TabPFNDemo available={byId.get("tabpfn")?.status === "configured"} />
+        <p><a className="underline" href="/v1/openapi" target="_blank" rel="noreferrer">Public read API specification</a> · Public reports only; rate limits apply.</p>
+      <TabPFNDemo available={byId.get("tabpfn")?.status === "configured"} />
       </section>
 
       <section className="flex flex-col gap-3" aria-labelledby="entire-evidence">

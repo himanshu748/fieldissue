@@ -110,3 +110,6 @@ export function appendItem(item: WalkSuggestion) {
   write({ ...walk, items: [...walk.items, { ...item, state: "pending" }] });
   return true;
 }
+
+// Restored only after explicit account-sync confirmation.
+export function restoreWalk(walk: Walk) { write(walk); }

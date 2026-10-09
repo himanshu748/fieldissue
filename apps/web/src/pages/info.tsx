@@ -67,20 +67,19 @@ export function MethodologyPage() {
           all earlier evidence.
         </p>
         <p>
-          Guests manage reports from their reporting browser; operators can moderate all reports. A resolution is <strong>human-confirmed, not identity-verified</strong>.
+          Guests manage reports from their reporting browser; accounts keep that ownership across devices. Operators can moderate all reports. Community review requires two other member accounts and fresh, compared evidence; the proposer and report owner cannot approve. Nicknames are unverified and the process does not certify independent people. A resolution is <strong>human-confirmed, not identity-verified</strong>.
         </p>
       </Section>
       <Section n="05" title="Walk suggestions">
         <p>
           Walk suggestions are unresolved issues within a radius, sorted by straight-line distance and then by how long
-          since the last observation. No street route is calculated and no machine-learning ranking is applied.
+          since the last observation. No street route is calculated inside FieldIssue and no machine-learning ranking is applied. After you consent, Open walking directions sends the start and next stop coordinates to Google Maps for its walking route.
         </p>
       </Section>
       <Section n="06" title="Recorded experiments">
         <p>
           The <Link className="underline" to="/app/lab">Model Lab</Link> shows recorded evaluations, such as a small
-          fine-tuning experiment on synthetic notes. They are labelled as recorded experiments with their limitations and
-          are not served in production.
+          fine-tuning experiment on synthetic notes. The recorded evaluation remains distinct from the live Tinker note interpreter and live TabPFN synthetic scenario tester. Neither replaces photo evidence or changes a report’s status.
         </p>
       </Section>
     </Page>
@@ -110,17 +109,17 @@ export function PrivacyPage() {
         </p>
       </Section>
       <Section n="03" title="Optional services and storage">
-        <p>Render stores reports, photos and the audit history. When enabled, Tiger Data keeps a secondary search index of report text and coordinates; local open-model embeddings turn the text into search vectors. SerpApi may receive report coordinates to look up nearby places.</p>
+        <p>Render runs the application. The configured PostgreSQL database stores reports, accounts and audit history; this deployment uses Tiger Data and database-backed photo storage. When enabled, Tiger Data keeps a secondary search index of report text and coordinates; local open-model embeddings turn the text into search vectors. SerpApi may receive report coordinates to look up nearby places.</p>
         <p>The synthetic scenario tester sends only the entered numeric scenario values to Prior Labs for TabPFN inference. It never uploads real reports and does not rank actual walks. Tinker receives only the selected written note after you consent to interpretation. Its model was fine-tuned on synthetic notes; its interpretations are not verified photo evidence. Backboard receives the stored note and analysis only after you consent to a comparison. ElevenLabs receives an issue briefing when you request spoken audio. These services cannot change an issue’s status.</p>
       </Section>
       <Section n="04" title="Maps">
         <p>
           Map tiles come from OpenStreetMap, whose servers see the area you view. The map stays off until you choose to
-          show it.
+          show it. Opening optional walking directions shares the start and next stop with Google Maps.
         </p>
       </Section>
       <Section n="05" title="Guest access and operator access">
-        <p>Public guest mode uses a signed, first-party, HttpOnly cookie for 30 days. It lets the reporting browser edit, resolve and reopen its reports. Clearing cookies or switching browsers loses these guest controls; the operator can still moderate. This is browser ownership, not a verified personal identity.</p>
+        <p>Public guest mode uses a signed, first-party, HttpOnly cookie for 30 days. It lets the reporting browser edit, resolve and reopen its reports. Sign in under Community to attach your browser-owned reports to an account. Without an account, clearing cookies or switching browsers loses these guest controls; the operator can still moderate. This is browser ownership, not a verified personal identity.</p>
         <p>New guest reports and revisits are public after explicit consent, including their photo, note and precise coordinates. Existing private reports stay private. Anyone can browse public reports and add revisit evidence.</p>
         <p>
           When a deployment requires a shared access token, it is stored in this browser tab's session storage only and is
@@ -131,9 +130,14 @@ export function PrivacyPage() {
       <Section n="06" title="Drafts, removal and retention">
         <p>Unsubmitted drafts stay in this tab's session storage for up to 24 hours. Locking the workspace clears saved drafts, locations and the walk queue. Drafts are not uploaded automatically.</p>
         <p>{config?.retentionNotice || "Ask the workspace owner about this deployment's retention policy."}</p>
-        <p>For removal, give the workspace owner the issue ID. Only the operator can remove the complete record and its photos, voice files and secondary search entry. Only the reporting browser or an operator can change a public report’s classification or status. Do not publish sensitive locations. Exported share summaries exclude photos, notes, titles and street addresses, and round coordinates to 0.01 degrees (about 1 km). Public reports show precise coordinates on the map; the copied summary uses only an approximate location. Private reports remain operator-only.</p>
+        <p>For removal, give the workspace owner the issue ID. Only the operator can remove the complete record and its photos, voice files and secondary search entry. The reporting browser, its linked account, or an operator can change a public report’s classification or status. An evidence review can also resolve a report after two eligible workspace accounts approve. Do not publish sensitive locations. Exported share summaries exclude photos, notes, titles and street addresses, and round coordinates to 0.01 degrees (about 1 km). Public reports show precise coordinates on the map; the copied summary uses only an approximate location. Private reports remain operator-only.</p>
       </Section>
-      <Section n="07" title="Safety">
+      <Section n="07" title="Accounts and offline storage">
+        <p>Accounts use a nickname and password, with a one-time recovery code instead of email reset. Passwords are salted and hashed; session and recovery tokens are stored only as hashes on the server. Account cookies expire after 30 days. Sign out all devices revokes existing sessions.</p>
+        <p>Workspace names, area descriptions, membership, assignments and review notes are visible to members. Added issue reports remain public. Saved account walks include their exact start and stops and are private to that account. Remove the account copy from the Walk screen. In-app reminders and subscribed updates are visible in Community; there is no email or push delivery.</p>
+        <p>Offline capture is optional and keeps up to ten photos, notes and exact coordinates in this browser. Use a personal device. Captures expire after seven days and expired files are removed when the queue is next opened. Delete from device removes a saved capture. Signing out clears the queue. The offline shell caches static assets only, never API responses or report photos. Uploads require your review and consent, one capture at a time.</p>
+      </Section>
+      <Section n="08" title="Safety">
         <p>
           <strong>Never put yourself at risk for a photo.</strong> Do not step into traffic, onto private property or near
           exposed electrical wiring or open manholes. For dangerous situations, keep your distance and contact local

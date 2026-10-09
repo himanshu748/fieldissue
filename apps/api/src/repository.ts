@@ -102,6 +102,19 @@ export class IssueRepository {
     guestOwner?: string,
   ) {
     const execute = async (c: PoolClient) => {
+      let effectiveOwner = guestOwner;
+      if (guestOwner) {
+        await c.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", [
+          guestOwner,
+        ]);
+        const linked = (
+          await c.query(
+            "SELECT a.guest_id FROM account_guest_links l JOIN accounts a ON a.id=l.account_id WHERE l.guest_id=$1",
+            [guestOwner],
+          )
+        ).rows[0];
+        effectiveOwner = linked?.guest_id ?? guestOwner;
+      }
       if (idempotency) {
         await c.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", [
           idempotency.key,
@@ -128,7 +141,7 @@ export class IssueRepository {
           input.longitude,
           input.reporterId ?? null,
           !!guestOwner,
-          guestOwner ?? null,
+          effectiveOwner ?? null,
         ],
       );
       const issue = r.rows[0];

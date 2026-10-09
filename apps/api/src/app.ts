@@ -1,3 +1,12 @@
+import { serviceWorker } from "./offline-shell.js";
+import { duplicates, municipalExport, publicApiSpec } from "./public-tools.js";
+import {
+  Accounts,
+  accountCookie,
+  sessionSeconds,
+  type Account,
+} from "./accounts.js";
+import { Community } from "./community.js";
 import { demoFeaturesSchema, type TabPFNDemoService } from "./tabpfn-demo.js";
 import { safeErrorKind } from "./telemetry.js";
 import type { TinkerNoteService } from "./tinker.js";
@@ -103,11 +112,15 @@ export function createApp(deps: Dependencies) {
   if (deps.publicAccess && !deps.accessToken)
     throw new Error("Public access requires an operator secret");
   const web = deps.webDirectory ? loadWebBundle(deps.webDirectory) : undefined;
+  let activeAuth = 0;
+  const accounts = new Accounts(deps.repository.pool);
+  const community = new Community(deps.repository.pool);
   const app = new Hono<{
     Variables: {
       requestId: string;
       admin: boolean;
       guestId: string | undefined;
+      account: Account | undefined;
     };
   }>();
   app.use(
@@ -173,6 +186,9 @@ export function createApp(deps: Dependencies) {
             "/landing.js",
             "/favicon.ico",
             "/app-config",
+            "/sw.js",
+            "/manifest.webmanifest",
+            "/offline-shell",
             "/app",
             "/health",
             "/ready",
@@ -211,7 +227,11 @@ export function createApp(deps: Dependencies) {
     await next();
   });
   app.use("/v1/*", async (c, next) => {
-    if (!deps.guard || !["POST", "PATCH", "DELETE"].includes(c.req.method))
+    if (
+      ["/v1/account/logout", "/v1/account/logout-all"].includes(c.req.path) ||
+      !deps.guard ||
+      !["POST", "PATCH", "DELETE"].includes(c.req.method)
+    )
       return next();
     let release: (() => void) | undefined;
     try {
@@ -242,10 +262,33 @@ export function createApp(deps: Dependencies) {
     }
   });
   app.use("*", async (c, next) => {
+    if (!(
+      c.req.path.startsWith("/v1/") ||
+      c.req.path.startsWith("/media/") ||
+      c.req.path === "/app-config"
+    ))
+      return next();
+    c.set(
+      "account",
+      deps.publicAccess
+        ? await accounts.current(getCookie(c, accountCookie))
+        : undefined,
+    );
     if (!deps.publicAccess || c.get("admin")) return next();
     if (!deps.accessToken)
       throw new Error("Public access requires an operator secret");
     let guestId = verifyGuest(deps.accessToken, getCookie(c, guestCookie));
+    if (
+      guestId &&
+      !c.get("account") &&
+      (
+        await deps.repository.pool.query(
+          "SELECT 1 FROM accounts WHERE guest_id=$1 UNION ALL SELECT 1 FROM account_guest_links WHERE guest_id=$1",
+          [guestId],
+        )
+      ).rowCount
+    )
+      guestId = undefined;
     if (c.req.path === "/app-config" && c.req.method === "GET" && !guestId) {
       const cookie = signGuest(deps.accessToken);
       guestId = verifyGuest(deps.accessToken, cookie);
@@ -257,6 +300,7 @@ export function createApp(deps: Dependencies) {
         maxAge: guestLifetime,
       });
     }
+    guestId = c.get("account")?.guest_id ?? guestId;
     c.set("guestId", guestId);
     const path = c.req.path;
     if (!path.startsWith("/v1/") && !path.startsWith("/media/")) return next();
@@ -285,6 +329,19 @@ export function createApp(deps: Dependencies) {
           403,
           "Submit from this app's own page.",
         );
+    }
+    if (
+      path.startsWith("/v1/account/") ||
+      path.startsWith("/v1/community/") ||
+      path === "/v1/duplicates" ||
+      path === "/v1/openapi"
+    ) {
+      if (
+        write &&
+        !["/v1/account/logout", "/v1/account/logout-all"].includes(path)
+      )
+        await guestAllowance(deps.repository.pool, guestId!, false);
+      return next();
     }
     const match = path.match(/^\/v1\/issues\/([^/]+)(?:\/(.*))?$/);
     if (match && match[1] !== "map") {
@@ -526,6 +583,37 @@ export function createApp(deps: Dependencies) {
     }
   }
   if (web) {
+    app.get("/sw.js", (c) => {
+      c.header("Content-Type", "text/javascript; charset=utf-8");
+      c.header("Cache-Control", "no-cache");
+      c.header("Service-Worker-Allowed", "/");
+      return c.body(serviceWorker(web.html, [...web.assets.keys()]));
+    });
+    app.get("/offline-shell", (c) => {
+      c.header("Content-Security-Policy", web.csp);
+      c.header("Cache-Control", "no-cache");
+      return c.html(web.html);
+    });
+    app.get("/manifest.webmanifest", (c) =>
+      c.json({
+        id: "/app",
+        name: "FieldIssue",
+        short_name: "FieldIssue",
+        start_url: "/app",
+        scope: "/",
+        display: "standalone",
+        background_color: "#F4F1E8",
+        theme_color: "#F4F1E8",
+        icons: [
+          {
+            src: "/assets/favicon.svg",
+            sizes: "any",
+            type: "image/svg+xml",
+            purpose: "any",
+          },
+        ],
+      }),
+    );
     for (const path of [
       "/",
       "/app",
@@ -577,6 +665,12 @@ export function createApp(deps: Dependencies) {
   app.get("/app-config", (c) => {
     c.header("Cache-Control", "private, no-store");
     return c.json({
+      captureAccountId: c.get("account")?.id ?? null,
+      captureScope: c.get("guestId")
+        ? createHash("sha256")
+            .update(`capture:${c.get("guestId")}`)
+            .digest("hex")
+        : "operator",
       storage: "unknown",
       retentionNotice: "",
       audio: !!deps.audio,
@@ -763,6 +857,220 @@ export function createApp(deps: Dependencies) {
       ),
     });
   });
+  app.get("/v1/duplicates", async (c) => {
+    const q = z
+      .object({
+        latitude: numeric(-90, 90),
+        longitude: numeric(-180, 180),
+        note: z.string().max(5000).default(""),
+        category: categorySchema.optional(),
+      })
+      .strict()
+      .parse(c.req.query());
+    return c.json(await duplicates(deps.repository.pool, q));
+  });
+  app.get("/v1/openapi", (c) => c.json(publicApiSpec));
+  app.get("/v1/issues/:id/export", async (c) => {
+    const i = await deps.repository.get(issueId(c.req.param("id")));
+    return c.json(municipalExport(i));
+  });
+  const accountRequired = (c: {
+    get: (key: "account") => Account | undefined;
+  }) => {
+    const a = c.get("account");
+    if (!a)
+      throw new AppError(
+        "ACCOUNT_REQUIRED",
+        403,
+        "Sign in to use saved walks and community workspaces.",
+      );
+    return a;
+  };
+  app.get("/v1/account/me", (c) =>
+    c.json({
+      account: c.get("account")
+        ? { id: c.get("account")!.id, username: c.get("account")!.username }
+        : null,
+    }),
+  );
+  for (const action of ["signup", "login", "recover"] as const)
+    app.post(`/v1/account/${action}`, async (c) => {
+      if (!deps.publicAccess)
+        throw new AppError(
+          "ACCOUNT_UNAVAILABLE",
+          503,
+          "Accounts require the public deployment.",
+        );
+      if (c.get("account"))
+        throw new AppError(
+          "ALREADY_SIGNED_IN",
+          409,
+          "Sign out before changing accounts.",
+        );
+      if (activeAuth >= 2)
+        throw new AppError(
+          "AUTH_BUSY",
+          429,
+          "Sign-in is busy. Try again in a moment.",
+        );
+      activeAuth++;
+      try {
+        const data = await json(c.req.raw);
+        const result =
+          action === "signup"
+            ? await accounts.signup(data, c.get("guestId"))
+            : action === "login"
+              ? await accounts.login(data, c.get("guestId"))
+              : await accounts.recover(data, c.get("guestId"));
+        setCookie(c, accountCookie, result.token, {
+          httpOnly: true,
+          secure: !!deps.secureGuestCookie,
+          sameSite: "Strict",
+          path: "/",
+          maxAge: sessionSeconds,
+        });
+        // Once ownership belongs to an account, do not leave a guest cookie that bypasses sign-in.
+        if (deps.accessToken)
+          setCookie(c, guestCookie, signGuest(deps.accessToken), {
+            httpOnly: true,
+            secure: !!deps.secureGuestCookie,
+            sameSite: "Strict",
+            path: "/",
+            maxAge: guestLifetime,
+          });
+        return c.json({
+          account: { id: result.account.id, username: result.account.username },
+          ...("recovery" in result ? { recovery: result.recovery } : {}),
+        });
+      } finally {
+        activeAuth--;
+      }
+    });
+  app.post("/v1/account/logout", async (c) => {
+    await accounts.logout(getCookie(c, accountCookie));
+    setCookie(c, accountCookie, "", {
+      httpOnly: true,
+      secure: !!deps.secureGuestCookie,
+      sameSite: "Strict",
+      path: "/",
+      maxAge: 0,
+    });
+    return c.json({ ok: true });
+  });
+  app.post("/v1/account/logout-all", async (c) => {
+    const a = accountRequired(c);
+    await accounts.pool.query(
+      "DELETE FROM account_sessions WHERE account_id=$1",
+      [a.id],
+    );
+    setCookie(c, accountCookie, "", {
+      httpOnly: true,
+      secure: !!deps.secureGuestCookie,
+      sameSite: "Strict",
+      path: "/",
+      maxAge: 0,
+    });
+    return c.json({ ok: true });
+  });
+  app.get("/v1/account/walk", async (c) =>
+    c.json({ walk: await community.savedWalk(accountRequired(c)) }),
+  );
+  app.post("/v1/account/walk", async (c) =>
+    c.json(await community.saveWalk(accountRequired(c), await json(c.req.raw))),
+  );
+  app.delete("/v1/account/walk", async (c) => {
+    await accounts.pool.query("DELETE FROM saved_walks WHERE account_id=$1", [
+      accountRequired(c).id,
+    ]);
+    return c.json({ ok: true });
+  });
+  app.get("/v1/account/notifications", async (c) =>
+    c.json({ items: await community.notifications(accountRequired(c)) }),
+  );
+  app.post("/v1/account/notifications/read", async (c) => {
+    const { id } = z
+      .object({ id: z.uuid() })
+      .strict()
+      .parse(await json(c.req.raw));
+    await accounts.pool.query(
+      "UPDATE account_notifications SET read_at=now() WHERE id=$1 AND account_id=$2",
+      [id, accountRequired(c).id],
+    );
+    return c.json({ ok: true });
+  });
+  app.post("/v1/account/reminders", async (c) =>
+    c.json(await community.reminder(accountRequired(c), await json(c.req.raw))),
+  );
+  app.post("/v1/account/subscriptions", async (c) =>
+    c.json(
+      await community.subscribe(accountRequired(c), await json(c.req.raw)),
+    ),
+  );
+  app.get("/v1/community/list", async (c) =>
+    c.json({ items: await community.list(accountRequired(c)) }),
+  );
+  app.post("/v1/community/create", async (c) =>
+    c.json(await community.create(accountRequired(c), await json(c.req.raw))),
+  );
+  app.post("/v1/community/join", async (c) =>
+    c.json(await community.join(accountRequired(c), await json(c.req.raw))),
+  );
+  app.get("/v1/community/:id", async (c) =>
+    c.json(await community.detail(accountRequired(c), c.req.param("id"))),
+  );
+  app.post("/v1/community/:id/members", async (c) =>
+    c.json(
+      await community.removeMember(
+        accountRequired(c),
+        c.req.param("id"),
+        await json(c.req.raw),
+      ),
+    ),
+  );
+  app.post("/v1/community/:id/revoke-invites", async (c) =>
+    c.json(
+      await community.revokeInvites(accountRequired(c), c.req.param("id")),
+    ),
+  );
+  app.post("/v1/community/:id/invite", async (c) =>
+    c.json(await community.invite(accountRequired(c), c.req.param("id"))),
+  );
+  app.post("/v1/community/:id/issues", async (c) =>
+    c.json(
+      await community.addIssue(
+        accountRequired(c),
+        c.req.param("id"),
+        await json(c.req.raw),
+      ),
+    ),
+  );
+  app.post("/v1/community/:id/assign", async (c) =>
+    c.json(
+      await community.assign(
+        accountRequired(c),
+        c.req.param("id"),
+        await json(c.req.raw),
+      ),
+    ),
+  );
+  app.post("/v1/community/:id/propose", async (c) =>
+    c.json(
+      await community.propose(
+        accountRequired(c),
+        c.req.param("id"),
+        await json(c.req.raw),
+      ),
+    ),
+  );
+  app.post("/v1/community/:id/vote", async (c) =>
+    c.json(
+      await community.vote(
+        accountRequired(c),
+        c.req.param("id"),
+        await json(c.req.raw),
+      ),
+    ),
+  );
   app.post("/v1/issues", async (c) => {
     const { media, fields } = await upload(c.req.raw);
     if (isGuest(c) && fields.publicConsent !== "true")

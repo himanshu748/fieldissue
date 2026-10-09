@@ -1,3 +1,5 @@
+import { clearCaptureDrafts } from "@/hooks/use-capture-draft";
+import { clearWalk } from "@/lib/walk";
 import { lazy, StrictMode, Suspense, type ComponentType } from "react";
 import { createRoot } from "react-dom/client";
 import { createBrowserRouter, Link, Outlet, RouterProvider, ScrollRestoration } from "react-router";
@@ -72,6 +74,8 @@ const router = createBrowserRouter([
           { path: "issues/:id/compare", element: page(() => import("@/pages/compare"), "ComparePage") },
           { path: "issues/:id/resolve", element: page(() => import("@/pages/resolve"), "ResolvePage") },
           { path: "walk", element: page(() => import("@/pages/walk"), "WalkPage") },
+          { path: "offline", element: page(() => import("@/pages/offline"), "OfflinePage") },
+          { path: "community", element: page(() => import("@/pages/community"), "CommunityPage") },
           { path: "lab", element: page(() => import("@/pages/lab"), "LabPage") },
           { path: "*", element: <NotFound /> },
         ],
@@ -86,3 +90,7 @@ createRoot(document.getElementById("root")!).render(
     <RouterProvider router={router} />
   </StrictMode>,
 );
+
+if (import.meta.env.PROD && "serviceWorker" in navigator) window.addEventListener("load", () => { void navigator.serviceWorker.register("/sw.js").catch(() => {}); });
+
+window.addEventListener("storage",event=>{if(event.key==="fieldissue-account-changed"){clearCaptureDrafts();clearWalk();window.location.reload();}});

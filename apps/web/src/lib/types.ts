@@ -126,6 +126,9 @@ export interface IssueEvent {
 }
 
 export interface AppConfig {
+  captureScope?: string;
+  captureAccountId?: string | null;
+  offline?: boolean;
   publicAccess?: boolean;
   accessRequired: boolean;
   storage: string;

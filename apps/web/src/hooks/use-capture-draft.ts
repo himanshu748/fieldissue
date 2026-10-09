@@ -19,6 +19,14 @@ export function clearCaptureDrafts() {
   } catch { /* Storage may be unavailable. */ }
 }
 
+export function clearMatchingCaptureDraft(id:string,expected:CaptureDraft) {
+  try {
+    const key=PREFIX+id;const saved=JSON.parse(sessionStorage.getItem(key)??"null")?.draft;
+    const shape=(d:CaptureDraft)=>JSON.stringify([d.photo?.fingerprint,d.note,d.capturedAt,d.locationMode,d.location]);
+    if(saved && shape(saved)===shape(expected))sessionStorage.removeItem(key);
+  }catch{/* Other drafts are preserved. */}
+}
+
 function restore(key: string, initial: CaptureDraft): CaptureDraft {
   try {
     const raw = sessionStorage.getItem(key);

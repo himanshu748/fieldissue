@@ -1,3 +1,4 @@
+import { SaveOffline } from "@/components/field/save-offline";
 import { useCaptureDraft } from "@/hooks/use-capture-draft";
 import { CaptureTime, captureTimeValid } from "@/components/field/capture-time";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
@@ -50,7 +51,7 @@ function RevisitForm({ id }: { id: string }) {
   const sending = phase.kind === "sending";
 
   const signature = useMemo(
-    () => JSON.stringify([photo?.blob.size, photo?.width, locationMode, location?.latitude, location?.longitude, note.trim(), capturedAt]),
+    () => JSON.stringify([photo?.fingerprint, photo?.blob.size, photo?.width, locationMode, location?.latitude, location?.longitude, note.trim(), capturedAt]),
     [photo, locationMode, location, note, capturedAt],
   );
 
@@ -61,6 +62,7 @@ function RevisitForm({ id }: { id: string }) {
     return () => window.removeEventListener("beforeunload", warn);
   }, [sending]);
 
+  if (issue.error instanceof ApiError && issue.error.status===0 && config?.publicAccess && /^FI-\d{6,}$/.test(id)) return <div className="mx-auto max-w-2xl space-y-6"><h1 className="text-3xl font-bold">Save an offline revisit</h1><p>The previous evidence for {id} needs a connection. A saved capture will use that issue’s location when you upload. Confirm the issue ID before saving.</p><CaptureButton value={photo} onChange={setPhoto}/><label className="block">Your observation<Textarea value={note} maxLength={5000} onChange={e=>setNote(e.target.value)}/></label><CaptureTime value={capturedAt} onChange={setCapturedAt} disabled={false}/><SaveOffline key={signature} signature={signature} issueId={id} draft={{...draft,locationMode:"inherit"}} onSaved={key=>{if(photo){attempt.current={key,signature,photo};setDraft(d=>({...d,attempt:{key,signature}}));}}}/><Button variant="outline" onClick={issue.reload}>Check connection</Button></div>;
   if (issue.error) return <ErrorNotice error={issue.error} onRetry={issue.reload} title="This issue could not be loaded" />;
   if (!issue.data)
     return (
@@ -223,6 +225,7 @@ function RevisitForm({ id }: { id: string }) {
 
       <CaptureTime value={capturedAt} onChange={setCapturedAt} disabled={sending} />
 
+      <SaveOffline key={signature} signature={signature} onSaved={key=>{if(photo){attempt.current={key,signature,photo};setDraft(d=>({...d,attempt:{key,signature}}));}}} draft={draft} issueId={id} disabled={sending} />
       <ProcessingConsent id="revisit-consent" checked={consent} onChange={setConsent} config={config} />
 
       {sending ? <ProgressSteps title="Saving your revisit" steps={steps} /> : null}

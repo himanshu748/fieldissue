@@ -5,6 +5,7 @@ const ACCEPTED = ["image/jpeg", "image/png", "image/webp"];
 
 export interface PreparedImage {
   blob: Blob;
+  fingerprint?: string;
   width: number;
   height: number;
   originalBytes: number;
@@ -65,7 +66,8 @@ export async function prepareImage(file: File, serverMaxBytes?: number): Promise
     blob = await encode(canvas, quality);
   }
   if (blob.size > cap) throw new Error("This photo is still too large after compression.");
-  return { blob, width, height, originalBytes: file.size };
+  const fingerprint=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",await blob.arrayBuffer())),b=>b.toString(16).padStart(2,"0")).join("");
+  return { blob, fingerprint, width, height, originalBytes: file.size };
 }
 
 export function formatBytes(bytes: number) {

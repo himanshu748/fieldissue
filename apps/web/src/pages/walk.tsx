@@ -1,3 +1,4 @@
+import { WalkSync } from "@/components/field/walk-sync";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router";
 import { motion } from "motion/react";
@@ -230,6 +231,7 @@ function ActiveWalk() {
     [walk.items],
   );
   const issueCoords = useIssueCoords(walk.items.map((i) => i.issueId));
+  const [directionsConsent, setDirectionsConsent] = useState(false);
   const placed = useMemo(
     () => markers.flatMap((m) => (issueCoords[m.id] ? [{ ...m, ...issueCoords[m.id] }] : [])),
     [markers, issueCoords],
@@ -257,6 +259,7 @@ function ActiveWalk() {
         </AlertDescription>
       </Alert>
 
+      <section className="space-y-3 border border-ink p-4"><h2 className="font-bold">Walking directions</h2><p className="text-sm text-muted-foreground">Open Google Maps for a walking route from the last visited stop (or your starting point) to the next stop. This shares the exact start and destination with Google. Follow local signs; accessibility and safe passage are not guaranteed.</p><label className="flex items-start gap-3"><Checkbox checked={directionsConsent} onCheckedChange={v=>setDirectionsConsent(v===true)}/>Share these two locations with Google Maps</label>{(() => {const next=walk.items.find(i=>i.state==='pending');const dest=next&&issueCoords[next.issueId];if(!dest)return <p>No pending stop with a location.</p>;const previous=walk.items.filter(i=>i.state==='visited').at(-1);const start=previous&&issueCoords[previous.issueId]||walk.origin;const url=new URL('https://www.google.com/maps/dir/');url.search=new URLSearchParams({api:'1',origin:`${start.latitude},${start.longitude}`,destination:`${dest.latitude},${dest.longitude}`,travelmode:'walking'}).toString();return directionsConsent?<Button asChild><a href={url.toString()} target="_blank" rel="noreferrer">Open walking directions</a></Button>:null;})()}</section>
       <div className="grid gap-8 lg:grid-cols-[1fr_1fr]">
         <div className="flex flex-col gap-4">
           <ol className="flex flex-col border-t border-ink">
@@ -315,5 +318,5 @@ function useIssueCoords(ids: string[]) {
 
 export function WalkPage() {
   const walk = useWalk();
-  return walk ? <ActiveWalk /> : <Planner />;
+  return <div className="space-y-8">{walk ? <ActiveWalk /> : <Planner />}<WalkSync /></div>;
 }

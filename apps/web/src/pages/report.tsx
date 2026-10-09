@@ -1,3 +1,5 @@
+import { SaveOffline } from "@/components/field/save-offline";
+import { DuplicateCheck } from "@/components/field/duplicate-check";
 import { useCaptureDraft } from "@/hooks/use-capture-draft";
 import { CaptureTime, captureTimeValid } from "@/components/field/capture-time";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
@@ -36,7 +38,7 @@ export function ReportPage() {
   const sending = phase.kind === "sending";
 
   const signature = useMemo(
-    () => JSON.stringify([photo?.blob.size, photo?.width, location?.latitude, location?.longitude, location?.source, note.trim(), capturedAt]),
+    () => JSON.stringify([photo?.fingerprint, photo?.blob.size, photo?.width, location?.latitude, location?.longitude, location?.source, note.trim(), capturedAt]),
     [photo, location, note, capturedAt],
   );
 
@@ -148,8 +150,10 @@ export function ReportPage() {
         </Field>
       </FieldGroup>
 
+      {location?<DuplicateCheck latitude={location.latitude} longitude={location.longitude} note={note}/>:null}
       <CaptureTime value={capturedAt} onChange={setCapturedAt} disabled={sending} />
 
+      <SaveOffline key={signature} signature={signature} onSaved={key=>{if(photo){attempt.current={key,signature,photo};setDraft(d=>({...d,attempt:{key,signature}}));}}} draft={draft} disabled={sending} />
       <ProcessingConsent id="report-consent" checked={consent} onChange={setConsent} config={config} />
 
       {sending ? <ProgressSteps title="Reading your observation" steps={steps} /> : null}
