@@ -14,6 +14,7 @@ COPY --chown=node:node apps/web ./apps/web
 COPY --chown=node:node packages/shared ./packages/shared
 COPY --chown=node:node db ./db
 COPY --chown=node:node scripts ./scripts
+COPY --chown=node:node docs/verification/tinker-evaluation-2026-10-09.json ./docs/verification/tinker-evaluation-2026-10-09.json
 RUN npm run build && mkdir -p /app/.media && chown -R node:node /app
 USER node
 ENV NODE_ENV=development
