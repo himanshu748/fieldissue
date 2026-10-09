@@ -1,0 +1,19 @@
+{
+  "verifiedAt": "2026-10-09T06:53:16.477027+00:00",
+  "platform": "DEV",
+  "articleId": 4821598,
+  "state": "published",
+  "url": "https://dev.to/himanshu_748/fieldissue-take-a-walk-report-a-problem-come-back-with-evidence-e40",
+  "publishedAt": "2026-10-09T06:50:40Z",
+  "requiredTags": [
+    "devchallenge",
+    "hf26challenge"
+  ],
+  "aiDisclosure": "fully_autonomous",
+  "approvedBodySha256": "02cd77e3152f081a4004040c8bcc9ec75516f8090b8670e9f063a58533edfdba",
+  "bodyMatchesApprovedDraft": true,
+  "publicHttpStatus": 200,
+  "challengeBadge": "Hacktoberfest Open-Source AI Challenge Week 1: Touch Grass Submission",
+  "readback": "Public slug API, public HTTP page and authenticated browser confirmed publication, required tags and AI disclosure.",
+  "cashSpentForPublicationUsd": 0
+}

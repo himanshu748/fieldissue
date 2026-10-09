@@ -10,7 +10,7 @@ Built for the DEV **Hacktoberfest Open-Source AI Challenge, Week 1: Touch Grass*
 | --- | --- |
 | Try it in a browser | Open `/` for the landing page and `/app` for the separate workspace on any running FieldIssue API (local: <http://127.0.0.1:3000/>). Walkthrough and video shot list: [DEMO.md](DEMO.md) |
 | Hosted demo | [Landing](https://fieldissue-demo.onrender.com/) · [Workspace](https://fieldissue-demo.onrender.com/app), public guest access, with optional accounts for report ownership and saved walks across devices |
-| DEV entry | [Submission draft](docs/submission/fieldissue-dev-draft.md), not yet published |
+| DEV entry | [Published challenge submission](https://dev.to/himanshu_748/fieldissue-take-a-walk-report-a-problem-come-back-with-evidence-e40) |
 | Demo video | Not yet recorded; the live demo and [walkthrough](DEMO.md) are available |
 | Verified live provider runs | [docs/zero-cost-stack.md](docs/zero-cost-stack.md) and [docs/verification/](docs/verification/) |
 

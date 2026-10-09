@@ -25,11 +25,15 @@ Deadline: **12 October 2026, 06:59 UTC / 12:29 IST** (11 October, 23:59 PDT). Su
 
 DEV article **4821598** was saved unpublished, with AI-assisted disclosure requested through DevRelay. Authenticated readback confirmed the full body and both required tags, `published=false`, and no publication time. See [draft receipt](dev-draft-receipt.json). There is one FieldIssue draft and no published entry.
 
-## Remaining before publication
+## Publication confirmed
 
-- Author review of the concrete draft and explicit publication approval. Confirm any personal eligibility conditions in the official rules; the draft does not attest to age or residency.
+Published on **9 October 2026 at 06:50:40 UTC** after explicit author approval. The public article has both required tags and DEV displays its Touch Grass Submission badge. The body matches the approved draft. The API did not retain its requested AI disclosure, so the browser editor was used to set **Fully Autonomous**, matching an agent-authored write-up published without human text edits. Public API and browser readback confirmed that label. See [publication receipt](dev-publication-receipt.json).
+
+## Disclosed evidence boundaries
+
+- The article does not attest to personal eligibility conditions such as age or residency.
 - Physical Android camera/GPS and an actual outdoor before/after visit are not independently verified. These are disclosed, not presented as completed evidence.
 - TabPFN's synthetic scenario implementation is a weaker fit for a category asking for historical data; no eligibility guarantee is made.
-- No public submission receipt until the DEV article is published and read back with its required tags.
+- Publication and the challenge badge establish the entry is posted; they are not a judging or prize-eligibility decision.
 
 Assets are unedited captures from the hosted browser acceptance on 9 October. `report.png` shows owner controls on a labeled synthetic control; `lab.png` shows a saved real API response to an invented scenario. They do not prove a physical visit.
