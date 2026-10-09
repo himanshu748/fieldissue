@@ -1,0 +1,39 @@
+{
+  "checkedAt": "2026-10-09T04:10:36.181Z",
+  "runtimeCommit": "23c6604edb6a07f0f0372fd9b65b849c492ab3fa",
+  "publicId": "FI-000005",
+  "status": "OPEN",
+  "observations": [
+    {
+      "id": "a4a70557-b03d-48a7-a850-eb47540ed6e2",
+      "model": "models/gemma-4-26b-a4b-it",
+      "version": "001",
+      "locationSource": "manual"
+    },
+    {
+      "id": "ee91d505-3179-484e-95a1-47019572c936",
+      "model": "models/gemma-4-26b-a4b-it",
+      "version": "001",
+      "locationSource": "inherited"
+    }
+  ],
+  "diffs": [
+    {
+      "model": "fieldissue-image-identity",
+      "recommendedStatus": "OPEN",
+      "added": [],
+      "removed": []
+    }
+  ],
+  "semantic": {
+    "method": "hybrid_keyword_vector",
+    "model": "sentence-transformers/all-MiniLM-L6-v2",
+    "containsTest": true
+  },
+  "audio": {
+    "durationSeconds": 7.523265,
+    "playedToEnd": true,
+    "error": null
+  },
+  "browserConsoleErrors": 0
+}

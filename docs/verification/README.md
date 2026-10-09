@@ -1,5 +1,7 @@
 # Final verification
 
+Current release evidence: [9 October integration recheck](integration-recheck-2026-10-09.md). Older logs below retain their original scope and limitations.
+
 ## Result
 
 The complete local backend vertical slice passes against genuine PostgreSQL 17.11, PostGIS 3.5.2 and pgvector 0.8.0. The API runtime was compiled to JavaScript and started alongside the private Python service. Its real HTTP exercise created a geotagged issue and first observation, retrieved it, added a revisit, persisted a real-world diff and timeline, and explicitly resolved the issue. Mock evidence was clearly marked development-fixture, confidence zero, and interpreted notes only; this does not demonstrate real Gemma visual understanding.

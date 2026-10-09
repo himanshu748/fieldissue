@@ -1,0 +1,40 @@
+{
+  "checkedAt": "2026-10-09T04:22:50.287Z",
+  "runtimeCommit": "9c4030c8e48e2bcba7c6c07367fcde0e82016f2c",
+  "deployId": "dep-db46mi142hec73c7qqm0",
+  "ci": "https://github.com/himanshu748/fieldissue/actions/runs/37883073123",
+  "tests": {
+    "api": 135,
+    "python": 74
+  },
+  "publicId": "FI-000005",
+  "httpStatus": 200,
+  "initialExecution": "Fresh two-model run through token-free owner browser in the public Lab; subsequent authenticated readback reuses persisted results.",
+  "results": [
+    {
+      "model": "google/gemma-3-27b-it",
+      "status": "complete",
+      "cached": true,
+      "promptVersion": "fieldissue-text-interpretation-v2",
+      "latencyMs": 9341,
+      "inputTokens": 309,
+      "outputTokens": 100,
+      "costUsd": null,
+      "createdAt": "2026-10-09T04:22:00.945Z"
+    },
+    {
+      "model": "qwen/qwen-2.5-72b-instruct",
+      "status": "complete",
+      "cached": true,
+      "promptVersion": "fieldissue-text-interpretation-v2",
+      "latencyMs": 4020,
+      "inputTokens": 317,
+      "outputTokens": 136,
+      "costUsd": null,
+      "createdAt": "2026-10-09T04:22:04.973Z"
+    }
+  ],
+  "changesIssueStatus": false,
+  "finalIssueStatus": "OPEN",
+  "readyHttp": 200
+}
