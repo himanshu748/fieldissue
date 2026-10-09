@@ -21,6 +21,10 @@ Deadline: **12 October 2026, 06:59 UTC / 12:29 IST** (11 October, 23:59 PDT). Su
 - Zero-cash approach explained without claiming permanently free hosting. Render database and Tinker checkpoint expiry stated.
 - DEV unpublished listing returned no drafts; public API listed 33 published articles with no FieldIssue/Touch Grass entry before creation.
 
+## Saved draft
+
+DEV article **4821598** was saved unpublished, with AI-assisted disclosure requested through DevRelay. Authenticated readback confirmed the full body and both required tags, `published=false`, and no publication time. See [draft receipt](dev-draft-receipt.json). There is one FieldIssue draft and no published entry.
+
 ## Remaining before publication
 
 - Author review of the concrete draft and explicit publication approval. Confirm any personal eligibility conditions in the official rules; the draft does not attest to age or residency.

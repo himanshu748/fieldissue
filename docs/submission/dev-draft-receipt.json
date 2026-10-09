@@ -1,0 +1,18 @@
+{
+  "verifiedAt": "2026-10-09T06:39:43.872682+00:00",
+  "platform": "DEV",
+  "articleId": 4821598,
+  "state": "unpublished",
+  "title": "FieldIssue: take a walk, report a problem, come back with evidence",
+  "editUrl": "https://dev.to/himanshu_748/fieldissue-take-a-walk-report-a-problem-come-back-with-evidence-5a1f-temp-slug-1108687/edit",
+  "tags": [
+    "devchallenge",
+    "hf26challenge"
+  ],
+  "aiDisclosureRequested": "some_ai (DevRelay default)",
+  "bodySha256": "02cd77e3152f081a4004040c8bcc9ec75516f8090b8670e9f063a58533edfdba",
+  "readback": "Authenticated unpublished listing returned exactly one FieldIssue draft; full body matched saved Markdown; published=false and published_at=null.",
+  "submissionComplete": false,
+  "sourceAndAssetsCommit": "7055d03",
+  "screenshotsPublicHttpStatus": 200
+}
