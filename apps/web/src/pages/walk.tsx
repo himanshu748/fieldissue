@@ -72,7 +72,7 @@ function Planner() {
           <h2 className="eyebrow">Starting point</h2>
           <LocationPicker value={origin} onChange={setOrigin} idPrefix="walk" />
           {existing.data?.items.length ? <label className="flex flex-col gap-2 text-sm">Or start near an existing open report
-            <select className="min-h-11 w-full min-w-0 border border-ink bg-paper px-3" value="" onChange={e => { const issue = existing.data?.items.find(i => i.publicId === e.target.value); if (issue) { setOrigin({ latitude: issue.latitude, longitude: issue.longitude, source: "manual" }); setResult({}); setPicked(new Set()); } }}>
+            <select aria-label="Start near an existing open report" className="min-h-11 w-full min-w-0 border border-ink bg-paper px-3" value="" onChange={e => { const issue = existing.data?.items.find(i => i.publicId === e.target.value); if (issue) { setOrigin({ latitude: issue.latitude, longitude: issue.longitude, source: "manual" }); setResult({}); setPicked(new Set()); } }}>
               <option value="">Choose a report's location</option>
               {existing.data.items.map(i => <option key={i.id} value={i.publicId}>{i.publicId}: {i.title}</option>)}
             </select>

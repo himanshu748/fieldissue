@@ -1,7 +1,8 @@
 import { TabPFNDemo } from "@/components/field/tabpfn-demo";
 import { TinkerNote } from "@/components/field/tinker-note";
 import { RecordedTinkerExamples } from "@/components/field/tinker-examples";
-import { Link } from "react-router";
+import { useEffect } from "react";
+import { Link, useLocation } from "react-router";
 import { ArrowUpRightIcon, BeakerIcon, CircleDotIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -159,7 +160,12 @@ function GemmaEvidence({ latest }: { latest: Resource<LatestIssue> }) {
 }
 
 export function LabPage() {
+  const { hash } = useLocation();
   const evaluations = useResource((signal) => api.evaluations(signal), []);
+  useEffect(() => {
+    if (hash === "#tinker-examples" && evaluations.data?.tinkerExamples)
+      document.getElementById("tinker-examples")?.scrollIntoView({ block: "start" });
+  }, [hash, evaluations.data]);
   const integrations = useResource((signal) => api.integrations(signal), []);
   const latest = useResource<LatestIssue>(async (signal) => {
     const list = await api.listIssues(new URLSearchParams({ limit: "1" }), signal);

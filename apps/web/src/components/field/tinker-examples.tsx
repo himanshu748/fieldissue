@@ -7,12 +7,12 @@ export function RecordedTinkerExamples({ data }: { data: TinkerExamples }) {
   const [selected, setSelected] = useState(data.samples[0]?.id);
   const sample = data.samples.find(s => s.id === selected) ?? data.samples[0];
   if (!sample) return null;
-  return <section id="tinker-examples" aria-labelledby="tinker-examples-title" className="space-y-4 border border-ink bg-surface p-4 sm:p-6">
+  return <section id="tinker-examples" aria-labelledby="tinker-examples-title" className="scroll-mt-24 space-y-4 border border-ink bg-surface p-4 sm:p-6">
     <div className="flex flex-wrap gap-2"><Badge variant="outline">Recorded provider outputs</Badge><Badge variant="secondary">Synthetic notes</Badge></div>
     <h3 id="tinker-examples-title" className="text-xl font-bold">Inspect Tinker's recorded examples</h3>
     <p className="text-sm text-muted-foreground">All {data.samples.length} held-out notes from the {formatDateTime(data.recordedAt)} evaluation. These are saved base and fine-tuned model responses, including mistakes. Viewing them needs no account and makes no new provider call.</p>
     <label className="flex flex-col gap-2 text-sm font-semibold">Choose a synthetic note
-      <select value={sample.id} onChange={e => setSelected(e.target.value)} className="min-h-11 w-full min-w-0 border border-ink bg-paper px-3 font-normal">
+      <select aria-label="Choose a synthetic note" value={sample.id} onChange={e => setSelected(e.target.value)} className="min-h-11 w-full min-w-0 border border-ink bg-paper px-3 font-normal">
         {data.samples.map(s => <option key={s.id} value={s.id}>{s.id}</option>)}
       </select>
     </label>
