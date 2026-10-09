@@ -4,7 +4,7 @@
 
 `fieldissue-demo` runs the Node API and Python intelligence service in one free Render web service. Python binds only to loopback; the supervisor stops both processes if either exits. CI must pass before Render deploys `main`.
 
-The live database is the credit-backed Tiger Data service, with certificate-verified TLS, PostGIS and pgvector. Media uses bounded PostgreSQL storage and survives web restarts. The original Render database expiry notice does not describe this database. Sponsor credit and service lifetime are finite; this is not archival storage.
+The authoritative database is free Render PostgreSQL on the private network. Media uses bounded PostgreSQL storage and survives web restarts. Render reports that this database expires on **7 November 2026 at 06:31 UTC**; export or migrate records before then. Tiger Data is a separate credit-backed semantic index using certificate-verified TLS and pgvector. Sponsor credit and service lifetime are finite; this is not archival storage.
 
 The public demo requires no access token. Public issues are readable, guest cookies protect report ownership, and optional accounts preserve ownership across devices. Private reports remain protected. The operator bearer token is a server-side administrative credential and must not be distributed to judges. See [public access](public-guests.md) and [data lifecycle](data-lifecycle.md).
 
@@ -15,9 +15,9 @@ The current integration set includes real Gemma, ElevenLabs, SerpApi, Backboard,
 ## Reproducible profiles
 
 - `render.yaml` is the external TLS database/S3 profile. It requires configured secrets and provisioned storage before use.
-- `render.demo.yaml` is the original smaller Render database/PostgreSQL-media profile. It does not replicate the current Tiger-backed deployment or its full provider configuration. Its generated administrative token is not a public demo credential. Do not apply it over the existing service to recreate the current deployment.
+- `render.demo.yaml` is the original smaller Render database/PostgreSQL-media profile. It does not replicate the current secondary Tiger index or the full provider configuration. Its generated administrative token is not a public demo credential. Do not apply it over the existing service to recreate the current deployment.
 
-For a fresh service, supply only verified free or sponsor-credit providers, keep mock mode off, preserve certificate verification, configure bounded provider quotas and media capacity, and add no paid plan or payment method. Use `/ready` as the deployment readiness gate. After deploy, verify the exact runtime commit, public/private access, report/revisit behavior and durable media. Preserve existing records when migrating databases.
+For a fresh service, supply only verified free or sponsor-credit providers, keep mock mode off, preserve certificate verification for external database connections (the Render private-network connection is separate), configure bounded provider quotas and media capacity, and add no paid plan or payment method. Use `/ready` as the deployment readiness gate. After deploy, verify the exact runtime commit, public/private access, report/revisit behavior and durable media. Preserve existing records when migrating databases.
 
 ## Secrets and limits
 

@@ -239,7 +239,7 @@ const app = createApp({
       name: "Tiger Data",
       status: semantic ? "configured" : "unavailable",
       detail:
-        "Hybrid keyword and open-model vector search; index writes use a durable retry queue. The hosted primary database also uses Tiger Data.",
+        "Secondary hybrid keyword and open-model vector search; writes use a durable retry queue.",
     },
     {
       id: "entire",

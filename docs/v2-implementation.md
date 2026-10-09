@@ -1,6 +1,6 @@
 # FieldIssue V2 implementation
 
-The product specification is [fieldissue-v2-prd.md](fieldissue-v2-prd.md). The TLS-verified Tiger Data PostgreSQL service is authoritative for the hosted application. The existing Hono/Mastra/private Python boundaries, immutable observations, idempotent writes and explicit resolution are retained.
+The product specification is [fieldissue-v2-prd.md](fieldissue-v2-prd.md). Render PostgreSQL is authoritative for the hosted application; Tiger Data is the TLS-verified semantic index. The existing Hono/Mastra/private Python boundaries, immutable observations, idempotent writes and explicit resolution are retained.
 
 ## Architecture
 
@@ -15,7 +15,7 @@ The product specification is [fieldissue-v2-prd.md](fieldissue-v2-prd.md). The T
 
 ## Configuration
 
-`DATABASE_URL` points to Tiger Data in the hosted application. `TIGER_DATABASE_URL` configures the semantic index connection; both remain server-only and certificate verified. Run `db/tiger-index.sql` on the secondary before enabling `SEMANTIC_SEARCH_ENABLED=true`. Apply all checked-in primary migrations in order, including 013 for accounts and community coordination. `BACKBOARD_API_KEY` enables the comparison adapter. No keys appear in frontend builds or source control.
+`DATABASE_URL` points to Render PostgreSQL on its private network. `TIGER_DATABASE_URL` configures the separate certificate-verified TLS semantic index connection. Both remain server-only. Run `db/tiger-index.sql` on the secondary before enabling `SEMANTIC_SEARCH_ENABLED=true`. Apply all checked-in primary migrations in order, including 013 for accounts and community coordination. `BACKBOARD_API_KEY` enables the comparison adapter. No keys appear in frontend builds or source control.
 
 A configured adapter is not proof of a successful provider request. Recorded provider evidence lives in `docs/verification`; synthetic integration controls are explicitly identified and excluded from genuine revisit training.
 
