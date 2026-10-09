@@ -1,0 +1,178 @@
+{
+  "checkedAt": "2026-10-09T06:29:21.321Z",
+  "runtime": {
+    "id": "dep-db48ikp7lnhs738v6irg",
+    "status": "live",
+    "commit": "a835145250c62f7b69a598b3200c026850e261ca",
+    "finishedAt": "2026-10-09T06:28:41.322714Z"
+  },
+  "ci": {
+    "url": "https://github.com/himanshu748/fieldissue/actions/runs/37893377754",
+    "apiTests": 166,
+    "pythonTests": 74,
+    "conclusion": "success"
+  },
+  "acceptance": {
+    "checkedAt": "2026-10-09T06:16:50.496Z",
+    "base": "https://fieldissue-demo.onrender.com",
+    "checks": [
+      "public config without access token",
+      "private walk rejects anonymous access",
+      "existing private report remains hidden",
+      "public OpenAPI document",
+      "public issue and redacted export",
+      "two real account sessions with secure HttpOnly cookies",
+      "cross-origin writes blocked",
+      "private workspace and single-use invitation",
+      "saved walk private with stale revision rejected",
+      "independent login session loads the saved walk",
+      "in-app reminder and opt-in subscription persisted",
+      "member removal revokes workspace access",
+      "all-session and current-session logout",
+      "due reminder appears in account inbox after scheduled time"
+    ],
+    "providerCalls": 0,
+    "cleanup": {
+      "sessionsRevoked": true,
+      "existingReportsChanged": 0,
+      "privateQaAccountsRetained": 2,
+      "reason": "External maintenance connection did not complete; no database access controls were changed for cleanup."
+    },
+    "runtimeCommit": "a05630deda0003b1ef1d4f9af1f1f74db088af74",
+    "note": "Subsequent runtime changes correct integration descriptions only; final runtime readback and CI are separate."
+  },
+  "readback": {
+    "/app-config": {
+      "status": 200,
+      "publicAccess": true,
+      "accessRequired": false,
+      "mock": false,
+      "audio": true,
+      "tinkerNotes": true
+    },
+    "/v1/openapi": {
+      "status": 200,
+      "openapi": "3.1.0"
+    },
+    "/health": {
+      "status": 200,
+      "body": {
+        "status": "ok",
+        "service": "fieldissue-api"
+      }
+    },
+    "/ready": {
+      "status": 200,
+      "body": {
+        "status": "ready"
+      }
+    },
+    "/v1/integrations/status": {
+      "status": 200,
+      "body": {
+        "coreReady": true,
+        "integrations": [
+          {
+            "id": "render",
+            "name": "Render",
+            "status": "configured",
+            "detail": "Application hosting for the Node API and private Python intelligence service."
+          },
+          {
+            "id": "gemma",
+            "name": "Gemma",
+            "status": "configured",
+            "detail": "Core readiness checks model availability; saved observations carry actual inference provenance."
+          },
+          {
+            "id": "mastra",
+            "name": "Mastra",
+            "status": "configured",
+            "detail": "Validated evidence workflow orchestration."
+          },
+          {
+            "id": "serpapi",
+            "name": "SerpApi",
+            "status": "configured",
+            "detail": "Optional nearby place context; report creation survives provider failure."
+          },
+          {
+            "id": "sentry",
+            "name": "Sentry",
+            "status": "configured",
+            "detail": "Sanitized service errors and timing; no report photos or notes."
+          },
+          {
+            "id": "tinker",
+            "name": "Tinker",
+            "status": "configured",
+            "detail": "Live fine-tuned Qwen3 field-note interpretation. Synthetic training data; notes are user reports, not visual evidence. Checkpoint expires 2026-11-08T04:56:23.353Z."
+          },
+          {
+            "id": "elevenlabs",
+            "name": "ElevenLabs",
+            "status": "configured",
+            "detail": "Cached spoken issue briefings when quota and credentials are configured."
+          },
+          {
+            "id": "backboard",
+            "name": "Backboard",
+            "status": "configured",
+            "detail": "Consent-based Gemma 3 and Qwen 2.5 text interpretation comparison; results never resolve issues."
+          },
+          {
+            "id": "tiger",
+            "name": "Tiger Data",
+            "status": "configured",
+            "detail": "Secondary hybrid keyword and open-model vector search; writes use a durable retry queue."
+          },
+          {
+            "id": "entire",
+            "name": "Entire",
+            "status": "documented",
+            "detail": "Actual Entire checkpoint with a reviewed nine-message transcript excerpt in docs/verification/entire-v2-curated-session.json. Full session remains private."
+          },
+          {
+            "id": "tabpfn",
+            "name": "TabPFN",
+            "status": "configured",
+            "detail": "Real TabPFN-3.5 inference in the synthetic scenario tester. 96 invented training rows; not calibrated for real revisit scheduling."
+          }
+        ]
+      }
+    }
+  },
+  "browser": {
+    "photosLoaded": 2,
+    "mapTilesLoaded": 4,
+    "audio": {
+      "durationSeconds": 7.941224,
+      "playedToEnd": true,
+      "error": null
+    },
+    "tinker": "saved real trained-checkpoint response displayed",
+    "backboard": "both saved real open-model responses displayed",
+    "tabpfn": "saved real synthetic scenario prediction 49.5%",
+    "tiger": "fresh hybrid search returned public FI-000005 with similarity 0.48",
+    "consoleErrors": 0
+  },
+  "sentry": {
+    "testedRelease": "a05630deda0003b1ef1d4f9af1f1f74db088af74",
+    "query": "level:error release_sha:a05630deda0003b1ef1d4f9af1f1f74db088af74",
+    "period": "24h",
+    "result": "No issues match your search",
+    "limitations": "Tagged error query only; historical unexplained groups remain open.",
+    "ingestionConfirmed": [
+      "ACCOUNT_REQUIRED",
+      "WALK_CONFLICT",
+      "INVALID_ORIGIN",
+      "NOT_FOUND",
+      "COMMUNITY_ACCESS"
+    ]
+  },
+  "infrastructure": {
+    "primary": "Render PostgreSQL private network",
+    "semanticIndex": "Tiger Data certificate-verified TLS",
+    "primaryDatabaseExpiresAt": "2026-11-07T06:31:20.624848Z"
+  }
+}

@@ -29,7 +29,19 @@ Additional browser checks passed: PNG summary download, redacted Open311 JSON do
 
 Local validation: type/format checks and production build passed. The final focused suite passed 13/13 against a fresh isolated Tiger schema. A broader earlier run passed 160/163; the three failures were the existing service-boundary readiness checks exceeding their 500 ms database connection timeout over remote TLS. CI uses local PostGIS and remains the release gate for those checks. No timeout assertion was weakened.
 
-Sentry was inspected read-only in its authenticated dashboard. Historical NOT_FOUND and provider-related groups remain visible; this does not establish a clean production release. CI and hosted results will be appended after deployment.
+Sentry was inspected read-only in its authenticated dashboard. The 24-hour query `level:error release_sha:a05630deda0003b1ef1d4f9af1f1f74db088af74` returned no matching issues after acceptance. Removing the level filter showed five expected Info groups (ACCOUNT_REQUIRED, WALK_CONFLICT, INVALID_ORIGIN, NOT_FOUND and COMMUNITY_ACCESS), confirming ingestion from the tested release. Historical NOT_FOUND and provider-related groups remain visible; this is not a claim that all historical errors are resolved.
+
+## Hosted acceptance
+
+The feature release `a05630deda0003b1ef1d4f9af1f1f74db088af74` passed 166 API and 74 Python tests, type/format checks, PostGIS/pgvector checks, development and compiled HTTP journeys, and the Render container isolation/512 MiB embedding/lifecycle checks. The three local connection-time failures passed in CI without weakening their assertions. Final runtime/CI identifiers and fresh readback are in [p2-hosted-2026-10-09.json](p2-hosted-2026-10-09.json).
+
+Hosted HTTP acceptance passed public access without a token, private-report hiding, secure HttpOnly account cookies, cross-origin rejection, private workspaces, single-use invitations, independent account sessions loading the same saved walk, stale-revision rejection, membership removal, reminder/subscription persistence, and current/all-session logout. A reminder appeared in the inbox after its due time. Two temporary private QA accounts remain, with test sessions revoked: the external maintenance connection did not complete, and access protections were not changed to force cleanup. Existing reports were unchanged.
+
+Hosted browser acceptance loaded both photos and four OpenStreetMap tiles on FI-000005. Its cached real ElevenLabs audio played to completion (7.941224 seconds, no media error). The saved real Tinker interpretation, both Backboard results, and 49.5% TabPFN synthetic scenario prediction displayed correctly. A fresh Tiger hybrid keyword/vector search returned the public control. Browser error logs were empty. This pass reused cached AI results; it does not claim new inference calls for every provider. Fresh local Gemma inference and the dated earlier provider executions remain separate evidence.
+
+The authoritative hosted database is free Render PostgreSQL on its private network; Tiger is the separate TLS-verified semantic index. Render reports database expiry **2026-11-07T06:31:20.624848Z**. Some intermediate documentation incorrectly described Tiger as primary; the final source and operational guide correct that against the live environment. Export/migrate before expiry to retain reports and media.
+
+Both Claude Opus reviews were source reviews. No public write-up or submission was posted during this pass.
 
 ## Remaining evidence boundaries
 
