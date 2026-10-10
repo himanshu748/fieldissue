@@ -7,6 +7,10 @@ is the separate field workspace, backed by the public API. Report an issue with
 a photo, revisit it with a new photo, read the before/after comparison, then
 resolve it yourself.
 
+## Verified build
+
+[Main CI run 38029824732](https://github.com/himanshu748/fieldissue/actions/runs/38029824732) passed on 10 October 2026 at commit `0f00a01`: **184 API tests** and **78 Python tests**, extracted from its test logs. Docker checks and mobile browser journeys also passed. CI uses isolated provider fixtures; hosted checks are separate.
+
 ## Try it
 
 **Hosted:** [Landing page](https://fieldissue-demo.onrender.com/) · [Workspace](https://fieldissue-demo.onrender.com/app). Public guest access requires no token or account. Your browser owns the reports it creates; sign in through Community to retain ownership across devices. Operator access is for private administration, not judges.
