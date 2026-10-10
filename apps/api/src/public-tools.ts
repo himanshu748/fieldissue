@@ -1,3 +1,4 @@
+import { visiblePointSql, visibleRadiusSql } from "./public-coordinates.js";
 import { z } from "zod";
 import type { Pool } from "pg";
 export async function duplicates(
@@ -8,14 +9,23 @@ export async function duplicates(
     note: string;
     category?: string;
   },
+  publicOnly = true,
+  guestId?: string,
 ) {
+  const point = publicOnly ? visiblePointSql("$5") : "geom";
   const r = await pool.query(
-    `WITH nearby AS (SELECT id,public_id,title,category,status,ST_Distance(geom::geography,ST_SetSRID(ST_MakePoint($2,$1),4326)::geography) AS distance_meters,
+    `WITH nearby AS (SELECT id,public_id,title,category,status,ST_Distance(${point}::geography,ST_SetSRID(ST_MakePoint($2,$1),4326)::geography) AS distance_meters,
  ts_rank_cd(to_tsvector('simple',coalesce(title,'')||' '||coalesce(description,'')),plainto_tsquery('simple',$3)) AS text_score FROM issues
- WHERE is_public AND status NOT IN ('RESOLVED','REJECTED') AND ST_DWithin(geom::geography,ST_SetSRID(ST_MakePoint($2,$1),4326)::geography,300))
+ WHERE is_public AND status NOT IN ('RESOLVED','REJECTED') AND ${visibleRadiusSql("geom", point, "ST_SetSRID(ST_MakePoint($2,$1),4326)::geography", "300")})
  SELECT id,public_id,title,category,status,round(distance_meters::numeric)::int AS distance_meters,(category::text=$4) AS category_match,text_score>0 AS text_match
  FROM nearby ORDER BY (CASE WHEN category::text=$4 THEN 2 ELSE 0 END + LEAST(text_score,1)*2 + (1-distance_meters/300)) DESC,distance_meters,id LIMIT 5`,
-    [input.latitude, input.longitude, input.note, input.category ?? null],
+    [
+      input.latitude,
+      input.longitude,
+      input.note,
+      input.category ?? null,
+      ...(publicOnly ? [guestId ?? null] : []),
+    ],
   );
   return {
     items: r.rows,

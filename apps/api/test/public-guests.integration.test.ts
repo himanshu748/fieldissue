@@ -29,6 +29,7 @@ suite("public guests preserve ownership and private evidence", () => {
     latitude: 0,
     longitude: 0,
   };
+  let precisionReport: any;
   let analyses = 0;
   let lastAnalysisInput: unknown;
   function form(consent = true) {
@@ -399,6 +400,7 @@ suite("public guests preserve ownership and private evidence", () => {
     });
     expect(created.status).toBe(201);
     const issue = await created.json();
+    precisionReport = issue;
     ids.push(issue.id);
     keys.push(issue.observations[0].storageKey);
     for (const [requestHeaders, precise] of [
@@ -423,7 +425,7 @@ suite("public guests preserve ownership and private evidence", () => {
       );
       expect(observations.items[0]).toMatchObject(point);
       const list = await read(
-        "/v1/issues?near_lat=26.9402177&near_lon=80.9169963&radius_meters=1",
+        `/v1/issues?near_lat=${point.latitude}&near_lon=${point.longitude}&radius_meters=1`,
       );
       expect(
         list.items.find((item: any) => item.id === issue.id),
@@ -440,7 +442,7 @@ suite("public guests preserve ownership and private evidence", () => {
       const summary = await read(`/v1/issues/${issue.publicId}/share-summary`);
       expect(summary.publicLocation).toMatchObject(point);
       const walk = await read(
-        "/v1/walks/suggestions?latitude=26.9402177&longitude=80.9169963&radius_meters=1",
+        `/v1/walks/suggestions?latitude=${point.latitude}&longitude=${point.longitude}&radius_meters=1`,
       );
       expect(
         walk.items.find((item: any) => item.issueId === issue.id)
@@ -451,6 +453,83 @@ suite("public guests preserve ownership and private evidence", () => {
       latitude: 26.9402177,
       longitude: 80.9169963,
     });
+  });
+  it("does not reveal hidden GPS through public radius, bounds or distance queries", async () => {
+    const id = precisionReport.id;
+    const probe = await pool.query(
+      "INSERT INTO issues(title,category,severity,status,latitude,longitude,is_public) VALUES('Spatial count fixture','OTHER','LOW','OPEN',26.94,80.916,true) RETURNING id",
+    );
+    ids.push(probe.rows[0].id);
+    async function snapshot() {
+      const results = [];
+      for (const cookie of [undefined, otherCookie]) {
+        const read = async (path: string) => {
+          const response = await app.request(path, {
+            headers: cookie ? { Cookie: cookie } : {},
+          });
+          expect(response.status).toBe(200);
+          return response.json();
+        };
+        for (const [lat, lon] of [
+          [26.9402177, 80.9169963],
+          [26.94, 80.917],
+          [26.9409, 80.917],
+        ]) {
+          for (const radius of [1, 15, 30, 100]) {
+            const list = await read(
+              `/v1/issues?search=${precisionReport.publicId}&near_lat=${lat}&near_lon=${lon}&radius_meters=${radius}`,
+            );
+            results.push(list.items.map((i: any) => i.id));
+            const walk = await read(
+              `/v1/walks/suggestions?latitude=${lat}&longitude=${lon}&radius_meters=${radius}`,
+            );
+            results.push(walk.items.filter((i: any) => i.issueId === id));
+          }
+          const duplicate = await read(
+            `/v1/duplicates?latitude=${lat}&longitude=${lon}`,
+          );
+          results.push(duplicate.items.filter((i: any) => i.id === id));
+          results.push(
+            (await repository.nearby(lat!, lon!, pool, true)).filter(
+              (i) => i.id === id,
+            ),
+          );
+        }
+        for (const bbox of [
+          "80.91699,26.94021,80.91701,26.94023",
+          "80.91699,26.93999,80.91701,26.94001",
+        ]) {
+          const map = await read(`/v1/issues/map?bbox=${bbox}`);
+          results.push(map.features.filter((i: any) => i.properties.id === id));
+        }
+      }
+      const features = await repository.features(id);
+      expect(features.nearby_issue_count).toBe(1);
+      results.push(features.nearby_issue_count);
+      return results;
+    }
+    const before = await snapshot();
+    try {
+      // Move only the disposable fixture inside the same rounded public cell.
+      await pool.query(
+        "UPDATE issues SET latitude=$2,longitude=$3 WHERE id=$1",
+        [id, 26.9404, 80.9167],
+      );
+      expect(await snapshot()).toEqual(before);
+      const exact = await repository.walkSuggestions(26.9404, 80.9167, 1, 5);
+      expect(
+        exact.items.find((i) => i.issueId === id)?.distanceMeters,
+      ).toBeLessThan(0.01);
+      expect(await repository.get(id)).toMatchObject({
+        latitude: 26.9404,
+        longitude: 80.9167,
+      });
+    } finally {
+      await pool.query(
+        "UPDATE issues SET latitude=$2,longitude=$3 WHERE id=$1",
+        [id, 26.9402177, 80.9169963],
+      );
+    }
   });
   it("stores reporter assessment separately and never forwards it as vision evidence", async () => {
     const old = (await repository.get(privateIssue.id)).observations[0];

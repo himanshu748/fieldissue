@@ -120,7 +120,7 @@ export function PrivacyPage() {
       </Section>
       <Section n="05" title="Guest access and operator access">
         <p>Public guest mode uses a signed, first-party, HttpOnly cookie for 30 days. It lets the reporting browser edit, resolve and reopen its reports. Sign in under Community to attach your browser-owned reports to an account. Without an account, clearing cookies or switching browsers loses these guest controls; the operator can still moderate. This is browser ownership, not a verified personal identity.</p>
-        <p>New guest reports and revisits are public after explicit consent, including their photo, note and an approximate location. Public and non-owner responses round coordinates to three decimals, about 100 m. Report owners and operators retain full precision. Existing private reports stay private. Anyone can browse public reports and add revisit evidence.</p>
+        <p>New guest reports and revisits are public after explicit consent, including their photo, note and an approximate location. Public and non-owner responses round coordinates to three decimals, about 100 m. Report owners and operators retain full precision. Public radius searches, map bounds and distances use the same rounded points. Existing private reports stay private. Anyone can browse public reports and add revisit evidence.</p>
         <p>
           When a deployment requires a shared access token, it is stored in this browser tab's session storage only and is
           sent as an authorization header to the same origin. Photos are fetched with that header and shown through

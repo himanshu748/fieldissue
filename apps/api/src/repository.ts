@@ -1,3 +1,8 @@
+import {
+  publicCoordinate,
+  visiblePointSql,
+  visibleRadiusSql,
+} from "./public-coordinates.js";
 import { Pool, type PoolClient } from "pg";
 import { comparisonSchema } from "@fieldissue/shared";
 import type {
@@ -655,6 +660,7 @@ export class IssueRepository {
   }
   async list(filters: {
     publicOnly?: boolean;
+    guestId?: string;
     status?: string;
     category?: string;
     severity?: string;
@@ -683,10 +689,19 @@ export class IssueRepository {
       where.push(
         `(created_at,id)<(${bind(filters.cursor.createdAt)}::timestamptz,${bind(filters.cursor.id)}::uuid)`,
       );
-    if (filters.nearLat !== undefined)
+    if (filters.nearLat !== undefined) {
+      const point = filters.publicOnly
+        ? visiblePointSql(bind(filters.guestId ?? null))
+        : "geom";
       where.push(
-        `ST_DWithin(geom::geography,ST_SetSRID(ST_MakePoint(${bind(filters.nearLon)},${bind(filters.nearLat)}),4326)::geography,${bind(filters.radius)})`,
+        visibleRadiusSql(
+          "geom",
+          point,
+          `ST_SetSRID(ST_MakePoint(${bind(filters.nearLon)},${bind(filters.nearLat)}),4326)::geography`,
+          bind(filters.radius),
+        ),
       );
+    }
     const result = await this.pool.query(
       `SELECT *,to_char(created_at AT TIME ZONE 'UTC','YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"') AS cursor_created_at FROM issues ${where.length ? `WHERE ${where.join(" AND ")}` : ""} ORDER BY created_at DESC,id DESC LIMIT ${bind(filters.limit + 1)}`,
       params,
@@ -711,15 +726,24 @@ export class IssueRepository {
     bbox: [number, number, number, number],
     limit: number,
     publicOnly = false,
+    guestId?: string,
   ) {
+    const point = publicOnly ? visiblePointSql("$6") : "geom";
     const [west, south, east, north] = bbox;
     const predicate =
       west <= east
-        ? "geom && ST_MakeEnvelope($1,$2,$3,$4,4326)"
-        : "(geom && ST_MakeEnvelope($1,$2,180,$4,4326) OR geom && ST_MakeEnvelope(-180,$2,$3,$4,4326))";
+        ? `(geom && ST_Expand(ST_MakeEnvelope($1,$2,$3,$4,4326),0.00051) AND ${point} && ST_MakeEnvelope($1,$2,$3,$4,4326))`
+        : `((geom && ST_Expand(ST_MakeEnvelope($1,$2,180,$4,4326),0.00051) AND ${point} && ST_MakeEnvelope($1,$2,180,$4,4326)) OR (geom && ST_Expand(ST_MakeEnvelope(-180,$2,$3,$4,4326),0.00051) AND ${point} && ST_MakeEnvelope(-180,$2,$3,$4,4326)))`;
     const r = await this.pool.query(
       `SELECT * FROM issues WHERE ${predicate} ${publicOnly ? "AND is_public" : ""} ORDER BY created_at DESC,id DESC LIMIT $5`,
-      [west, south, east, north, limit + 1],
+      [
+        west,
+        south,
+        east,
+        north,
+        limit + 1,
+        ...(publicOnly ? [guestId ?? null] : []),
+      ],
     );
     return {
       type: "FeatureCollection",
@@ -737,15 +761,23 @@ export class IssueRepository {
     radius: number,
     limit: number,
     publicOnly = false,
+    guestId?: string,
   ) {
+    const point = publicOnly ? visiblePointSql("$5", "i") : "i.geom";
     const result = await this.pool.query(
       `SELECT i.id AS issue_id,i.title,i.status,
-        ST_Distance(i.geom::geography,p.point) AS distance_meters,
+        ST_Distance(${point}::geography,p.point) AS distance_meters,
         COALESCE((SELECT max(o.captured_at) FROM observations o WHERE o.issue_id=i.id),i.created_at) AS last_observed_at
        FROM issues i CROSS JOIN (SELECT ST_SetSRID(ST_MakePoint($1,$2),4326)::geography AS point) p
-       WHERE ${publicOnly ? "i.is_public AND" : ""} i.status NOT IN ('RESOLVED','REJECTED') AND ST_DWithin(i.geom::geography,p.point,$3)
+       WHERE ${publicOnly ? "i.is_public AND" : ""} i.status NOT IN ('RESOLVED','REJECTED') AND ${visibleRadiusSql("i.geom", point, "p.point", "$3")}
        ORDER BY distance_meters ASC,last_observed_at ASC,i.id ASC LIMIT $4`,
-      [longitude, latitude, radius, limit],
+      [
+        longitude,
+        latitude,
+        radius,
+        limit,
+        ...(publicOnly ? [guestId ?? null] : []),
+      ],
     );
     return {
       items: result.rows.map(camel),
@@ -758,11 +790,13 @@ export class IssueRepository {
     longitude: number,
     client: Pool | PoolClient = this.pool,
     publicOnly = false,
+    guestId?: string,
   ) {
+    const point = publicOnly ? visiblePointSql("$3") : "geom";
     return (
       await client.query(
-        `SELECT id,public_id,title FROM issues WHERE ${publicOnly ? "is_public AND" : ""} status NOT IN ('RESOLVED','REJECTED') AND ST_DWithin(geom::geography,ST_SetSRID(ST_MakePoint($1,$2),4326)::geography,100) LIMIT 10`,
-        [longitude, latitude],
+        `SELECT id,public_id,title FROM issues WHERE ${publicOnly ? "is_public AND" : ""} status NOT IN ('RESOLVED','REJECTED') AND ${visibleRadiusSql("geom", point, "ST_SetSRID(ST_MakePoint($1,$2),4326)::geography", "100")} LIMIT 10`,
+        [longitude, latitude, ...(publicOnly ? [guestId ?? null] : [])],
       )
     ).rows.map(camel);
   }
@@ -798,8 +832,14 @@ export class IssueRepository {
       category: i.category,
       nearby_issue_count: (
         await client.query(
-          "SELECT count(*)::int count FROM issues WHERE id<>$1 AND (NOT $4::boolean OR is_public) AND status NOT IN ('RESOLVED','REJECTED') AND ST_DWithin(geom::geography,ST_SetSRID(ST_MakePoint($2,$3),4326)::geography,100)",
-          [i.id, i.longitude, i.latitude, !!i.is_public],
+          `SELECT count(*)::int count FROM issues WHERE id<>$1 AND (NOT $4::boolean OR is_public) AND status NOT IN ('RESOLVED','REJECTED') AND ${visibleRadiusSql("geom", i.is_public ? visiblePointSql("$5") : "geom", "ST_SetSRID(ST_MakePoint($2,$3),4326)::geography", "100")}`,
+          [
+            i.id,
+            i.is_public ? publicCoordinate(i.longitude) : i.longitude,
+            i.is_public ? publicCoordinate(i.latitude) : i.latitude,
+            !!i.is_public,
+            ...(i.is_public ? [null] : []),
+          ],
         )
       ).rows[0].count,
       previous_change_count: changes,

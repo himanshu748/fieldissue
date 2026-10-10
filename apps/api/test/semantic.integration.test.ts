@@ -148,4 +148,60 @@ describeDb("durable secondary index queue", () => {
       );
     }
   });
+  it("filters public semantic results by the visible primary point while owners keep precise access", async () => {
+    const owner = "10000000-0000-4000-8000-000000000001";
+    await pool.query(
+      "UPDATE issues SET is_public=true,guest_owner=$2,latitude=26.9402177,longitude=80.9169963 WHERE id=$1",
+      [id, owner],
+    );
+    await repo.patch(id, { title: "Public spatial fixture" });
+    await pool.query(
+      "UPDATE semantic_index_jobs SET available_at=now(),locked_until='-infinity' WHERE issue_id=$1",
+      [id],
+    );
+    const search = new SemanticSearch(repo, pool, async () =>
+      Array(384).fill(1 / Math.sqrt(384)),
+    );
+    expect(await search.processNext(id)).toBe(true);
+    const query = {
+      q: "fixture",
+      limit: 10,
+      latitude: 26.94,
+      longitude: 80.917,
+      radius_meters: 1,
+      publicOnly: true,
+    };
+    expect((await search.search(query)).items.some((i) => i.id === id)).toBe(
+      true,
+    );
+    const exact = { ...query, latitude: 26.9402177, longitude: 80.9169963 };
+    expect((await search.search(exact)).items.some((i) => i.id === id)).toBe(
+      false,
+    );
+    expect(
+      (await search.search({ ...exact, guestId: owner })).items.some(
+        (i) => i.id === id,
+      ),
+    ).toBe(true);
+    expect(
+      (await search.search({ ...exact, publicOnly: false })).items.some(
+        (i) => i.id === id,
+      ),
+    ).toBe(true);
+    // A stale secondary index must not reveal a more precise point to public callers.
+    await pool.query(
+      "UPDATE issues SET latitude=26.9404,longitude=80.9167 WHERE id=$1",
+      [id],
+    );
+    expect((await search.search(query)).items.some((i) => i.id === id)).toBe(
+      true,
+    );
+    expect((await search.search(exact)).items.some((i) => i.id === id)).toBe(
+      false,
+    );
+    await pool.query(
+      "DELETE FROM fieldissue_semantic_index WHERE issue_id=$1",
+      [id],
+    );
+  });
 });

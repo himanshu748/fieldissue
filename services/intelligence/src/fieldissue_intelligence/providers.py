@@ -132,6 +132,7 @@ class GemmaEvidenceProvider:
 
     async def analyze_observation(self, image: bytes, mime_type: str, note: str) -> AnalyzeResult:
         image_content = self._image_content(image, mime_type)
+        note = vision_note(note)
         if self.settings.ai_mock_mode:
             # The fixture interprets a supplied note only, never pixels.
             lower = note.lower()
@@ -180,8 +181,9 @@ class GemmaEvidenceProvider:
         before_image = self._image_content(before.image_bytes(), before.mime_type)
         after_image = self._image_content(after.image_bytes(), after.mime_type)
         if self.settings.ai_mock_mode:
-            before_conditions = {before.note[:500]} if before.note.strip() else set()
-            after_conditions = {after.note[:500]} if after.note.strip() else set()
+            before_note, after_note = vision_note(before.note), vision_note(after.note)
+            before_conditions = {before_note[:500]} if before_note.strip() else set()
+            after_conditions = {after_note[:500]} if after_note.strip() else set()
             return CompareResult(
                 summary="Development fixture compares notes only; images were not analyzed.",
                 outcome="CHANGED" if before_conditions != after_conditions else "UNCHANGED" if before_conditions else "INSUFFICIENT_EVIDENCE",

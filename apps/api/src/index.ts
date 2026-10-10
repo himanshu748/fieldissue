@@ -242,6 +242,13 @@ const app = createApp({
         "Secondary hybrid keyword and open-model vector search; writes use a durable retry queue.",
     },
     {
+      id: "github-actions",
+      name: "GitHub Copilot category",
+      status: "documented",
+      detail:
+        "Qualifying usage: GitHub Actions runs CI and a read-only demo health monitor. The Lab links the workflows and passing runs. No Copilot-authored code is claimed.",
+    },
+    {
       id: "entire",
       name: "Entire",
       status: "documented",
