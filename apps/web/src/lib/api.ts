@@ -163,6 +163,8 @@ export const api = {
     request<{ events: IssueEvent[] }>(`/v1/issues/${id(issueId)}/timeline`, { signal }),
   patch: (issueId: string, body: Record<string, unknown>) =>
     request<Issue>(`/v1/issues/${id(issueId)}`, { method: "PATCH", json: body }),
+  correctObservation: (issueId:string, observationId:string, body:{exclusionType:"WRONG_LOCATION"|"WRONG_PHOTOGRAPH"|"NOT_SUITABLE"|null;reason:string}) =>
+    request<Observation>(`/v1/issues/${id(issueId)}/observations/${id(observationId)}/correction`,{method:"POST",json:body}),
   diff: (issueId: string, beforeObservationId: string, afterObservationId: string) =>
     request<Diff>(`/v1/issues/${id(issueId)}/diff`, {
       method: "POST",

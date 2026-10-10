@@ -360,6 +360,9 @@ describeDb("provider and transaction boundaries", () => {
       },
       compare: async () => ({
         summary: "Fixture comparison",
+        outcome: "CHANGED",
+        comparabilityReason: "Same synthetic bench fixture",
+        sameSubjectEvidence: ["matching frame"],
         removed: ["broken slat"],
         added: ["repaired slat"],
         unchanged: ["frame"],

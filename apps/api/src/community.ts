@@ -299,7 +299,7 @@ export class Community {
   async evidence(c: PoolClient, i: any, observation: string) {
     const latest = (
       await c.query(
-        "SELECT id FROM observations WHERE issue_id=$1 ORDER BY captured_at DESC,created_at DESC,id DESC LIMIT 1",
+        "SELECT id FROM observations WHERE issue_id=$1 AND exclusion_type IS NULL ORDER BY captured_at DESC,created_at DESC,id DESC LIMIT 1",
         [i.id],
       )
     ).rows[0];
@@ -316,11 +316,11 @@ export class Community {
         "Only an active issue can be reviewed.",
       );
     const fresh = await c.query(
-      "SELECT 1 FROM evidence_diffs WHERE issue_id=$1 AND after_observation_id=$2 AND model<>'fieldissue-image-identity'",
+      "SELECT 1 FROM evidence_diffs WHERE issue_id=$1 AND after_observation_id=$2 AND superseded_at IS NULL AND outcome IN ('CHANGED','UNCHANGED') AND model<>'fieldissue-image-identity'",
       [i.id, observation],
     );
     const repeated = await c.query(
-      "SELECT 1 FROM evidence_diffs WHERE issue_id=$1 AND after_observation_id=$2 AND model='fieldissue-image-identity'",
+      "SELECT 1 FROM evidence_diffs WHERE issue_id=$1 AND after_observation_id=$2 AND superseded_at IS NULL AND model='fieldissue-image-identity'",
       [i.id, observation],
     );
     if (!fresh.rowCount || repeated.rowCount)

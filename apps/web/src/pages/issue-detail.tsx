@@ -1,3 +1,4 @@
+import { ObservationCorrection } from "@/components/field/observation-correction";
 import { IssueFollowup } from "@/components/field/issue-followup";
 import { TinkerNote } from "@/components/field/tinker-note";
 import { ShareSummary } from "@/components/field/share-summary";
@@ -159,6 +160,7 @@ export function IssueDetailPage() {
           observation{observations.length === 1 ? "" : "s"}
         </p>
         {data.permissions?.manage === false ? <p className="text-sm text-muted-foreground">Anyone can add a revisit. The reporting browser or an operator confirms resolution and reopening.</p> : null}
+        <Link className="inline-flex min-h-11 items-center underline" to={`/app/issues/${data.publicId}/evidence`}>Read-only evidence walkthrough</Link>
         <div className="flex flex-wrap gap-2">
           {data.status !== "REJECTED" ? (
             <Button asChild>
@@ -176,6 +178,7 @@ export function IssueDetailPage() {
               </Link>
             </Button>
           ) : null}
+          {observations.length > 1 && !original?.exclusionType && observations.filter(o=>!o.exclusionType).at(-1)?.id !== original?.id ? <Button variant="outline" asChild><Link to={`/app/issues/${data.publicId}/compare?before=${original!.id}&after=${observations.filter(o=>!o.exclusionType).at(-1)!.id}`}>Compare with original</Link></Button> : null}
           {!closed && data.permissions?.manage !== false ? (
             <Button asChild variant="outline">
               <Link to={`/app/issues/${data.publicId}/resolve`}>
@@ -227,13 +230,19 @@ export function IssueDetailPage() {
                         <span className="font-semibold">
                           {index === 0 ? "Original observation" : `Revisit ${index}`}
                         </span>
-                        <span className="font-mono text-xs text-muted-foreground">{formatDateTime(o.capturedAt)}</span>
+                        <span className="font-mono text-xs text-muted-foreground">Captured {formatDateTime(o.capturedAt)}</span>
+                        <span className="text-sm">{o.exclusionType ? `Excluded: ${label(o.exclusionType)}` : "Eligible for comparison"}</span>
                       </span>
                     </AccordionTrigger>
                     <AccordionContent>
                       <div className="grid gap-4 pt-2 sm:grid-cols-[12rem_1fr]">
                         <ObservationImage storageKey={o.storageKey} alt={`Observation ${index + 1}`} className="aspect-square border border-border" />
                         <div className="flex flex-col gap-3">
+                          {o.exclusionType ? <div role="note" className="border-l-4 border-ink bg-muted p-3"><strong>Excluded: {label(o.exclusionType)}</strong><p>{o.correctionReason || "Owner marked this observation unsuitable."}</p><p>Not valid comparison evidence. Original output below is retained for audit.</p></div> : null}
+                          <p className="text-sm">Captured: {formatDateTime(o.capturedAt)} · Uploaded: {formatDateTime(o.createdAt)}</p>
+                          {o.locationSource === "inherited" ? <p className="text-sm">Location inherited from the issue. This is not independent proof of where the photo was taken.</p> : null}
+                          {data.permissions?.manage !== false ? <ObservationCorrection issueId={data.publicId} observation={o} onSaved={()=>{issue.reload();diffs.reload();timeline.reload();}}/> : null}
+                          {diffs.data?.items.filter(d=>d.beforeObservationId===o.id || d.afterObservationId===o.id).map(d=><Link key={d.id} className="min-h-11 py-2 text-sm underline" to={`/app/issues/${data.publicId}/compare?before=${d.beforeObservationId}&after=${d.afterObservationId}&comparison=${d.id}`}>{d.supersededAt?"Historical":"Saved"} comparison · {formatDateTime(d.createdAt)}</Link>)}
                           {o.note ? <p>“{o.note}”</p> : <p className="text-muted-foreground">No note.</p>}
                           {a.conditions?.length ? (
                             <div>
@@ -273,17 +282,17 @@ export function IssueDetailPage() {
               {diffs.data?.items.map((d) => (
                 <li key={d.id}>
                   <Link
-                    to={`/app/issues/${data.publicId}/compare?before=${d.beforeObservationId}&after=${d.afterObservationId}`}
+                    to={`/app/issues/${data.publicId}/compare?before=${d.beforeObservationId}&after=${d.afterObservationId}&comparison=${d.id}`}
                     className="flex flex-col gap-2 border border-border bg-surface p-4 hover:border-ink"
                   >
                     <span className="flex flex-wrap items-center justify-between gap-2">
                       <span className="font-mono text-xs text-muted-foreground">{formatDateTime(d.createdAt)}</span>
-                      <Badge variant="outline">{d.model === "fieldissue-image-identity" ? "Repeated photo: no new evidence" : `Model suggested ${label(d.recommendedStatus)}`}</Badge>
+                      <Badge variant="outline">{d.supersededAt ? "Superseded: not current evidence" : d.model === "fieldissue-image-identity" ? "Repeated photo: no new evidence" : label(d.outcome ?? "INSUFFICIENT_EVIDENCE")}</Badge>
                       {d.model === "fieldissue-image-identity" ? <p className="text-xs text-muted-foreground">This checks identical file bytes. Edited copies can differ; this is not proof that a repair happened.</p> : null}
                     </span>
                     <span>{d.summary}</span>
                     <span className="font-mono text-xs text-muted-foreground">
-                      −{d.removed.length} removed · +{d.added.length} added · {d.unchanged.length} unchanged
+                      {d.supersededAt ? d.supersededReason : ["CHANGED","UNCHANGED"].includes(d.outcome) ? `${d.removed.length} removed · ${d.added.length} added · ${d.unchanged.length} unchanged` : "No reliable change conclusion"}
                     </span>
                   </Link>
                 </li>

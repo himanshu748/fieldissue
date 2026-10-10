@@ -6,6 +6,10 @@ import type { IssueEvent } from "@/lib/types";
 function describe(event: IssueEvent): { title: string; detail?: string; tone: "observe" | "ink" | "grass" | "muted" } {
   const p = event.payload ?? {};
   switch (event.eventType) {
+    case "OBSERVATION_CORRECTED":
+      return {title:p.exclusionType ? `Observation excluded: ${label(String(p.exclusionType))}` : "Observation restored",detail:`${p.reason || "No reason supplied"} · Authorized ${(p.actor as {kind?:string})?.kind ?? "owner"}`,tone:"ink"};
+    case "COMPARISON_SUPERSEDED":
+      return {title:"Comparison superseded",detail:"Earlier output remains in history, but is no longer current evidence.",tone:"muted"};
     case "ISSUE_CREATED":
       return { title: "Issue created from a field photo", tone: "observe" };
     case "OBSERVATION_ADDED":

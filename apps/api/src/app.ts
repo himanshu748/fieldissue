@@ -356,6 +356,7 @@ export function createApp(deps: Dependencies) {
       if (
         write &&
         (c.req.method === "PATCH" ||
+          /^observations\/[^/]+\/correction$/.test(suffix) ||
           ["resolve", "revisit-review", "revisit-prediction"].includes(
             suffix,
           )) &&
@@ -367,7 +368,10 @@ export function createApp(deps: Dependencies) {
         !(c.req.method === "PATCH" && !suffix) &&
         !(
           c.req.method === "POST" &&
-          ["observations", "diff", "resolve", "audio-summary"].includes(suffix)
+          (["observations", "diff", "resolve", "audio-summary"].includes(
+            suffix,
+          ) ||
+            /^observations\/[^/]+\/correction$/.test(suffix))
         )
       )
         forbidden();
@@ -1223,17 +1227,51 @@ export function createApp(deps: Dependencies) {
   app.get("/v1/issues/:id/observations", async (c) =>
     c.json(await deps.repository.observations(issueId(c.req.param("id")))),
   );
+  app.post(
+    "/v1/issues/:id/observations/:observationId/correction",
+    async (c) => {
+      const input = z
+        .object({
+          exclusionType: z
+            .enum(["WRONG_LOCATION", "WRONG_PHOTOGRAPH", "NOT_SUITABLE"])
+            .nullable(),
+          reason: z.string().trim().max(1000).default(""),
+        })
+        .strict()
+        .parse(await json(c.req.raw));
+      const ownerId = c.get("guestId");
+      return c.json(
+        await deps.repository.correctObservation(
+          issueId(c.req.param("id")),
+          z.uuid().parse(c.req.param("observationId")),
+          input,
+          {
+            kind: isGuest(c) ? "owner" : "operator",
+            id: isGuest(c)
+              ? createHash("sha256")
+                  .update(`correction:${ownerId}`)
+                  .digest("hex")
+                  .slice(0, 20)
+              : "operator",
+            ownerId,
+          },
+        ),
+      );
+    },
+  );
   app.post("/v1/issues/:id/diff", async (c) => {
     const body = z
-      .object({ beforeObservationId: z.uuid(), afterObservationId: z.uuid() })
+      .object({
+        beforeObservationId: z.uuid().optional(),
+        afterObservationId: z.uuid().optional(),
+        mode: z
+          .enum(["manual", "latest_eligible", "original_latest"])
+          .default("manual"),
+      })
       .strict()
       .parse(await json(c.req.raw));
     return c.json(
-      await deps.service.diff(
-        issueId(c.req.param("id")),
-        body.beforeObservationId,
-        body.afterObservationId,
-      ),
+      await deps.service.compareSelected(issueId(c.req.param("id")), body),
       201,
     );
   });

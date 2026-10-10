@@ -158,10 +158,16 @@ export class IssueService {
     // Read the committed order, not a stale snapshot from before model inference.
     const ordered = (await this.repository.observations(issue.id)).items;
     const index = ordered.findIndex((o) => o.id === observation.id);
-    const previous = ordered[index - 1];
+    const previous = ordered
+      .slice(0, index)
+      .filter((o) => !o.exclusionType)
+      .at(-1);
     if (observation.replayed) {
       const cached = (await this.repository.diffs(issue.id)).items.find(
-        (d) => d.afterObservationId === observation.id,
+        (d) =>
+          !d.supersededAt &&
+          d.beforeObservationId === previous?.id &&
+          d.afterObservationId === observation.id,
       );
       return {
         observation,
@@ -173,7 +179,12 @@ export class IssueService {
     }
     if (previous) {
       try {
-        const diff = await this.diff(issue.id, previous.id, observation.id);
+        const diff = await this.diff(
+          issue.id,
+          previous.id,
+          observation.id,
+          "latest_eligible",
+        );
         return {
           observation,
           realWorldDiff: diff,
@@ -190,7 +201,12 @@ export class IssueService {
     }
     return { observation, recommendedStatus: null };
   }
-  async diff(id: string, before: string, after: string) {
+  async diff(
+    id: string,
+    before: string,
+    after: string,
+    selectionMode = "manual",
+  ) {
     const pair = await this.repository.pair(id, before, after);
     const beforeMedia = await this.storage.read(pair.before.storage_key);
     const afterMedia = await this.storage.read(pair.after.storage_key);
@@ -201,10 +217,14 @@ export class IssueService {
         pair.issueId,
         before,
         after,
+        pair.evidenceRevision,
       );
     }
     const cached = (await this.repository.diffs(pair.issueId)).items.find(
-      (x) => x.beforeObservationId === before && x.afterObservationId === after,
+      (x) =>
+        !x.supersededAt &&
+        x.beforeObservationId === before &&
+        x.afterObservationId === after,
     );
     if (cached) return cached;
     const result = await runRevisitWorkflow(
@@ -231,11 +251,56 @@ export class IssueService {
           });
         },
         persist: (comparison) =>
-          this.repository.saveDiff(pair.issueId, before, after, comparison),
+          this.repository.saveDiff(
+            pair.issueId,
+            before,
+            after,
+            comparison,
+            pair.evidenceRevision,
+            selectionMode,
+          ),
         metadata: () => this.revisitMetadata(pair.issueId),
       },
     );
     return { ...result.diff, revisitMetadata: result.revisitMetadata };
+  }
+  async compareSelected(
+    id: string,
+    input: {
+      mode?: "manual" | "latest_eligible" | "original_latest";
+      beforeObservationId?: string;
+      afterObservationId?: string;
+    },
+  ) {
+    const mode = input.mode ?? "manual";
+    if (
+      mode === "manual" &&
+      (!input.beforeObservationId ||
+        !input.afterObservationId ||
+        input.beforeObservationId === input.afterObservationId)
+    )
+      throw new AppError(
+        "INVALID_DIFF",
+        400,
+        "Select two distinct observations.",
+      );
+    const observations = (await this.repository.observations(id)).items;
+    const eligible = observations.filter((o) => !o.exclusionType);
+    const before =
+      mode === "manual"
+        ? input.beforeObservationId
+        : mode === "original_latest"
+          ? observations[0]?.id
+          : eligible.at(-2)?.id;
+    const after =
+      mode === "manual" ? input.afterObservationId : eligible.at(-1)?.id;
+    if (!before || !after || before === after)
+      throw new AppError(
+        "NO_ELIGIBLE_BASELINE",
+        409,
+        "Two eligible observations are needed. Add a suitable revisit.",
+      );
+    return this.diff(id, before, after, mode);
   }
   private async revisitMetadata(id: string): Promise<Record<string, unknown>> {
     if (!this.predictionEnabled)

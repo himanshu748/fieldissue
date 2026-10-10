@@ -10,6 +10,7 @@ export interface SpeechProvider {
 }
 export function buildBriefing(issue: Row, now = new Date()) {
   const times = issue.observations
+    .filter((observation: Row) => !observation.exclusionType)
     .map((observation: Row) => new Date(observation.capturedAt).getTime())
     .filter((time: number) => Number.isFinite(time) && time <= now.getTime());
   const last = times.length ? Math.max(...times) : null;

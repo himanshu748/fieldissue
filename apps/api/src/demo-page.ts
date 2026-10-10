@@ -211,6 +211,12 @@ export const demoPageScript = String.raw`"use strict";
       return;
     }
     var d = result.realWorldDiff;
+    if(d.supersededAt || !["CHANGED","UNCHANGED"].includes(d.outcome)) {
+      box.appendChild(el("h3",d.supersededAt ? "Superseded comparison" : "No reliable change conclusion"));
+      box.appendChild(el("p",d.supersededReason || d.comparabilityReason || "An explicit comparability assessment is needed."));
+      box.appendChild(el("p",d.summary));
+      return;
+    }
     modeNotice(d.model);
     var suggestion = el("details"), suggestionTitle = el("summary", "Show Gemma’s comparison suggestion");
     suggestion.appendChild(suggestionTitle);
