@@ -145,6 +145,7 @@ async def test_real_compare_has_two_images_and_observation_evidence():
 
     comparison = {
         "summary": "Hole remains",
+        "outcome": "UNCHANGED", "comparabilityReason": "Same synthetic road", "sameSubjectEvidence": ["matching road fixture"],
         "removed": [],
         "added": [],
         "unchanged": ["pothole"],
@@ -209,6 +210,7 @@ def test_result_limits_match_shared_typescript():
             AnalyzeResult(**{**ANALYSIS, **changes})
     valid = {
         "summary": "x" * 2000,
+        "outcome": "INSUFFICIENT_EVIDENCE", "comparabilityReason": "Synthetic insufficient evidence", "sameSubjectEvidence": [],
         "removed": [],
         "added": [],
         "unchanged": [],
@@ -277,3 +279,30 @@ async def test_identical_photos_do_not_call_model_or_inherit_conflicting_claims(
     assert result.added == result.removed == result.unchanged == []
     assert result.recommendedStatus == "OPEN"
     assert "same photo" in result.summary
+
+
+def test_non_comparable_output_rejects_change_claims():
+    import pytest
+    from pydantic import ValidationError
+
+    from fieldissue_intelligence.schemas import CompareResult
+
+    payload = {"summary": "Different trees", "removed": [], "added": ["litter"], "unchanged": [],
+               "recommendedStatus": "OPEN", "confidence": 0.9, "model": "gemma", "modelVersion": "001",
+               "outcome": "NOT_COMPARABLE", "comparabilityReason": "Different subjects", "sameSubjectEvidence": []}
+    with pytest.raises(ValidationError):
+        CompareResult(**payload)
+    payload.update(added=[], confidence=0.0)
+    assert CompareResult(**payload).outcome == "NOT_COMPARABLE"
+
+
+def test_comparable_outcome_cannot_disclaim_comparability_in_reason():
+    from pydantic import ValidationError
+
+    from fieldissue_intelligence.schemas import CompareResult
+
+    with pytest.raises(ValidationError):
+        CompareResult(outcome="CHANGED", comparabilityReason="These views are not comparable",
+                      sameSubjectEvidence=["tree"], summary="Litter appeared", added=["litter"],
+                      removed=[], unchanged=[], recommendedStatus="OPEN", confidence=0.9,
+                      model="synthetic-fixture", modelVersion="1")

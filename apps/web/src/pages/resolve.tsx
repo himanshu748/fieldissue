@@ -50,8 +50,8 @@ export function ResolvePage() {
 
   const data = issue.data;
   if (data.permissions?.manage === false) return <EmptyState icon={<InfoIcon />} title="Resolution belongs to the reporter" description="Open the browser that created this report to resolve or reopen it. You can still contribute a fresh revisit photo from this browser."><Button asChild><Link to={`/app/issues/${data.publicId}/revisit`}>Add a revisit</Link></Button></EmptyState>;
-  const latest = data.observations.at(-1);
-  const latestDiff = diffs.data?.items.filter((d) => d.afterObservationId === latest?.id).at(-1);
+  const latest = data.observations.filter(o => !o.exclusionType).at(-1);
+  const latestDiff = diffs.data?.items.filter((d) => !d.supersededAt && d.afterObservationId === latest?.id).at(-1);
   const repeatedPhoto = latestDiff?.model === "fieldissue-image-identity";
   const hasRevisit = data.observations.length > 1;
 
@@ -105,7 +105,7 @@ export function ResolvePage() {
         <h2 className="eyebrow">Latest observation</h2>
         <ObservationImage storageKey={latest?.storageKey} alt="Latest observation" className="aspect-[4/3] border border-ink" />
         {latest ? <p className="font-mono text-xs text-muted-foreground">Captured {formatDateTime(latest.capturedAt)}</p> : null}
-        {latestDiff && !repeatedPhoto ? (
+        {latestDiff && ["CHANGED", "UNCHANGED"].includes(latestDiff.outcome) && !repeatedPhoto ? (
           <p className="text-sm text-muted-foreground">
             The latest comparison suggested <strong className="text-ink">{label(latestDiff.recommendedStatus)}</strong>. That is
             advisory; your decision is what counts.
@@ -166,7 +166,7 @@ export function ResolvePage() {
 
       <AlertDialog>
         <AlertDialogTrigger asChild>
-          <Button size="lg" className="h-14 text-base" disabled={busy || (basis === "latest_observation" && repeatedPhoto)}>
+          <Button size="lg" className="h-14 text-base" disabled={busy || (basis === "latest_observation" && (!latest || repeatedPhoto))}>
             {busy ? <Spinner data-icon="inline-start" /> : <CheckCircle2Icon data-icon="inline-start" />}
             Confirm resolution
           </Button>

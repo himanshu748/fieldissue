@@ -17,7 +17,7 @@ export function ImageComparisonSlider({
   const id = useId();
   return (
     <figure className="flex flex-col gap-3">
-      <div className="relative aspect-[4/3] w-full select-none overflow-hidden border border-ink bg-muted">
+      <div className="relative aspect-[4/3] w-full select-none overflow-hidden border border-ink bg-muted focus-within:ring-2 focus-within:ring-observe-ink focus-within:ring-offset-2">
         <ObservationImage storageKey={beforeKey} alt={`Before: ${beforeLabel}`} className="absolute inset-0" />
         <div className="absolute inset-0" style={{ clipPath: `inset(0 0 0 ${position}%)` }}>
           <ObservationImage storageKey={afterKey} alt={`After: ${afterLabel}`} className="absolute inset-0" />

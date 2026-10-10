@@ -76,7 +76,7 @@ suite("account and community boundaries", () => {
     );
     [first, second] = obs.rows.map((x) => x.id);
     await pool.query(
-      "INSERT INTO evidence_diffs(issue_id,before_observation_id,after_observation_id,summary,removed,added,unchanged,recommended_status,confidence,model,model_version) VALUES($1,$2,$3,'Synthetic fixture','[]','[]','[]','RESOLVED',0.5,'isolated-fixture','1')",
+      "INSERT INTO evidence_diffs(issue_id,before_observation_id,after_observation_id,summary,removed,added,unchanged,recommended_status,confidence,model,model_version,outcome,comparability_reason,same_subject_evidence) VALUES($1,$2,$3,'Synthetic fixture','[]','[]','[\"fixture remains\"]','OPEN',0.5,'isolated-fixture','1','UNCHANGED','Synthetic same subject','[\"fixture\"]')",
       [issue, first, second],
     );
     app = createApp({

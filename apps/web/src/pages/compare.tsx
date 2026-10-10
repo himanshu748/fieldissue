@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { ArrowLeftIcon, CheckCircle2Icon, InfoIcon, MinusIcon, PlusIcon, SparklesIcon, EqualIcon } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,7 @@ function Conditions({
   tone: string;
   empty: string;
 }) {
+  const reduced = useReducedMotion();
   return (
     <section className="flex flex-col gap-3 border-t-2 border-ink pt-4">
       <h3 className="eyebrow flex items-center justify-between">
@@ -44,7 +45,7 @@ function Conditions({
             {items.map((item, i) => (
               <motion.li
                 key={item}
-                initial={{ opacity: 0, x: -8 }}
+                initial={reduced ? false : { opacity: 0, x: -8 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.15 + i * 0.06, duration: 0.3 }}
                 className="flex gap-2"
@@ -90,7 +91,7 @@ function ObservationSelect({
           <SelectGroup>
             {observations.map((o, i) => (
               <SelectItem key={o.id} value={o.id} disabled={disabledIds.has(o.id)}>
-                {i === 0 ? "Original" : `Revisit ${i}`} · {formatDateTime(o.capturedAt)}
+                {i === 0 ? "Original" : `Revisit ${i}`} · {formatDateTime(o.capturedAt)}{o.exclusionType ? " · Excluded" : ""}
               </SelectItem>
             ))}
           </SelectGroup>
@@ -101,6 +102,7 @@ function ObservationSelect({
 }
 
 export function ComparePage() {
+  const reduced = useReducedMotion();
   const { id = "" } = useParams();
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
@@ -143,26 +145,30 @@ export function ComparePage() {
     );
 
   const index = new Map(observations.map((o, i) => [o.id, i]));
-  const latestDiff = diffs.data.items.at(-1);
+  const eligible = observations.filter(o=>!o.exclusionType);
+  const latestDiff = diffs.data.items.filter(d=>!d.supersededAt).at(-1);
   const beforeId =
     (params.get("before") && index.has(params.get("before")!) ? params.get("before")! : null) ??
     latestDiff?.beforeObservationId ??
-    observations.at(-2)!.id;
+    eligible.at(-2)?.id ?? observations[0]!.id;
   const afterId =
     (params.get("after") && index.has(params.get("after")!) ? params.get("after")! : null) ??
     latestDiff?.afterObservationId ??
-    observations.at(-1)!.id;
+    eligible.at(-1)?.id ?? observations.at(-1)!.id;
   const before = observations[index.get(beforeId)!];
   const after = observations[index.get(afterId)!];
-  const validPair = index.get(beforeId)! < index.get(afterId)!;
-  const diff: Diff | undefined = diffs.data.items.find(
-    (d) => d.beforeObservationId === beforeId && d.afterObservationId === afterId,
-  );
+  const orderedPair = index.get(beforeId)! < index.get(afterId)!;
+  const validPair = orderedPair && !before.exclusionType && !after.exclusionType;
+  const pairDiffs = diffs.data.items.filter(d=>d.beforeObservationId===beforeId && d.afterObservationId===afterId);
+  const activeDiff = pairDiffs.find(d=>!d.supersededAt);
+  const diff: Diff | undefined = (params.get("comparison") ? pairDiffs.find(d=>d.id===params.get("comparison")) : undefined) ?? activeDiff ?? pairDiffs.at(-1);
 
   function choose(which: "before" | "after", value: string) {
     const next = new URLSearchParams(params);
     next.set("before", which === "before" ? value : beforeId);
     next.set("after", which === "after" ? value : afterId);
+    next.delete("comparison");
+    setConsent(false);
     setParams(next, { replace: true });
     setRunError(undefined);
   }
@@ -172,6 +178,7 @@ export function ComparePage() {
     setRunError(undefined);
     try {
       const saved = await api.diff(data.publicId, beforeId, afterId);
+      const next=new URLSearchParams(params);next.set("comparison",saved.id);setParams(next,{replace:true});
       diffs.setData({ items: [...diffs.data!.items.filter((d) => d.id !== saved.id), saved] });
     } catch (e) {
       setRunError(e as Error);
@@ -183,7 +190,8 @@ export function ComparePage() {
   const beforeLabel = `${index.get(beforeId) === 0 ? "Original" : `Revisit ${index.get(beforeId)}`} · ${formatDateTime(before.capturedAt)}`;
   const afterLabel = `${index.get(afterId) === 0 ? "Original" : `Revisit ${index.get(afterId)}`} · ${formatDateTime(after.capturedAt)}`;
   const identical = diff?.model === "fieldissue-image-identity";
-  const noChange = diff && !identical && !diff.added.length && !diff.removed.length;
+  const reliable = !!diff && !diff.supersededAt && validPair && ["UNCHANGED","CHANGED"].includes(diff.outcome);
+  const noChange = reliable && diff?.outcome === "UNCHANGED";
   const closed = data.status === "RESOLVED" || data.status === "REJECTED";
 
   return (
@@ -208,6 +216,8 @@ export function ComparePage() {
         </Alert>
       ) : null}
 
+      {!observations[0]?.exclusionType && eligible.length > 1 ? <Button variant="outline" className="self-start" onClick={()=>{setParams({before:observations[0]!.id,after:eligible.at(-1)!.id});setConsent(false);}}>Compare with original</Button> : null}
+      <p className="text-sm text-muted-foreground">Only eligible observations can generate a new comparison. Inherited coordinates are not independent location evidence.</p>
       <div className="grid gap-4 sm:grid-cols-2">
         <ObservationSelect
           id="before"
@@ -215,7 +225,7 @@ export function ComparePage() {
           value={beforeId}
           observations={observations}
           onChange={(v) => choose("before", v)}
-          disabledIds={new Set(observations.filter((o) => index.get(o.id)! >= index.get(afterId)!).map((o) => o.id))}
+          disabledIds={new Set(observations.filter((o) => !!o.exclusionType || index.get(o.id)! >= index.get(afterId)!).map((o) => o.id))}
         />
         <ObservationSelect
           id="after"
@@ -223,11 +233,11 @@ export function ComparePage() {
           value={afterId}
           observations={observations}
           onChange={(v) => choose("after", v)}
-          disabledIds={new Set(observations.filter((o) => index.get(o.id)! <= index.get(beforeId)!).map((o) => o.id))}
+          disabledIds={new Set(observations.filter((o) => !!o.exclusionType || index.get(o.id)! <= index.get(beforeId)!).map((o) => o.id))}
         />
       </div>
 
-      {validPair ? (
+      {orderedPair ? (
         <Tabs defaultValue="slider" className="flex flex-col gap-4">
           <TabsList className="self-start">
             <TabsTrigger value="slider" className="px-4">
@@ -241,7 +251,7 @@ export function ComparePage() {
             <ImageComparisonSlider beforeKey={before.storageKey} afterKey={after.storageKey} beforeLabel={beforeLabel} afterLabel={afterLabel} />
           </TabsContent>
           <TabsContent value="side">
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-2 gap-3">
               {[
                 { o: before, l: `Before · ${beforeLabel}` },
                 { o: after, l: `After · ${afterLabel}` },
@@ -260,9 +270,12 @@ export function ComparePage() {
         </Alert>
       )}
 
-      {validPair && diff ? (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col gap-8">
+      {orderedPair && diff ? (
+        <motion.div initial={reduced ? false : { opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col gap-8">
+          {!reliable ? <Alert><InfoIcon/><AlertTitle>{diff.supersededAt ? "Superseded comparison: not current evidence" : label(diff.outcome ?? "INSUFFICIENT_EVIDENCE")}</AlertTitle><AlertDescription>{diff.supersededReason || diff.comparabilityReason || "No reliable conclusion is available."} No improvement, deterioration or unchanged state is established. Take another view of the same subject or request human review.</AlertDescription></Alert> : null}
+          <p className="text-sm font-mono">Pair: {beforeLabel} → {afterLabel} · {diff.selectionMode ?? "legacy"}</p>
           <p className="max-w-3xl font-heading text-xl leading-snug sm:text-2xl">{diff.summary}</p>
+          {reliable ? <section className="space-y-2"><h2 className="eyebrow">Why these views can be compared</h2><p>{diff.comparabilityReason}</p><ul className="list-inside list-disc">{diff.sameSubjectEvidence.map(item=><li key={item}>{item}</li>)}</ul><p className="text-sm text-muted-foreground">These are model observations, not independent proof of location.</p></section> : null}
           {identical ? <Alert><InfoIcon /><AlertTitle>A fresh photo is needed</AlertTitle><AlertDescription>This is an exact file match, not an AI assessment or proof of a new visit. The issue status has not changed.</AlertDescription></Alert> : null}
           {noChange ? (
             <Alert>
@@ -271,28 +284,30 @@ export function ComparePage() {
               <AlertDescription>The model found no visible difference between these two photos.</AlertDescription>
             </Alert>
           ) : null}
-          <div className="grid gap-8 md:grid-cols-3">
+          {reliable ? <div className="grid gap-8 md:grid-cols-3">
             <Conditions title="Removed conditions" items={diff.removed} icon={MinusIcon} tone="text-grass" empty="No condition removed." />
             <Conditions title="Unchanged conditions" items={diff.unchanged} icon={EqualIcon} tone="text-muted-foreground" empty="None listed." />
             <Conditions title="Added conditions" items={diff.added} icon={PlusIcon} tone="text-observe-ink" empty="No new condition identified." />
           </div>
+          : <details><summary className="min-h-11 cursor-pointer py-2">Inspect retained raw comparison (not verified change evidence)</summary><pre className="max-w-full overflow-auto whitespace-pre-wrap break-words text-xs">{JSON.stringify(diff,null,2)}</pre></details>}
           <section className="grid gap-6 border border-ink bg-surface p-5 md:grid-cols-[1fr_1.2fr]">
             <div>
               <h2 className="eyebrow text-muted-foreground">{identical ? "Status at comparison" : "AI recommendation"}</h2>
-              <p className="mt-2 text-2xl font-bold">{label(diff.recommendedStatus)}</p>
+              <p className="mt-2 text-2xl font-bold">{reliable ? label(diff.recommendedStatus) : "No reliable recommendation"}</p>
               <p className="mt-2 text-sm text-muted-foreground">
                 {identical ? "No status change was inferred. The issue is still " : "A suggestion only. The issue is still "}<strong className="text-ink">{label(data.status)}</strong> until a person
                 decides.
               </p>
             </div>
-            <ModelProvenance model={diff.model} modelVersion={diff.modelVersion} confidence={diff.confidence} at={diff.createdAt} />
+            <ModelProvenance model={diff.model} modelVersion={diff.modelVersion} confidence={reliable ? diff.confidence : undefined} at={diff.createdAt} />
           </section>
         </motion.div>
       ) : null}
 
-      {validPair && !diff ? (
+      {!validPair ? <Alert><AlertTitle>No eligible pair selected</AlertTitle><AlertDescription>Choose two eligible observations or add a new view. Excluded evidence stays available for historical inspection.</AlertDescription></Alert> : null}
+      {validPair && !activeDiff ? (
         <section className="flex flex-col gap-4 border border-ink bg-surface p-5">
-          <h2 className="eyebrow">No saved comparison for this pair</h2>
+          <h2 className="eyebrow">No current comparison for this pair</h2>
           <Field orientation="horizontal">
             <Checkbox id="diff-consent" checked={consent} onCheckedChange={(v) => setConsent(v === true)} className="size-5" />
             <FieldLabel htmlFor="diff-consent" className="font-normal">

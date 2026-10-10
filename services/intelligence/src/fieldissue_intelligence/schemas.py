@@ -4,7 +4,14 @@ import base64
 import binascii
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    StringConstraints,
+    field_validator,
+    model_validator,
+)
 
 Category = Literal[
     "CLEANLINESS",
@@ -41,6 +48,9 @@ class AnalyzeResult(StrictModel):
 
 
 class CompareResult(StrictModel):
+    outcome: Literal["UNCHANGED", "CHANGED", "NOT_COMPARABLE", "INSUFFICIENT_EVIDENCE"]
+    comparabilityReason: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=2000)]
+    sameSubjectEvidence: list[ShortText] = Field(max_length=30)
     summary: Annotated[str, Field(min_length=1, max_length=2000)]
     removed: list[ShortText] = Field(max_length=30)
     added: list[ShortText] = Field(max_length=30)
@@ -49,6 +59,24 @@ class CompareResult(StrictModel):
     confidence: float = Field(ge=0, le=1)
     model: Provenance
     modelVersion: Provenance
+
+
+    @model_validator(mode="after")
+    def evidence_integrity(self):
+        import re
+        comparable = self.outcome in {"CHANGED", "UNCHANGED"}
+        change = bool(self.added or self.removed)
+        if not comparable and (change or self.unchanged or self.confidence != 0 or self.recommendedStatus != "OPEN"):
+            raise ValueError("Unreliable comparison cannot claim changes or status")
+        if comparable and (not self.sameSubjectEvidence or re.search(
+            r"not comparable|cannot (?:reliably )?compare|different subject matter", f"{self.summary} {self.comparabilityReason}", re.IGNORECASE
+        )):
+            raise ValueError("Comparable results require explicit same-subject evidence")
+        if self.outcome == "UNCHANGED" and (change or not self.unchanged):
+            raise ValueError("Unchanged needs positive unchanged evidence")
+        if self.outcome == "CHANGED" and not change:
+            raise ValueError("Changed needs a supported change")
+        return self
 
 
 class AnalyzeInput(StrictModel):

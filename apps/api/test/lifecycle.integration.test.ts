@@ -97,6 +97,9 @@ suite("evidence identity and complete data removal", () => {
     const before = issue.observations[0].id;
     const old = await repository.saveDiff(issue.id, before, after.id, {
       summary: "Incorrect model suggestion",
+      outcome: "CHANGED",
+      comparabilityReason: "Synthetic erroneous assessment",
+      sameSubjectEvidence: ["synthetic frame"],
       removed: ["broken slat"],
       added: [],
       unchanged: [],
@@ -107,12 +110,19 @@ suite("evidence identity and complete data removal", () => {
     });
     const diff = await service.diff(issue.id, before, after.id);
     expect(diff).toMatchObject({
-      id: old.id,
       model: "fieldissue-image-identity",
       added: [],
       removed: [],
       unchanged: [],
       recommendedStatus: "OPEN",
+    });
+    expect(diff.id).not.toBe(old.id);
+    expect(
+      (await repository.diffs(issue.id)).items.find((d) => d.id === old.id),
+    ).toMatchObject({
+      summary: "Incorrect model suggestion",
+      supersededReason:
+        "Identical uploaded files; prior model comparison withdrawn",
     });
     expect((await repository.get(issue.id)).status).toBe("OPEN");
     await expect(
@@ -122,9 +132,10 @@ suite("evidence identity and complete data removal", () => {
       }),
     ).rejects.toMatchObject({ code: "REPEATED_PHOTO" });
     const events = (await repository.timeline(issue.id)).events;
-    expect(events.at(-1)?.payload.previousComparison.summary).toBe(
-      "Incorrect model suggestion",
-    );
+    expect(
+      events.find((e) => e.eventType === "COMPARISON_SUPERSEDED")?.payload
+        .previousComparison.summary,
+    ).toBe("Incorrect model suggestion");
     await service.diff(issue.id, before, after.id);
     expect((await repository.timeline(issue.id)).events.length).toBe(
       events.length,

@@ -1,4 +1,5 @@
 import { Pool, type PoolClient } from "pg";
+import { comparisonSchema } from "@fieldissue/shared";
 import type {
   CreateIssueInput,
   ObservationInput,
@@ -241,7 +242,7 @@ export class IssueRepository {
         );
       const previous = (
         await c.query(
-          "SELECT id,captured_at FROM observations WHERE issue_id=$1 ORDER BY captured_at DESC,created_at DESC,id DESC LIMIT 1",
+          "SELECT id,captured_at FROM observations WHERE issue_id=$1 AND exclusion_type IS NULL ORDER BY captured_at DESC,created_at DESC,id DESC LIMIT 1",
           [issue.id],
         )
       ).rows[0];
@@ -297,21 +298,32 @@ export class IssueRepository {
       ).rows.map(camel),
     };
   }
-  async pair(id: string, before: string, after: string) {
-    const issue = await this.issue(this.pool, id);
+  async pair(
+    id: string,
+    before: string,
+    after: string,
+    client: Pool | PoolClient = this.pool,
+  ) {
+    const issue = await this.issue(client, id);
     if (before === after)
       throw new AppError(
         "INVALID_DIFF",
         400,
         "Diff requires distinct observations",
       );
-    const r = await this.pool.query(
+    const r = await client.query(
       "SELECT * FROM observations WHERE issue_id=$1 AND id=ANY($2::uuid[])",
       [issue.id, [before, after]],
     );
     const b = r.rows.find((x) => x.id === before),
       a = r.rows.find((x) => x.id === after);
     if (!a || !b) throw notFound();
+    if (a.exclusion_type || b.exclusion_type)
+      throw new AppError(
+        "EXCLUDED_OBSERVATION",
+        409,
+        "Select two eligible observations. Excluded photos remain in history.",
+      );
     if (
       a.captured_at < b.captured_at ||
       (a.captured_at.getTime() === b.captured_at.getTime() &&
@@ -322,91 +334,188 @@ export class IssueRepository {
         400,
         "After observation must be newer than before observation",
       );
-    return { issueId: issue.id as string, before: b, after: a };
+    return {
+      issueId: issue.id as string,
+      evidenceRevision: issue.evidence_revision as number,
+      before: b,
+      after: a,
+    };
   }
-  async saveIdentityComparison(id: string, before: string, after: string) {
+  async correctObservation(
+    id: string,
+    observationId: string,
+    correction: {
+      exclusionType:
+        "WRONG_LOCATION" | "WRONG_PHOTOGRAPH" | "NOT_SUITABLE" | null;
+      reason: string;
+    },
+    actor: { kind: "owner" | "operator"; id: string; ownerId?: string },
+  ) {
     return this.transaction(async (c) => {
       const issue = await this.issue(c, id, true);
+      // Recheck under the issue lock: ownership can change during account adoption.
+      if (
+        actor.kind !== "operator" &&
+        (!actor.ownerId || issue.guest_owner !== actor.ownerId)
+      )
+        throw new AppError(
+          "OWNER_REQUIRED",
+          403,
+          "Only the report owner or an operator can correct observations.",
+        );
       const old = (
         await c.query(
-          "SELECT * FROM evidence_diffs WHERE issue_id=$1 AND before_observation_id=$2 AND after_observation_id=$3 FOR UPDATE",
-          [id, before, after],
+          "SELECT * FROM observations WHERE id=$1 AND issue_id=$2 FOR UPDATE",
+          [observationId, issue.id],
         )
       ).rows[0];
-      if (old?.model === "fieldissue-image-identity") return camel(old);
-      const result = (
+      if (!old) throw notFound();
+      if (
+        old.exclusion_type === correction.exclusionType &&
+        old.correction_reason === correction.reason
+      )
+        return camel(old);
+      const updated = (
         await c.query(
-          `INSERT INTO evidence_diffs(issue_id,before_observation_id,after_observation_id,summary,removed,added,unchanged,recommended_status,confidence,model,model_version)
-         VALUES($1,$2,$3,$4,'[]','[]','[]',$5,1,'fieldissue-image-identity','bytes-v1')
-         ON CONFLICT(issue_id,before_observation_id,after_observation_id) DO UPDATE SET
-         summary=excluded.summary,removed='[]',added='[]',unchanged='[]',recommended_status=excluded.recommended_status,
-         confidence=1,model=excluded.model,model_version=excluded.model_version RETURNING *`,
-          [
-            id,
-            before,
-            after,
-            "The same photo was uploaded twice. No new visual evidence is available; take a fresh photo to check whether the issue changed.",
-            issue.status,
-          ],
+          "UPDATE observations SET exclusion_type=$2,correction_reason=$3,corrected_at=clock_timestamp() WHERE id=$1 RETURNING *",
+          [observationId, correction.exclusionType, correction.reason],
         )
       ).rows[0];
-      await this.event(c, id, "DIFF_GENERATED", {
-        diffId: result.id,
-        method: "image_identity",
-        recommendedStatus: issue.status,
-        ...(old
-          ? {
-              correction:
-                "Identical uploaded files; prior model comparison withdrawn",
-              previousComparison: camel(old),
-            }
-          : {}),
-      });
       await c.query(
-        "UPDATE issues SET updated_at=clock_timestamp() WHERE id=$1",
-        [id],
+        "UPDATE issues SET evidence_revision=evidence_revision+1,updated_at=clock_timestamp() WHERE id=$1",
+        [issue.id],
       );
-      return camel(result);
+      await this.event(c, issue.id, "OBSERVATION_CORRECTED", {
+        observationId,
+        exclusionType: correction.exclusionType,
+        reason: correction.reason,
+        previousExclusionType: old.exclusion_type,
+        previousReason: old.correction_reason,
+        actor: { kind: actor.kind, id: actor.id },
+      });
+      const withdrawn = await c.query(
+        `UPDATE evidence_diffs SET superseded_at=clock_timestamp(),superseded_reason='Observation correction changed comparison eligibility'
+        WHERE issue_id=$1 AND superseded_at IS NULL AND (before_observation_id=$2 OR after_observation_id=$2) RETURNING id`,
+        [issue.id, observationId],
+      );
+      for (const diff of withdrawn.rows)
+        await this.event(c, issue.id, "COMPARISON_SUPERSEDED", {
+          diffId: diff.id,
+          observationId,
+          actor: { kind: actor.kind, id: actor.id },
+        });
+      return camel(updated);
     });
+  }
+  async saveIdentityComparison(
+    id: string,
+    before: string,
+    after: string,
+    revision?: number,
+  ) {
+    return this.saveDiff(
+      id,
+      before,
+      after,
+      {
+        outcome: "INSUFFICIENT_EVIDENCE",
+        comparabilityReason:
+          "Identical file is not independent evidence of another visit.",
+        sameSubjectEvidence: [],
+        summary:
+          "The same photo was uploaded twice. No new visual evidence is available; take a fresh photo to check whether the issue changed.",
+        removed: [],
+        added: [],
+        unchanged: [],
+        recommendedStatus: "OPEN",
+        confidence: 0,
+        model: "fieldissue-image-identity",
+        modelVersion: "bytes-v2",
+      },
+      revision,
+      "identity",
+    );
   }
   async saveDiff(
     id: string,
     before: string,
     after: string,
     result: Comparison,
+    revision?: number,
+    selectionMode = "manual",
   ) {
+    result = comparisonSchema.parse(result);
     return this.transaction(async (c) => {
-      await this.issue(c, id, true);
-      const existing = await c.query(
-        "SELECT * FROM evidence_diffs WHERE issue_id=$1 AND before_observation_id=$2 AND after_observation_id=$3",
-        [id, before, after],
-      );
-      if (existing.rows[0]) return camel(existing.rows[0]);
-      const r = await c.query(
-        "INSERT INTO evidence_diffs(issue_id,before_observation_id,after_observation_id,summary,removed,added,unchanged,recommended_status,confidence,model,model_version) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *",
-        [
-          id,
-          before,
-          after,
-          result.summary,
-          JSON.stringify(result.removed),
-          JSON.stringify(result.added),
-          JSON.stringify(result.unchanged),
-          result.recommendedStatus,
-          result.confidence,
-          result.model,
-          result.modelVersion,
-        ],
-      );
+      const issue = await this.issue(c, id, true);
+      if (revision !== undefined && issue.evidence_revision !== revision)
+        throw new AppError(
+          "EVIDENCE_CHANGED",
+          409,
+          "Observation eligibility changed during comparison. Review the pair and retry.",
+        );
+      await this.pair(id, before, after, c);
+      const existing = (
+        await c.query(
+          "SELECT * FROM evidence_diffs WHERE issue_id=$1 AND before_observation_id=$2 AND after_observation_id=$3 AND superseded_at IS NULL",
+          [id, before, after],
+        )
+      ).rows[0];
+      if (
+        existing &&
+        (selectionMode !== "identity" ||
+          existing.model === "fieldissue-image-identity")
+      )
+        return camel(existing);
+      if (existing) {
+        await c.query(
+          "UPDATE evidence_diffs SET superseded_at=clock_timestamp(),superseded_reason='Identical uploaded files; prior model comparison withdrawn' WHERE id=$1",
+          [existing.id],
+        );
+        await this.event(c, id, "COMPARISON_SUPERSEDED", {
+          diffId: existing.id,
+          method: "image_identity",
+          previousComparison: camel(existing),
+        });
+      }
+      const row = (
+        await c.query(
+          `INSERT INTO evidence_diffs(issue_id,before_observation_id,after_observation_id,summary,removed,added,unchanged,recommended_status,confidence,model,model_version,outcome,comparability_reason,same_subject_evidence,evidence_revision,selection_mode)
+        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING *`,
+          [
+            id,
+            before,
+            after,
+            result.summary,
+            JSON.stringify(result.removed),
+            JSON.stringify(result.added),
+            JSON.stringify(result.unchanged),
+            result.recommendedStatus,
+            result.confidence,
+            result.model,
+            result.modelVersion,
+            result.outcome,
+            result.comparabilityReason,
+            JSON.stringify(result.sameSubjectEvidence),
+            issue.evidence_revision,
+            selectionMode,
+          ],
+        )
+      ).rows[0];
       await this.event(c, id, "DIFF_GENERATED", {
-        diffId: r.rows[0].id,
+        diffId: row.id,
+        outcome: result.outcome,
         recommendedStatus: result.recommendedStatus,
+        ...(selectionMode === "identity" ? { method: "image_identity" } : {}),
+        beforeObservationId: before,
+        afterObservationId: after,
+        selectionMode,
+        evidenceRevision: issue.evidence_revision,
       });
       await c.query(
         "UPDATE issues SET updated_at=clock_timestamp() WHERE id=$1",
         [id],
       );
-      return camel(r.rows[0]);
+      return camel(row);
     });
   }
   async diffs(id: string) {
@@ -445,7 +554,7 @@ export class IssueRepository {
       if (resolution?.basis === "latest_observation") {
         const latest = (
           await c.query(
-            "SELECT id FROM observations WHERE issue_id=$1 ORDER BY captured_at DESC,created_at DESC,id DESC LIMIT 1",
+            "SELECT id FROM observations WHERE issue_id=$1 AND exclusion_type IS NULL ORDER BY captured_at DESC,created_at DESC,id DESC LIMIT 1",
             [current.id],
           )
         ).rows[0];
@@ -664,13 +773,13 @@ export class IssueRepository {
     const i = await this.issue(client, id);
     const r = (
       await client.query(
-        "SELECT count(*)::int count,max(captured_at) last FROM observations WHERE issue_id=$1",
+        "SELECT count(*)::int count,max(captured_at) last FROM observations WHERE issue_id=$1 AND exclusion_type IS NULL",
         [i.id],
       )
     ).rows[0];
     const changes = (
       await client.query(
-        "SELECT count(*)::int count FROM evidence_diffs WHERE issue_id=$1 AND (jsonb_array_length(added)>0 OR jsonb_array_length(removed)>0)",
+        "SELECT count(*)::int count FROM evidence_diffs WHERE issue_id=$1 AND superseded_at IS NULL AND outcome='CHANGED' AND (jsonb_array_length(added)>0 OR jsonb_array_length(removed)>0)",
         [i.id],
       )
     ).rows[0].count;
@@ -708,6 +817,12 @@ export class IssueRepository {
   ) {
     return this.transaction(async (c) => {
       const issue = await this.issue(c, id, true);
+      await this.pair(
+        issue.id,
+        input.beforeObservationId,
+        input.afterObservationId,
+        c,
+      );
       const after = (
         await c.query(
           "SELECT * FROM observations WHERE id=$1 AND issue_id=$2",
@@ -765,7 +880,8 @@ export class IssueRepository {
       await this.pool
         .query(`SELECT o.revisit_features AS features,r.material_change AS changed
       FROM revisit_reviews r JOIN observations o ON o.id=r.after_observation_id
-      WHERE r.evidence_is_genuine AND o.revisit_features IS NOT NULL ORDER BY r.reviewed_at,r.after_observation_id`)
+      JOIN observations b ON b.id=r.before_observation_id
+      WHERE r.evidence_is_genuine AND o.exclusion_type IS NULL AND b.exclusion_type IS NULL AND o.revisit_features IS NOT NULL ORDER BY r.reviewed_at,r.after_observation_id`)
     ).rows;
     if (!rows.some((r) => r.changed) || !rows.some((r) => !r.changed))
       throw new AppError(

@@ -32,8 +32,17 @@ export const observationAnalysisSchema = z
     modelVersion: z.string().min(1).max(200),
   })
   .strict();
+export const comparisonOutcomeSchema = z.enum([
+  "UNCHANGED",
+  "CHANGED",
+  "NOT_COMPARABLE",
+  "INSUFFICIENT_EVIDENCE",
+]);
 export const comparisonSchema = z
   .object({
+    outcome: comparisonOutcomeSchema,
+    comparabilityReason: z.string().trim().min(1).max(2000),
+    sameSubjectEvidence: boundedList,
     summary: z.string().min(1).max(2000),
     removed: boundedList,
     added: boundedList,
@@ -43,7 +52,30 @@ export const comparisonSchema = z
     model: z.string().min(1).max(200),
     modelVersion: z.string().min(1).max(200),
   })
-  .strict();
+  .strict()
+  .superRefine((v, ctx) => {
+    const comparable = v.outcome === "CHANGED" || v.outcome === "UNCHANGED";
+    const change = v.added.length + v.removed.length;
+    if (
+      (!comparable &&
+        (change ||
+          v.unchanged.length ||
+          v.confidence !== 0 ||
+          v.recommendedStatus !== "OPEN")) ||
+      (comparable &&
+        (!v.sameSubjectEvidence.length ||
+          /not comparable|cannot (?:reliably )?compare|different subject matter/i.test(
+            `${v.summary} ${v.comparabilityReason}`,
+          ))) ||
+      (v.outcome === "UNCHANGED" && (change || !v.unchanged.length)) ||
+      (v.outcome === "CHANGED" && !change)
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Comparison claims contradict the available evidence",
+      });
+    }
+  });
 export const predictionSchema = z
   .object({
     probabilityChanged: z.number().min(0).max(1),

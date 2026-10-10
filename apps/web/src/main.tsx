@@ -71,6 +71,7 @@ const router = createBrowserRouter([
           { path: "report/review", element: page(() => import("@/pages/report-review"), "ReportReviewPage") },
           { path: "issues/:id", element: page(() => import("@/pages/issue-detail"), "IssueDetailPage") },
           { path: "issues/:id/revisit", element: page(() => import("@/pages/revisit"), "RevisitPage") },
+          { path: "issues/:id/evidence", element: page(() => import("@/pages/evidence-walkthrough"), "EvidenceWalkthroughPage") },
           { path: "issues/:id/compare", element: page(() => import("@/pages/compare"), "ComparePage") },
           { path: "issues/:id/resolve", element: page(() => import("@/pages/resolve"), "ResolvePage") },
           { path: "walk", element: page(() => import("@/pages/walk"), "WalkPage") },

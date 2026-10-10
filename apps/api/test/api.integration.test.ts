@@ -23,6 +23,9 @@ const analysis = {
   modelVersion: "1",
 };
 const comparison = {
+  outcome: "CHANGED" as const,
+  comparabilityReason: "Same synthetic bench fixture",
+  sameSubjectEvidence: ["matching synthetic frame"],
   summary: "Seat repaired",
   removed: ["broken slat"],
   added: ["repaired seat"],

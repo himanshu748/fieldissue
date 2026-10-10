@@ -54,6 +54,9 @@ export interface Observation {
   aiAnalysis: Partial<Analysis>;
   locationSource: LocationSource;
   captureTimeSource: "user" | "upload" | "unspecified";
+  exclusionType?: "WRONG_LOCATION" | "WRONG_PHOTOGRAPH" | "NOT_SUITABLE" | null;
+  correctionReason?: string;
+  correctedAt?: string | null;
   previousObservationId?: string | null;
 }
 
@@ -94,6 +97,10 @@ export interface CreateIssueResult extends Issue {
 }
 
 export interface Diff extends Comparison {
+  supersededAt?: string | null;
+  supersededReason?: string | null;
+  selectionMode?: string;
+  evidenceRevision?: number;
   id: string;
   issueId: string;
   beforeObservationId: string;
@@ -120,7 +127,9 @@ export interface IssueEvent {
     | "DIFF_GENERATED"
     | "ISSUE_RESOLVED"
     | "REVISIT_REVIEWED"
-    | "ISSUE_UPDATED";
+    | "ISSUE_UPDATED"
+    | "OBSERVATION_CORRECTED"
+    | "COMPARISON_SUPERSEDED";
   payload: Record<string, unknown>;
   createdAt: string;
 }

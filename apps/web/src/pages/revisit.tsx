@@ -73,7 +73,7 @@ function RevisitForm({ id }: { id: string }) {
     );
 
   const data = issue.data;
-  const previous = data.observations.at(-1);
+  const previous = data.observations.filter(o=>!o.exclusionType).at(-1);
   const locationReady = locationMode === "inherit" || !!location;
   const missing = [!photo && "a new photo", !locationReady && "a location", !consent && "consent to analysis", !captureTimeValid(capturedAt) && "a valid capture time"].filter(Boolean) as string[];
 
@@ -102,7 +102,7 @@ function RevisitForm({ id }: { id: string }) {
       clearDraft();
       attempt.current = null;
       markVisited([data.id], result.observation.id);
-      const before = previous?.id;
+      const before = result.realWorldDiff?.beforeObservationId ?? previous?.id;
       navigate(
         before
           ? `/app/issues/${data.publicId}/compare?before=${before}&after=${result.observation.id}`
@@ -173,7 +173,8 @@ function RevisitForm({ id }: { id: string }) {
 
       <FieldSet disabled={sending}>
         <FieldLegend className="eyebrow">Take a new photo</FieldLegend>
-        <CaptureButton value={photo} onChange={setPhoto} prompt="Open camera" disabled={sending} />
+        <details className="border border-ink p-3"><summary className="min-h-11 cursor-pointer py-2">Show original photo for framing</summary><ObservationImage storageKey={data.observations[0]?.storageKey} alt="Original photo reference for matching the viewing angle" className="max-w-sm aspect-[4/3]"/><p className="text-sm">Match the same subject and angle where possible. A different tree or inherited coordinates cannot establish a revisit.</p></details>
+      <CaptureButton value={photo} onChange={setPhoto} prompt="Open camera" disabled={sending} />
       </FieldSet>
 
       <FieldSet disabled={sending}>

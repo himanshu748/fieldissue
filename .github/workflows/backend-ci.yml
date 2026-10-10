@@ -130,3 +130,48 @@ jobs:
       - name: Remove isolated containers and volumes
         if: always()
         run: docker compose --profile tools down --volumes --remove-orphans
+  mobile-corrections:
+    name: Mobile correction journey (isolated fixtures)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      TEST_DATABASE_URL: postgresql://fieldissue:fieldissue-test-only@127.0.0.1:55439/fieldissue_test
+      FIELDISSUE_LOCAL_E2E: '1'
+      FIELDISSUE_E2E_URL: http://127.0.0.1:3190
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - run: npm ci
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - name: Start isolated database and test-only provider
+        run: |
+          docker build -t fieldissue-mobile-db db
+          docker run -d --name fieldissue-mobile-db -p 127.0.0.1:55439:5432 -e POSTGRES_USER=fieldissue -e POSTGRES_PASSWORD=fieldissue-test-only -e POSTGRES_DB=fieldissue_test fieldissue-mobile-db
+          for i in $(seq 1 30); do
+            if docker exec fieldissue-mobile-db pg_isready -U fieldissue -d fieldissue_test; then break; fi
+            sleep 1
+          done
+          node scripts/revisit-test-server.mjs > /tmp/fieldissue-mobile.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:3190/health; then break; fi
+            sleep 1
+          done
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: mobile-correction-evidence-${{ github.run_id }}
+          path: |
+            docs/verification/assets/revisit-*.png
+            test-results
+            /tmp/fieldissue-mobile.log
+          retention-days: 14
+      - name: Remove isolated database
+        if: always()
+        run: docker rm -f fieldissue-mobile-db
