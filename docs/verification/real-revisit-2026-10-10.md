@@ -1,6 +1,6 @@
 # Real revisit correction: 10 October 2026
 
-Released on 10 October 2026 after owner approval to merge and deploy. FI-000007 remains OPEN. Migration 014 superseded legacy comparisons with audit events while preserving their original output. No observation correction, fresh real comparison, provider setting change or DEV article edit was performed.
+Released on 10 October 2026 after owner approval to merge and deploy. FI-000007 remains OPEN. Migration 014 superseded legacy comparisons with audit events while preserving their original output. The owner subsequently approved the wrong-location correction and one fresh Gemma comparison; the result is recorded below. No provider settings or DEV article were changed.
 
 ## Incident and read-only reproduction
 
@@ -149,7 +149,7 @@ If verification fails: pause new evidence writes/inference and retain the backup
 
 ## Remaining production actions
 
-Merge and deployment are complete. Explicit owner approval is still required for correcting B, one fresh real A → C comparison and any DEV edit. Physical Android confirmation of the owner controls and a real 90-second recording remain. No repair, resolved status or new model conclusion is claimed.
+Merge, deployment, the owner-approved correction of B, and one fresh A → C comparison are complete. Any DEV edit still needs approval. Physical Android confirmation of the owner controls and a real 90-second recording remain. No repair or resolved status is claimed.
 
 Companion: [90-second recording script and unpublished article evidence draft](real-revisit-demo-script-2026-10-10.md).
 
@@ -166,3 +166,24 @@ Companion: [90-second recording script and unpublished article evidence draft](r
 - Live browser checks: original-versus-latest link targets A → C; historical B → C displays “Superseded comparison: not current evidence”, a neutral explanation and no verified change indicators. Both photos loaded in side-by-side mode, keyboard slider interaction worked, and no horizontal overflow was observed at 360px or 390px. Full owner correction/restoration remains covered by isolated CI; the unrelated live browser does not own FI-000007.
 - Startup logs confirm both processes running and the service live; no error-level records returned in the release log check.
 - Automatic deployments remain **off** to hold the judged version. A read-only Codex heartbeat checks health/readiness every ten minutes through **19 October 2026, 12:29 PM IST**. The user requires the code freeze on **12 October**; this monitor never changes code or deploys. Monitoring requires the Codex host running and does not guarantee uptime.
+
+
+## Authorized real correction and comparison
+
+At the owner's explicit approval on 10 October, B was marked WRONG_LOCATION through the authenticated operator API. It remains in history with the owner's reason. A and C remain eligible. The correction appended its actor/time event and advanced the evidence revision to 1; no original note, image, analysis, timestamp or location source was rewritten.
+
+Exactly one Gemma comparison request selected A → C. The saved result is **UNCHANGED**, comparison `0fc1db56-0030-4826-992e-31861426d0f2`, created **2026-10-10 05:11:57 UTC (10:41:57 IST)**, model `models/gemma-4-26b-a4b-it`, version `001`. The model identified the severed trunk, dry branches/leaves and litter as still visible, with empty added/removed lists. Its 0.95 confidence is model output, not an independently calibrated probability or proof of location. The optional real-history revisit predictor returned PREDICTION_UNAVAILABLE; that does not invalidate the saved visual comparison and does not establish a TabPFN prediction for this real report.
+
+The [exact saved provider result](real-revisit-result-2026-10-10.json) is retained. The [live read-only walkthrough](https://fieldissue-demo.onrender.com/app/issues/FI-000007/evidence) was reloaded and visibly showed the excluded first revisit, original → second revisit pair, UNCHANGED explanation and OPEN status. All three photos and both superseded comparisons remain.
+
+A separate real SerpApi diagnosis used one existing free search (219 available before the call). It returned HTTP 200 / Success in about 1.65 seconds, with 20 positioned results. All were outside the existing 2,000 m cutoff; the nearest was about 2,032 m away. Returning no verified nearby place is correct for that response. No place name or existing report location was changed, and the historical request outcome cannot be reconstructed from this current lookup.
+
+## Follow-up capture and update fixes
+
+New revisit drafts now default to recording the current location, with the existing explicit inherited-location option retained. No permission is requested until the user presses Use my location. The request disallows a browser-cached position, and revisit forms hide the reuse-last-location shortcut. This changes future captures only; the two real revisits remain honestly labelled inherited.
+
+The prewritten no-change checkbox and leading example were removed. Notes start empty and ask what is visible. Existing notes and restored drafts are not rewritten. The offline fallback now retains a chosen device location instead of forcing inherited coordinates, and offline storage rejects a missing location unless inheritance was explicitly chosen.
+
+The service worker already uses network-first navigation and excludes API/media responses from its cache. An open app can retain its loaded JavaScript. The new update notice reacts to a changed worker and checks for updates when the tab becomes visible; it asks the user to reload after finishing or saving their work, without forcing a reload. Older already-loaded versions need one normal reload to receive this improvement.
+
+Validation: build and lint passed. Four isolated browser tests passed: both existing owner-correction journeys (360/390px), a fresh-GPS and offline-save/upload journey, and an update-notice draft-preservation test. The update test uses a real initial worker installation followed by a simulated controller-change event; it is not a two-production-deployment test. Browser GPS is simulated on the isolated server; this does not establish a new physical Android capture. The opt-in live-provider test remains skipped to avoid extra quota use.

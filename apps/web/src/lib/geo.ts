@@ -30,7 +30,7 @@ export function requestDeviceLocation(): Promise<Located> {
               : "Your location could not be determined. Enter coordinates instead.",
           ),
         ),
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
     );
   });
 }

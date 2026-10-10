@@ -1,0 +1,37 @@
+{
+  "checkedAt": "2026-10-10T05:11:57.872Z",
+  "diff": {
+    "id": "0fc1db56-0030-4826-992e-31861426d0f2",
+    "issueId": "9a13ea56-24e7-4de5-8cc2-e2cda2ca703f",
+    "beforeObservationId": "d86c8e66-7989-4001-85dd-b9d038bf3785",
+    "afterObservationId": "21174133-810b-4bf5-a090-dc42c50e95ed",
+    "summary": "The tree remains cut down with a pile of dry branches and scattered litter on the ground, showing no significant change.",
+    "removed": [],
+    "added": [],
+    "unchanged": [
+      "The tree trunk remains severed and cut.",
+      "The pile of dry branches and leaves is still present.",
+      "Scattered litter and plastic waste are still visible on the ground."
+    ],
+    "recommendedStatus": "OPEN",
+    "confidence": 0.95,
+    "model": "models/gemma-4-26b-a4b-it",
+    "modelVersion": "001",
+    "createdAt": "2026-10-10T05:11:57.733Z",
+    "outcome": "UNCHANGED",
+    "comparabilityReason": "The images show the same tree trunk and pile of debris/litter, confirming they are comparable. The state of the tree and the litter remains the same.",
+    "sameSubjectEvidence": [
+      "The central tree trunk is identical in shape and structure.",
+      "The pile of dry branches and litter is in the same location and configuration.",
+      "The background vegetation is consistent across both images."
+    ],
+    "selectionMode": "manual",
+    "evidenceRevision": 1,
+    "supersededAt": null,
+    "supersededReason": null,
+    "revisitMetadata": {
+      "available": false,
+      "error": "PREDICTION_UNAVAILABLE"
+    }
+  }
+}

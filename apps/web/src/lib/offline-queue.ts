@@ -51,6 +51,8 @@ export async function listQueued() {
   return valid.sort((a, b) => a.savedAt - b.savedAt);
 }
 export async function putQueued(x: QueuedCapture) {
+  if ((!x.issueId || x.draft.locationMode === "here") && !x.draft.location)
+    throw new Error("Record a location or explicitly choose the issue’s saved location before saving.");
   const items = await listQueued();
   if (items.length >= 10 && !items.some((i) => i.id === x.id))
     throw new Error(

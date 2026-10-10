@@ -1,3 +1,4 @@
+import { AppUpdateNotice } from "@/components/field/app-update-notice";
 import { clearCaptureDrafts } from "@/hooks/use-capture-draft";
 import { clearWalk } from "@/lib/walk";
 import { lazy, StrictMode, Suspense, type ComponentType } from "react";
@@ -42,6 +43,7 @@ function NotFound() {
 function Root() {
   return (
     <MotionConfig reducedMotion="user">
+      <AppUpdateNotice />
       <ScrollRestoration />
       <Outlet />
     </MotionConfig>
@@ -92,6 +94,6 @@ createRoot(document.getElementById("root")!).render(
   </StrictMode>,
 );
 
-if (import.meta.env.PROD && "serviceWorker" in navigator) window.addEventListener("load", () => { void navigator.serviceWorker.register("/sw.js").catch(() => {}); });
+
 
 window.addEventListener("storage",event=>{if(event.key==="fieldissue-account-changed"){clearCaptureDrafts();clearWalk();window.location.reload();}});

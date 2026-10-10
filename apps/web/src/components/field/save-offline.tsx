@@ -91,7 +91,7 @@ export function SaveOffline({
         disabled={
           !consent ||
           !draft.photo ||
-          (!issueId && !draft.location) ||
+          ((!issueId || draft.locationMode === "here") && !draft.location) ||
           disabled ||
           busy ||
           saved
