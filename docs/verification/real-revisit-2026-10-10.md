@@ -106,7 +106,9 @@ Local verification completed on 10 October 2026:
 | `npm run test:e2e` with local opt-in | **2 passed**, 1 live-provider journey intentionally skipped |
 | `git diff --check` | Passed |
 
-No live inference test was enabled. CI identifiers will be added after the PR run completes.
+No live inference test was enabled.
+
+[PR #4](https://github.com/himanshu748/fieldissue/pull/4) is open and unmerged. Full CI passed for implementation commit `b9564c036ab9c3ef4d7f2aacdd17bc9a98a847b0` in [run 38024942907](https://github.com/himanshu748/fieldissue/actions/runs/38024942907): Docker/PostGIS/API/Python tests, lint, migrations, HTTP development/runtime exercises, Render container boundaries and lifecycle, and both mobile correction journeys. A subsequent audit-label correction preserves the existing `image_identity` event marker and human-readable status recommendation; local tests, lint and build were rerun successfully. Check [the PR's current checks](https://github.com/himanshu748/fieldissue/pull/4/checks) for that final revision before merging.
 
 - PostgreSQL 17 with PostGIS/pgvector, isolated container `fieldissue-revisit-test`, localhost port 55439, tmpfs storage, database `fieldissue_test`. No production URL used by fixtures.
 - API tests cover A/B/C correction, owner versus unrelated guest exclusion/restoration, metadata immutability, append-only comparison history, eligible automatic/manual selection, restore/recompare, concurrent correction, no baseline, exact-image protection, invalid provider responses and unchanged OPEN status.

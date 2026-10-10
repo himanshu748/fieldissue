@@ -504,6 +504,8 @@ export class IssueRepository {
       await this.event(c, id, "DIFF_GENERATED", {
         diffId: row.id,
         outcome: result.outcome,
+        recommendedStatus: result.recommendedStatus,
+        ...(selectionMode === "identity" ? { method: "image_identity" } : {}),
         beforeObservationId: before,
         afterObservationId: after,
         selectionMode,

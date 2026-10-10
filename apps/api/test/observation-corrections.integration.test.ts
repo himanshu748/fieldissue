@@ -302,6 +302,9 @@ suite("observation corrections preserve evidence and ownership", () => {
       removed: [],
     });
     expect(calls).toBe(n);
+    expect(
+      (await repo.timeline(issue.id)).events.at(-1)?.payload,
+    ).toMatchObject({ method: "image_identity", recommendedStatus: "OPEN" });
   });
   it("rejects contradictory and missing provider evidence without losing the upload or resolving", async () => {
     const previous = (await repo.diffs(issue.id)).items.length;
