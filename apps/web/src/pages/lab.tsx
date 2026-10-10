@@ -180,7 +180,7 @@ function LabContent({ issueId }: { issueId?: string }) {
   }, []);
   const latestObservationId = latest.data?.observations.at(-1)?.id;
   useEffect(() => {
-    if (["#tinker-examples", "#backboard"].includes(hash) && evaluations.data && integrations.data && !latest.loading)
+    if (["#tinker-examples", "#backboard", "#github-actions"].includes(hash) && evaluations.data && integrations.data && !latest.loading)
       document.getElementById(hash.slice(1))?.scrollIntoView({ block: "start" });
   }, [hash, evaluations.data, integrations.data, latest.loading]);
   const byId = new Map((integrations.data?.integrations ?? []).map((i) => [i.id.toLowerCase(), i]));
@@ -262,6 +262,18 @@ function LabContent({ issueId }: { issueId?: string }) {
         <h2 id="tabpfn-demo" className="text-2xl font-bold uppercase">Revisit scenario tester</h2>
         <p><a className="underline" href="/v1/openapi" target="_blank" rel="noreferrer">Public read API specification</a> · Public reports only; rate limits apply.</p>
       <TabPFNDemo available={byId.get("tabpfn")?.status === "configured"} />
+      </section>
+
+      <section className="flex flex-col gap-3" aria-labelledby="github-actions">
+        <h2 id="github-actions" className="text-2xl font-bold uppercase">GitHub Copilot category</h2>
+        <p className="max-w-2xl text-muted-foreground">Our qualifying use is GitHub Actions automation. CI checks the API, Python service and browser journeys before release. A separate scheduled workflow checks demo availability through 19 October. This records automation evidence, not Copilot-authored code.</p>
+        <ul className="space-y-2">
+          <li><a className="underline min-h-11 inline-flex items-center" href="https://dev.to/challenges/hacktoberfest-week1-2026-10-05" target="_blank" rel="noreferrer">Official category rules include GitHub Actions</a></li>
+          <li><a className="underline min-h-11 inline-flex items-center" href="https://github.com/himanshu748/fieldissue/blob/main/.github/workflows/backend-ci.yml" target="_blank" rel="noreferrer">Inspect the CI workflow</a></li>
+          <li><a className="underline min-h-11 inline-flex items-center" href="https://github.com/himanshu748/fieldissue/actions/runs/38030232150" target="_blank" rel="noreferrer">Passing CI run from 10 October</a></li>
+          <li><a className="underline min-h-11 inline-flex items-center" href="https://github.com/himanshu748/fieldissue/blob/main/.github/workflows/demo-monitor.yml" target="_blank" rel="noreferrer">Inspect the read-only demo monitor</a></li>
+          <li><a className="underline min-h-11 inline-flex items-center" href="https://github.com/himanshu748/fieldissue/actions/runs/38028160908" target="_blank" rel="noreferrer">Passing monitor run from 10 October</a></li>
+        </ul>
       </section>
 
       <section className="flex flex-col gap-3" aria-labelledby="entire-evidence">
