@@ -340,3 +340,19 @@ def test_legacy_context_omits_tainted_analysis_without_mutating_saved_input():
     manual = before.model_copy(update={"note": "Fallen branch still visible"})
     assert vision_context(manual)["note"] == manual.note
     assert vision_context(manual)["evidence"] == manual.evidence.model_dump()
+
+
+@pytest.mark.asyncio
+async def test_local_fixtures_also_ignore_legacy_checkbox_claims():
+    from fieldissue_intelligence.providers import LEGACY_NO_CHANGE_NOTE
+    from fieldissue_intelligence.schemas import ObservationInput
+    Settings, Provider, _ = modules()
+    provider = Provider(Settings(ai_mock_mode=True))
+    result = await provider.analyze_observation(PNG, "image/png", LEGACY_NO_CHANGE_NOTE)
+    assert result.conditions == result.evidence == []
+    before = ObservationInput(image_base64=base64.b64encode(PNG).decode(),
+                              mime_type="image/png", note=LEGACY_NO_CHANGE_NOTE)
+    after = before.model_copy(update={"note": ""})
+    compared = await provider.compare_observations(before, after)
+    assert compared.added == compared.removed == compared.unchanged == []
+    assert before.note == LEGACY_NO_CHANGE_NOTE
