@@ -19,11 +19,13 @@ export function LocationPicker({
   onChange,
   idPrefix,
   showMap = true,
+  allowReuse = true,
 }: {
   value: Located | null;
   onChange: (value: Located | null) => void;
   idPrefix: string;
   showMap?: boolean;
+  allowReuse?: boolean;
 }) {
   const [locating, setLocating] = useState(false);
   const [error, setError] = useState<string>();
@@ -32,7 +34,7 @@ export function LocationPicker({
     lon: value?.source === "manual" ? String(value.longitude) : "",
   }));
   const [manualOpen, setManualOpen] = useState(false);
-  const recalled = !value ? recallLocation() : null;
+  const recalled = allowReuse && !value ? recallLocation() : null;
 
   async function locate() {
     setLocating(true);
