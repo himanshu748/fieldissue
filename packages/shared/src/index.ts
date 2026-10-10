@@ -101,6 +101,12 @@ export const observationInputSchema = z
       .enum(["device", "manual", "inherited", "unspecified"])
       .optional(),
     captureTimeSource: z.enum(["user", "upload", "unspecified"]).optional(),
+    reporterSawNoChange: z
+      .union([
+        z.boolean(),
+        z.enum(["true", "false"]).transform((v) => v === "true"),
+      ])
+      .optional(),
   })
   .strict();
 export const createIssueSchema = observationInputSchema.extend({

@@ -30,6 +30,7 @@ suite("public guests preserve ownership and private evidence", () => {
     longitude: 0,
   };
   let analyses = 0;
+  let lastAnalysisInput: unknown;
   function form(consent = true) {
     const f = new FormData();
     f.set("image", new Blob([png], { type: "image/png" }), "fixture.png");
@@ -53,7 +54,8 @@ suite("public guests preserve ownership and private evidence", () => {
       repository,
       storage,
       {
-        analyze: async () => {
+        analyze: async (input: unknown) => {
+          lastAnalysisInput = input;
           analyses++;
           return {
             objects: ["bench"],
@@ -449,5 +451,54 @@ suite("public guests preserve ownership and private evidence", () => {
       latitude: 26.9402177,
       longitude: 80.9169963,
     });
+  });
+  it("stores reporter assessment separately and never forwards it as vision evidence", async () => {
+    const old = (await repository.get(privateIssue.id)).observations[0];
+    expect(old.reporterSawNoChange).toBeNull();
+    for (const value of ["true", "false", undefined]) {
+      const f = form();
+      f.delete("reporterId");
+      f.delete("publicConsent");
+      f.set("note", "Fresh photo from the same path");
+      if (value !== undefined) f.set("reporterSawNoChange", value);
+      const response = await app.request(
+        `/v1/issues/${privateIssue.id}/observations`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: f,
+        },
+      );
+      expect(response.status).toBe(201);
+      const saved = (await response.json()).observation;
+      keys.push(saved.storageKey);
+      expect(saved.reporterSawNoChange).toBe(
+        value === undefined ? null : value === "true",
+      );
+      expect(saved.note).toBe("Fresh photo from the same path");
+      expect(lastAnalysisInput).toEqual({
+        image_base64: png.toString("base64"),
+        mime_type: "image/png",
+        note: saved.note,
+      });
+    }
+    const invalid = form();
+    invalid.delete("reporterId");
+    invalid.delete("publicConsent");
+    invalid.set("reporterSawNoChange", "definitely");
+    const before = analyses;
+    expect(
+      (
+        await app.request(`/v1/issues/${privateIssue.id}/observations`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: invalid,
+        })
+      ).status,
+    ).toBe(400);
+    expect(analyses).toBe(before);
+    expect((await repository.get(privateIssue.id)).observations[0].note).toBe(
+      old.note,
+    );
   });
 });

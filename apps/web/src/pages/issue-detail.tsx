@@ -243,6 +243,7 @@ export function IssueDetailPage() {
                           {o.locationSource === "inherited" ? <p className="text-sm">Location inherited from the issue. This is not independent proof of where the photo was taken.</p> : null}
                           {data.permissions?.manage !== false ? <ObservationCorrection issueId={data.publicId} observation={o} onSaved={()=>{issue.reload();diffs.reload();timeline.reload();}}/> : null}
                           {diffs.data?.items.filter(d=>d.beforeObservationId===o.id || d.afterObservationId===o.id).map(d=><Link key={d.id} className="min-h-11 py-2 text-sm underline" to={`/app/issues/${data.publicId}/compare?before=${d.beforeObservationId}&after=${d.afterObservationId}&comparison=${d.id}`}>{d.supersededAt?"Historical":"Saved"} comparison · {formatDateTime(d.createdAt)}</Link>)}
+                          {o.reporterSawNoChange ? <p className="text-sm text-muted-foreground">Reporter saw no change</p> : null}
                           {o.note ? <p>“{o.note}”</p> : <p className="text-muted-foreground">No note.</p>}
                           {a.conditions?.length ? (
                             <div>

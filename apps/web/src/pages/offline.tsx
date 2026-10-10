@@ -58,6 +58,7 @@ function QueueItem({
         form.set("locationSource", d.location.source);
       }
       if (d.note.trim()) form.set("note", d.note.trim());
+      if (item.issueId && typeof d.reporterSawNoChange === "boolean") form.set("reporterSawNoChange", String(d.reporterSawNoChange));
       if (d.capturedAt)
         form.set("capturedAt", new Date(d.capturedAt).toISOString());
       if (item.issueId) {
@@ -99,6 +100,7 @@ function QueueItem({
       </p>
       <CaptureButton value={item.draft.photo} onChange={() => {}} disabled />
       <p className="break-words">{item.draft.note || "No note"}</p>
+      {item.draft.reporterSawNoChange ? <p>Reporter saw no change</p> : null}
       <p className="text-sm">
         {item.draft.location
           ? `${item.draft.location.latitude}, ${item.draft.location.longitude}`

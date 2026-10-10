@@ -10,6 +10,7 @@ export interface CaptureDraft {
   locationMode: "inherit" | "here";
   note: string;
   capturedAt: string;
+  reporterSawNoChange?: boolean;
   attempt?: { key: string; signature: string };
 }
 
@@ -22,7 +23,7 @@ export function clearCaptureDrafts() {
 export function clearMatchingCaptureDraft(id:string,expected:CaptureDraft) {
   try {
     const key=PREFIX+id;const saved=JSON.parse(sessionStorage.getItem(key)??"null")?.draft;
-    const shape=(d:CaptureDraft)=>JSON.stringify([d.photo?.fingerprint,d.note,d.capturedAt,d.locationMode,d.location]);
+    const shape=(d:CaptureDraft)=>JSON.stringify([d.photo?.fingerprint,d.note,d.capturedAt,d.locationMode,d.location,d.reporterSawNoChange]);
     if(saved && shape(saved)===shape(expected))sessionStorage.removeItem(key);
   }catch{/* Other drafts are preserved. */}
 }

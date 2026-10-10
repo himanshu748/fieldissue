@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useNavigate, useParams } from "react-router";
 import { ArrowLeftRightIcon, ShieldAlertIcon } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldGroup, FieldLabel, FieldLegend, FieldSet } from "@/components/ui/field";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -36,10 +37,11 @@ function RevisitForm({ id }: { id: string }) {
   const navigate = useNavigate();
   const { config } = useAppConfig();
   const issue = useResource((signal) => api.issue(id, signal), [id]);
-  const { draft, setDraft, clear: clearDraft, notice: draftNotice, persist } = useCaptureDraft(`revisit:${id}`, { photo: null, location: null, locationMode: "here", note: "", capturedAt: "" });
-  const { photo, location, locationMode, note, capturedAt } = draft;
+  const { draft, setDraft, clear: clearDraft, notice: draftNotice, persist } = useCaptureDraft(`revisit:${id}`, { photo: null, location: null, locationMode: "here", note: "", capturedAt: "", reporterSawNoChange: false });
+  const { photo, location, locationMode, note, capturedAt, reporterSawNoChange = false } = draft;
   const setPhoto = (photo: PreparedImage | null) => setDraft(d => ({ ...d, photo }));
   const setLocation = (location: Located | null) => setDraft(d => ({ ...d, location }));
+  const setReporterSawNoChange = (reporterSawNoChange: boolean) => setDraft(d => ({ ...d, reporterSawNoChange }));
   const setNote = (note: string) => setDraft(d => ({ ...d, note }));
   const setCapturedAt = (capturedAt: string) => setDraft(d => ({ ...d, capturedAt }));
   const setLocationMode = (locationMode: "inherit" | "here") => setDraft(d => ({ ...d, locationMode }));
@@ -49,8 +51,8 @@ function RevisitForm({ id }: { id: string }) {
   const sending = phase.kind === "sending";
 
   const signature = useMemo(
-    () => JSON.stringify([photo?.fingerprint, photo?.blob.size, photo?.width, locationMode, location?.latitude, location?.longitude, note.trim(), capturedAt]),
-    [photo, locationMode, location, note, capturedAt],
+    () => JSON.stringify([photo?.fingerprint, photo?.blob.size, photo?.width, locationMode, location?.latitude, location?.longitude, note.trim(), capturedAt, reporterSawNoChange]),
+    [photo, locationMode, location, note, capturedAt, reporterSawNoChange],
   );
 
   useEffect(() => {
@@ -60,7 +62,7 @@ function RevisitForm({ id }: { id: string }) {
     return () => window.removeEventListener("beforeunload", warn);
   }, [sending]);
 
-  if (issue.error instanceof ApiError && issue.error.status===0 && config?.publicAccess && /^FI-\d{6,}$/.test(id)) return <div className="mx-auto max-w-2xl space-y-6"><h1 className="text-3xl font-bold">Save an offline revisit</h1><p>The previous evidence for {id} needs a connection. Confirm the issue ID before saving. Record your current location, or explicitly choose the issue’s saved location.</p><CaptureButton value={photo} onChange={setPhoto}/><RadioGroup value={locationMode} onValueChange={v=>setLocationMode(v as "here"|"inherit")}><Field orientation="horizontal"><RadioGroupItem value="here" id="offline-loc-here"/><FieldLabel htmlFor="offline-loc-here">Record my current location</FieldLabel></Field><Field orientation="horizontal"><RadioGroupItem value="inherit" id="offline-loc-inherit"/><FieldLabel htmlFor="offline-loc-inherit">Reuse the issue’s location; not a fresh GPS reading</FieldLabel></Field></RadioGroup>{locationMode==="here"?<LocationPicker value={location} onChange={setLocation} idPrefix="offline-revisit" allowReuse={false}/>:null}<label className="block">Your observation<Textarea value={note} maxLength={5000} onChange={e=>setNote(e.target.value)}/></label><CaptureTime value={capturedAt} onChange={setCapturedAt} disabled={false}/><SaveOffline key={signature} signature={signature} issueId={id} draft={draft} onSaved={key=>{if(photo){attempt.current={key,signature,photo};setDraft(d=>({...d,attempt:{key,signature}}));}}}/><Button variant="outline" onClick={issue.reload}>Check connection</Button></div>;
+  if (issue.error instanceof ApiError && issue.error.status===0 && config?.publicAccess && /^FI-\d{6,}$/.test(id)) return <div className="mx-auto max-w-2xl space-y-6"><h1 className="text-3xl font-bold">Save an offline revisit</h1><p>The previous evidence for {id} needs a connection. Confirm the issue ID before saving. Record your current location, or explicitly choose the issue’s saved location.</p><CaptureButton value={photo} onChange={setPhoto}/><RadioGroup value={locationMode} onValueChange={v=>setLocationMode(v as "here"|"inherit")}><Field orientation="horizontal"><RadioGroupItem value="here" id="offline-loc-here"/><FieldLabel htmlFor="offline-loc-here">Record my current location</FieldLabel></Field><Field orientation="horizontal"><RadioGroupItem value="inherit" id="offline-loc-inherit"/><FieldLabel htmlFor="offline-loc-inherit">Reuse the issue’s location; not a fresh GPS reading</FieldLabel></Field></RadioGroup>{locationMode==="here"?<LocationPicker value={location} onChange={setLocation} idPrefix="offline-revisit" allowReuse={false}/>:null}<label className="block">Your observation<Textarea value={note} maxLength={5000} onChange={e=>setNote(e.target.value)}/></label><ReporterAssessment checked={reporterSawNoChange} onChange={setReporterSawNoChange}/><CaptureTime value={capturedAt} onChange={setCapturedAt} disabled={false}/><SaveOffline key={signature} signature={signature} issueId={id} draft={draft} onSaved={key=>{if(photo){attempt.current={key,signature,photo};setDraft(d=>({...d,attempt:{key,signature}}));}}}/><Button variant="outline" onClick={issue.reload}>Check connection</Button></div>;
   if (issue.error) return <ErrorNotice error={issue.error} onRetry={issue.reload} title="This issue could not be loaded" />;
   if (!issue.data)
     return (
@@ -91,6 +93,7 @@ function RevisitForm({ id }: { id: string }) {
       form.set("locationSource", location.source);
     }
     if (note.trim()) form.set("note", note.trim());
+    form.set("reporterSawNoChange", String(reporterSawNoChange));
     if (capturedAt) form.set("capturedAt", new Date(capturedAt).toISOString());
     setPhase({ kind: "sending", step: "uploading", fraction: 0 });
     try {
@@ -211,6 +214,8 @@ function RevisitForm({ id }: { id: string }) {
         <FieldDescription>Your note is a personal observation. The comparison must be supported by the photos.</FieldDescription>
       </FieldGroup>
 
+      <ReporterAssessment checked={reporterSawNoChange} onChange={setReporterSawNoChange} disabled={sending} />
+
       <CaptureTime value={capturedAt} onChange={setCapturedAt} disabled={sending} />
 
       <SaveOffline key={signature} signature={signature} onSaved={key=>{if(photo){attempt.current={key,signature,photo};setDraft(d=>({...d,attempt:{key,signature}}));}}} draft={draft} issueId={id} disabled={sending} />
@@ -236,4 +241,14 @@ function RevisitForm({ id }: { id: string }) {
       </div>
     </form>
   );
+}
+
+function ReporterAssessment({ checked, onChange, disabled = false }: { checked: boolean; onChange: (value: boolean) => void; disabled?: boolean }) {
+  return <FieldGroup>
+    <Field orientation="horizontal">
+      <Checkbox id="reporter-no-change" checked={checked} onCheckedChange={v => onChange(v === true)} disabled={disabled} aria-describedby="reporter-no-change-help" />
+      <FieldLabel htmlFor="reporter-no-change">Reporter saw no change</FieldLabel>
+    </Field>
+    <FieldDescription id="reporter-no-change-help">Optional personal assessment. Saved separately and not sent to the vision model.</FieldDescription>
+  </FieldGroup>;
 }

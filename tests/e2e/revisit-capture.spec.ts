@@ -46,6 +46,8 @@ test("revisit captures fresh GPS without inserting a conclusion and preserves it
   await expect(
     page.getByLabel("What do you see?", { exact: false }),
   ).toHaveValue("");
+  await page.getByRole("checkbox", { name: "Reporter saw no change", exact: true }).check();
+  await expect(page.getByLabel("What do you see?", { exact: false })).toHaveValue("");
   await page
     .getByLabel("Choose a photo from your files")
     .setInputFiles(resolve("tests/fixtures/revisit/correct-revisit.png"));
@@ -97,6 +99,7 @@ test("revisit captures fresh GPS without inserting a conclusion and preserves it
   expect(captures[0].draft).toMatchObject({
     locationMode: "here",
     note: "",
+    reporterSawNoChange: true,
     location: { latitude: 12.9763, longitude: 77.5929, source: "device" },
   });
   // Continue through the real HTTP upload against the isolated test provider.
@@ -116,6 +119,7 @@ test("revisit captures fresh GPS without inserting a conclusion and preserves it
   ).json();
   expect(saved.observations.at(-1)).toMatchObject({
     note: "",
+    reporterSawNoChange: true,
     locationSource: "device",
     latitude: 12.9763,
     longitude: 77.5929,

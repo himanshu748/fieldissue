@@ -306,3 +306,37 @@ def test_comparable_outcome_cannot_disclaim_comparability_in_reason():
                       sameSubjectEvidence=["tree"], summary="Litter appeared", added=["litter"],
                       removed=[], unchanged=[], recommendedStatus="OPEN", confidence=0.9,
                       model="synthetic-fixture", modelVersion="1")
+
+
+@pytest.mark.asyncio
+async def test_legacy_checkbox_note_is_not_sent_to_vision():
+    from fieldissue_intelligence.providers import LEGACY_NO_CHANGE_NOTE
+    _, Provider, _ = modules()
+
+    def handler(request):
+        text = json.loads(request.content)["messages"][1]["content"][0]["text"]
+        assert LEGACY_NO_CHANGE_NOTE not in text
+        return httpx.Response(200, json={
+            "model": "google/gemma-3-4b-it",
+            "choices": [{"message": {"content": json.dumps(ANALYSIS)}}],
+        })
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        await Provider(settings(), client).analyze_observation(PNG, "image/png", LEGACY_NO_CHANGE_NOTE)
+
+
+def test_legacy_context_omits_tainted_analysis_without_mutating_saved_input():
+    from fieldissue_intelligence.providers import LEGACY_NO_CHANGE_NOTE, vision_context
+    from fieldissue_intelligence.schemas import AnalyzeResult, ObservationInput
+
+    before = ObservationInput(
+        image_base64=base64.b64encode(PNG).decode(), mime_type="image/png",
+        note=LEGACY_NO_CHANGE_NOTE,
+        evidence=AnalyzeResult(**{**ANALYSIS, "evidence": [LEGACY_NO_CHANGE_NOTE]}),
+    )
+    assert vision_context(before) == {"note": "", "evidence": None}
+    assert before.note == LEGACY_NO_CHANGE_NOTE
+    assert before.evidence.evidence == [LEGACY_NO_CHANGE_NOTE]
+    manual = before.model_copy(update={"note": "Fallen branch still visible"})
+    assert vision_context(manual)["note"] == manual.note
+    assert vision_context(manual)["evidence"] == manual.evidence.model_dump()
