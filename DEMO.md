@@ -9,7 +9,7 @@ resolve it yourself.
 
 ## Verified build
 
-[Main CI run 38029824732](https://github.com/himanshu748/fieldissue/actions/runs/38029824732) passed on 10 October 2026 at commit `0f00a01`: **184 API tests** and **78 Python tests**, extracted from its test logs. Docker checks and mobile browser journeys also passed. CI uses isolated provider fixtures; hosted checks are separate.
+[Main CI run 38031644266](https://github.com/himanshu748/fieldissue/actions/runs/38031644266) passed on 10 October 2026 at commit `1769e2f`: **186 API tests** and **79 Python tests**, extracted from its test logs. Docker checks and mobile browser journeys also passed. CI uses isolated provider fixtures; hosted checks are separate.
 
 ## Try it
 
