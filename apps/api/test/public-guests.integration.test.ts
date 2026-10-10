@@ -30,6 +30,7 @@ suite("public guests preserve ownership and private evidence", () => {
     longitude: 0,
   };
   let analyses = 0;
+  let lastAnalysisInput: unknown;
   function form(consent = true) {
     const f = new FormData();
     f.set("image", new Blob([png], { type: "image/png" }), "fixture.png");
@@ -53,7 +54,8 @@ suite("public guests preserve ownership and private evidence", () => {
       repository,
       storage,
       {
-        analyze: async () => {
+        analyze: async (input: unknown) => {
+          lastAnalysisInput = input;
           analyses++;
           return {
             objects: ["bench"],
@@ -383,5 +385,120 @@ suite("public guests preserve ownership and private evidence", () => {
       }),
     });
     expect(r.status).toBe(400);
+  });
+  it("keeps owner and operator GPS precise while rounding anonymous and non-owner output", async () => {
+    const config = await app.request("/app-config");
+    const precisionOwner = config.headers.get("set-cookie")!.split(";")[0]!;
+    const f = form();
+    f.set("latitude", "26.9402177");
+    f.set("longitude", "80.9169963");
+    const created = await app.request("/v1/issues", {
+      method: "POST",
+      headers: headers(precisionOwner),
+      body: f,
+    });
+    expect(created.status).toBe(201);
+    const issue = await created.json();
+    ids.push(issue.id);
+    keys.push(issue.observations[0].storageKey);
+    for (const [requestHeaders, precise] of [
+      [{}, false],
+      [{ Cookie: otherCookie }, false],
+      [{ Cookie: precisionOwner }, true],
+      [{ Authorization: `Bearer ${token}` }, true],
+    ] as const) {
+      const point = precise
+        ? { latitude: 26.9402177, longitude: 80.9169963 }
+        : { latitude: 26.94, longitude: 80.917 };
+      const read = async (path: string) => {
+        const response = await app.request(path, { headers: requestHeaders });
+        expect(response.status).toBe(200);
+        return response.json();
+      };
+      const detail = await read(`/v1/issues/${issue.publicId}`);
+      expect(detail).toMatchObject(point);
+      expect(detail.observations[0]).toMatchObject(point);
+      const observations = await read(
+        `/v1/issues/${issue.publicId}/observations`,
+      );
+      expect(observations.items[0]).toMatchObject(point);
+      const list = await read(
+        "/v1/issues?near_lat=26.9402177&near_lon=80.9169963&radius_meters=1",
+      );
+      expect(
+        list.items.find((item: any) => item.id === issue.id),
+      ).toMatchObject(point);
+      const map = await read("/v1/issues/map?bbox=80.9,26.9,81,27");
+      const feature = map.features.find(
+        (item: any) => item.properties.id === issue.id,
+      );
+      expect(feature.properties).toMatchObject(point);
+      expect(feature.geometry.coordinates).toEqual([
+        point.longitude,
+        point.latitude,
+      ]);
+      const summary = await read(`/v1/issues/${issue.publicId}/share-summary`);
+      expect(summary.publicLocation).toMatchObject(point);
+      const walk = await read(
+        "/v1/walks/suggestions?latitude=26.9402177&longitude=80.9169963&radius_meters=1",
+      );
+      expect(
+        walk.items.find((item: any) => item.issueId === issue.id)
+          .distanceMeters,
+      ).toBeLessThan(0.01);
+    }
+    expect(await repository.get(issue.id)).toMatchObject({
+      latitude: 26.9402177,
+      longitude: 80.9169963,
+    });
+  });
+  it("stores reporter assessment separately and never forwards it as vision evidence", async () => {
+    const old = (await repository.get(privateIssue.id)).observations[0];
+    expect(old.reporterSawNoChange).toBeNull();
+    for (const value of ["true", "false", undefined]) {
+      const f = form();
+      f.delete("reporterId");
+      f.delete("publicConsent");
+      f.set("note", "Fresh photo from the same path");
+      if (value !== undefined) f.set("reporterSawNoChange", value);
+      const response = await app.request(
+        `/v1/issues/${privateIssue.id}/observations`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: f,
+        },
+      );
+      expect(response.status).toBe(201);
+      const saved = (await response.json()).observation;
+      keys.push(saved.storageKey);
+      expect(saved.reporterSawNoChange).toBe(
+        value === undefined ? null : value === "true",
+      );
+      expect(saved.note).toBe("Fresh photo from the same path");
+      expect(lastAnalysisInput).toEqual({
+        image_base64: png.toString("base64"),
+        mime_type: "image/png",
+        note: saved.note,
+      });
+    }
+    const invalid = form();
+    invalid.delete("reporterId");
+    invalid.delete("publicConsent");
+    invalid.set("reporterSawNoChange", "definitely");
+    const before = analyses;
+    expect(
+      (
+        await app.request(`/v1/issues/${privateIssue.id}/observations`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: invalid,
+        })
+      ).status,
+    ).toBe(400);
+    expect(analyses).toBe(before);
+    expect((await repository.get(privateIssue.id)).observations[0].note).toBe(
+      old.note,
+    );
   });
 });

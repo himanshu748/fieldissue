@@ -64,6 +64,7 @@ export function EvidenceWalkthroughPage() {
               {formatDateTime(o.createdAt)}
             </p>
             <p>{o.note}</p>
+            {o.reporterSawNoChange ? <p>Reporter saw no change</p> : null}
             <p>
               <strong>
                 {o.exclusionType

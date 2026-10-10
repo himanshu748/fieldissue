@@ -179,7 +179,7 @@ export class IssueRepository {
   ) {
     return (
       await c.query(
-        "INSERT INTO observations(issue_id,note,media_url,storage_key,mime_type,latitude,longitude,captured_at,ai_analysis,location_source,capture_time_source) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *",
+        "INSERT INTO observations(issue_id,note,media_url,storage_key,mime_type,latitude,longitude,captured_at,ai_analysis,location_source,capture_time_source,reporter_saw_no_change) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *",
         [
           id,
           input.note,
@@ -192,6 +192,7 @@ export class IssueRepository {
           JSON.stringify(analysis),
           input.locationSource ?? "unspecified",
           input.captureTimeSource ?? (input.capturedAt ? "user" : "upload"),
+          input.reporterSawNoChange ?? null,
         ],
       )
     ).rows[0];

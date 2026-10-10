@@ -41,6 +41,7 @@ export interface PlaceContext {
 }
 
 export interface Observation {
+  reporterSawNoChange?: boolean | null;
   id: string;
   issueId: string;
   note: string;

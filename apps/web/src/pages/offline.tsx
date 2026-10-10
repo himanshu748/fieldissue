@@ -58,6 +58,7 @@ function QueueItem({
         form.set("locationSource", d.location.source);
       }
       if (d.note.trim()) form.set("note", d.note.trim());
+      if (item.issueId && typeof d.reporterSawNoChange === "boolean") form.set("reporterSawNoChange", String(d.reporterSawNoChange));
       if (d.capturedAt)
         form.set("capturedAt", new Date(d.capturedAt).toISOString());
       if (item.issueId) {
@@ -99,6 +100,7 @@ function QueueItem({
       </p>
       <CaptureButton value={item.draft.photo} onChange={() => {}} disabled />
       <p className="break-words">{item.draft.note || "No note"}</p>
+      {item.draft.reporterSawNoChange ? <p>Reporter saw no change</p> : null}
       <p className="text-sm">
         {item.draft.location
           ? `${item.draft.location.latitude}, ${item.draft.location.longitude}`
@@ -123,7 +125,7 @@ function QueueItem({
               onCheckedChange={(v) => setConsent(v === true)}
             />
             I reviewed this capture and agree to publish its photo, note and
-            exact location and send it for AI analysis.
+            approximate location publicly and send it for AI analysis. The service keeps the exact location for the owner and operator.
           </label>
           <div className="flex flex-wrap gap-3">
             <Button disabled={!consent || busy} onClick={send}>

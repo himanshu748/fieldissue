@@ -15,8 +15,8 @@ it("shares only a small allowlist and a coarse location", () => {
     placeContext: { address: "private address" },
   });
   expect(result.publicLocation).toMatchObject({
-    latitude: 12.98,
-    longitude: 77.59,
+    latitude: 12.976,
+    longitude: 77.593,
   });
   expect(JSON.stringify(result)).not.toMatch(
     /private|identity|12.97621|77.59291/,
