@@ -165,7 +165,7 @@ Companion: [90-second recording script and unpublished article evidence draft](r
 - Integration status reported ten configured providers/frameworks and Entire documented, with core readiness true. No fresh inference was invoked; configuration/readiness is not proof of a fresh successful call to every provider.
 - Live browser checks: original-versus-latest link targets A → C; historical B → C displays “Superseded comparison: not current evidence”, a neutral explanation and no verified change indicators. Both photos loaded in side-by-side mode, keyboard slider interaction worked, and no horizontal overflow was observed at 360px or 390px. Full owner correction/restoration remains covered by isolated CI; the unrelated live browser does not own FI-000007.
 - Startup logs confirm both processes running and the service live; no error-level records returned in the release log check.
-- Automatic deployments remain **off** to hold the judged version. A read-only Codex heartbeat checks health/readiness every ten minutes through **19 October 2026, 12:29 PM IST**. The user requires the code freeze on **12 October**; this monitor never changes code or deploys. Monitoring requires the Codex host running and does not guarantee uptime.
+- Automatic deployments remain **off** to hold the judged version. The cloud availability workflow supersedes the laptop-dependent Codex heartbeat; see [cloud monitoring](cloud-monitor-2026-10-10.md). The user requires the code freeze on **12 October**; the monitor never changes application code or deploys.
 
 
 ## Authorized real correction and comparison

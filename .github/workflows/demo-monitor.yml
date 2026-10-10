@@ -1,0 +1,49 @@
+name: Demo availability
+
+on:
+  schedule:
+    # UTC; avoid the busiest start-of-hour minute. The script enforces the year
+    # and exact 19 October 2026 06:59 UTC deadline before every request.
+    - cron: '2-59/5 * 10-19 10 *'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/demo-monitor.yml'
+      - 'scripts/check_demo.py'
+      - 'scripts/test_check_demo.py'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: demo-monitor-${{ github.event_name }}
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    outputs:
+      expired: ${{ steps.probe.outputs.expired }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Verify deadline and bounded retry behavior
+        run: python3 -m unittest discover -s scripts -p test_check_demo.py
+      - name: Check public demo without invoking AI
+        id: probe
+        if: github.event_name != 'pull_request'
+        run: python3 scripts/check_demo.py
+  disable-after-deadline:
+    needs: check
+    if: needs.check.outputs.expired == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    permissions:
+      actions: write
+    steps:
+      - name: Disable this scheduler after judging
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow disable demo-monitor.yml --repo "$GITHUB_REPOSITORY"
