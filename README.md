@@ -170,7 +170,7 @@ The wrapper's `run` command keeps the database and its child command in one proc
 
 ### Tests and verification limits
 
-On 10 October 2026, [main CI run 38029824732](https://github.com/himanshu748/fieldissue/actions/runs/38029824732) passed with **184 API tests** and **78 Python tests**. These totals come from the run logs for commit `0f00a01`; they include the coordinate privacy and reporter assessment regressions. The run also checks Docker startup, HTTP behavior and the mobile browser journeys. Provider calls in CI use isolated fixtures.
+On 10 October 2026, [main CI run 38031644266](https://github.com/himanshu748/fieldissue/actions/runs/38031644266) passed with **186 API tests** and **79 Python tests**. These totals come from the run logs for commit `1769e2f`; they include the coordinate privacy, public spatial query and reporter assessment regressions. The run also checks Docker startup, HTTP behavior and the mobile browser journeys. Provider calls in CI use isolated fixtures.
 
 The `Backend CI` GitHub Actions workflow runs `make test` against a disposable real PostGIS/pgvector database, runs lint, starts/migrates/seeds the Docker stack, verifies both extensions, and exercises the HTTP vertical slice. It then rebuilds the API with the compiled runtime target and repeats the HTTP checks without the source bind mount. Both HTTP runs explicitly use development AI fixtures. CI requires no provider secrets and retains diagnostic logs as a workflow artifact; a passing run is not evidence of live AI quality or deployment.
 
