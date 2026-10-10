@@ -25,7 +25,7 @@ export function ShareSummary({ id }: { id: string }) {
         };
       }>(`/v1/issues/${encodeURIComponent(id)}/share-summary`);
       setSummary(
-        `${value.publicId} · ${value.category.toLowerCase()} · ${value.status.toLowerCase()}\nSeverity: ${value.severity.toLowerCase()}\nApproximate area: ${value.publicLocation.latitude.toFixed(2)}, ${value.publicLocation.longitude.toFixed(2)}\n${value.publicLocation.precision}.\nHuman review required. This summary excludes photos, free text and exact coordinates.`,
+        `${value.publicId} · ${value.category.toLowerCase()} · ${value.status.toLowerCase()}\nSeverity: ${value.severity.toLowerCase()}\nLocation: ${value.publicLocation.latitude}, ${value.publicLocation.longitude}\n${value.publicLocation.precision}.\nHuman review required. This summary excludes photos and free text. Check the location precision before sharing.`,
       );
     } catch (e) {
       setError(e as Error);

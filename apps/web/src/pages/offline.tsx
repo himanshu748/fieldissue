@@ -123,7 +123,7 @@ function QueueItem({
               onCheckedChange={(v) => setConsent(v === true)}
             />
             I reviewed this capture and agree to publish its photo, note and
-            exact location and send it for AI analysis.
+            approximate location publicly and send it for AI analysis. The service keeps the exact location for the owner and operator.
           </label>
           <div className="flex flex-wrap gap-3">
             <Button disabled={!consent || busy} onClick={send}>

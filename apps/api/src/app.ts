@@ -1,3 +1,4 @@
+import { publicResponse } from "./public-coordinates.js";
 import { serviceWorker } from "./offline-shell.js";
 import { duplicates, municipalExport, publicApiSpec } from "./public-tools.js";
 import {
@@ -344,6 +345,7 @@ export function createApp(deps: Dependencies) {
         await guestAllowance(deps.repository.pool, guestId!, false);
       return next();
     }
+    let ownsIssue = false;
     const match = path.match(/^\/v1\/issues\/([^/]+)(?:\/(.*))?$/);
     if (match && match[1] !== "map") {
       const issue = await deps.repository.issue(
@@ -352,6 +354,7 @@ export function createApp(deps: Dependencies) {
       );
       if (!issue.is_public)
         throw new AppError("NOT_FOUND", 404, "Issue not found");
+      ownsIssue = !!guestId && issue.guest_owner === guestId;
       const suffix = match[2] ?? "";
       if (
         write &&
@@ -411,20 +414,7 @@ export function createApp(deps: Dependencies) {
       );
     await next();
     if (c.res.headers.get("Content-Type")?.includes("application/json")) {
-      const clean = (value: any): any => {
-        if (Array.isArray(value)) return value.map(clean);
-        if (!value || typeof value !== "object") return value;
-        const out: Record<string, unknown> = {};
-        for (const [key, item] of Object.entries(value))
-          if (!["guestOwner", "reporterId"].includes(key))
-            out[key] = clean(item);
-        if (value.publicId && value.status)
-          out.permissions = {
-            manage: !!guestId && value.guestOwner === guestId,
-          };
-        return out;
-      };
-      const body = clean(await c.res.json());
+      const body = publicResponse(await c.res.json(), guestId, ownsIssue);
       c.res.headers.delete("Content-Length");
       c.res = new Response(JSON.stringify(body), {
         status: c.res.status,
@@ -1275,11 +1265,13 @@ export function createApp(deps: Dependencies) {
       201,
     );
   });
-  app.get("/v1/issues/:id/share-summary", async (c) =>
-    c.json(
-      publicSummary(await deps.repository.get(issueId(c.req.param("id")))),
-    ),
-  );
+  app.get("/v1/issues/:id/share-summary", async (c) => {
+    const issue = await deps.repository.get(issueId(c.req.param("id")));
+    const precise =
+      !isGuest(c) ||
+      (!!c.get("guestId") && issue.guestOwner === c.get("guestId"));
+    return c.json(publicSummary(issue, precise));
+  });
   app.get("/v1/issues/:id/diffs", async (c) =>
     c.json(await deps.repository.diffs(issueId(c.req.param("id")))),
   );

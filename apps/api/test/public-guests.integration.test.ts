@@ -384,4 +384,70 @@ suite("public guests preserve ownership and private evidence", () => {
     });
     expect(r.status).toBe(400);
   });
+  it("keeps owner and operator GPS precise while rounding anonymous and non-owner output", async () => {
+    const config = await app.request("/app-config");
+    const precisionOwner = config.headers.get("set-cookie")!.split(";")[0]!;
+    const f = form();
+    f.set("latitude", "26.9402177");
+    f.set("longitude", "80.9169963");
+    const created = await app.request("/v1/issues", {
+      method: "POST",
+      headers: headers(precisionOwner),
+      body: f,
+    });
+    expect(created.status).toBe(201);
+    const issue = await created.json();
+    ids.push(issue.id);
+    keys.push(issue.observations[0].storageKey);
+    for (const [requestHeaders, precise] of [
+      [{}, false],
+      [{ Cookie: otherCookie }, false],
+      [{ Cookie: precisionOwner }, true],
+      [{ Authorization: `Bearer ${token}` }, true],
+    ] as const) {
+      const point = precise
+        ? { latitude: 26.9402177, longitude: 80.9169963 }
+        : { latitude: 26.94, longitude: 80.917 };
+      const read = async (path: string) => {
+        const response = await app.request(path, { headers: requestHeaders });
+        expect(response.status).toBe(200);
+        return response.json();
+      };
+      const detail = await read(`/v1/issues/${issue.publicId}`);
+      expect(detail).toMatchObject(point);
+      expect(detail.observations[0]).toMatchObject(point);
+      const observations = await read(
+        `/v1/issues/${issue.publicId}/observations`,
+      );
+      expect(observations.items[0]).toMatchObject(point);
+      const list = await read(
+        "/v1/issues?near_lat=26.9402177&near_lon=80.9169963&radius_meters=1",
+      );
+      expect(
+        list.items.find((item: any) => item.id === issue.id),
+      ).toMatchObject(point);
+      const map = await read("/v1/issues/map?bbox=80.9,26.9,81,27");
+      const feature = map.features.find(
+        (item: any) => item.properties.id === issue.id,
+      );
+      expect(feature.properties).toMatchObject(point);
+      expect(feature.geometry.coordinates).toEqual([
+        point.longitude,
+        point.latitude,
+      ]);
+      const summary = await read(`/v1/issues/${issue.publicId}/share-summary`);
+      expect(summary.publicLocation).toMatchObject(point);
+      const walk = await read(
+        "/v1/walks/suggestions?latitude=26.9402177&longitude=80.9169963&radius_meters=1",
+      );
+      expect(
+        walk.items.find((item: any) => item.issueId === issue.id)
+          .distanceMeters,
+      ).toBeLessThan(0.01);
+    }
+    expect(await repository.get(issue.id)).toMatchObject({
+      latitude: 26.9402177,
+      longitude: 80.9169963,
+    });
+  });
 });
