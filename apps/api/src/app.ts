@@ -731,7 +731,13 @@ export function createApp(deps: Dependencies) {
         "Semantic search is not configured.",
       );
     await deps.consumeSearch?.();
-    return c.json(await deps.semantic.search({ ...q, publicOnly: isGuest(c) }));
+    return c.json(
+      await deps.semantic.search({
+        ...q,
+        publicOnly: isGuest(c),
+        guestId: c.get("guestId"),
+      }),
+    );
   });
   app.post("/v1/model-lab/compare", async (c) => {
     const input = z
@@ -863,7 +869,9 @@ export function createApp(deps: Dependencies) {
       })
       .strict()
       .parse(c.req.query());
-    return c.json(await duplicates(deps.repository.pool, q));
+    return c.json(
+      await duplicates(deps.repository.pool, q, isGuest(c), c.get("guestId")),
+    );
   });
   app.get("/v1/openapi", (c) => c.json(publicApiSpec));
   app.get("/v1/issues/:id/export", async (c) => {
@@ -1110,6 +1118,7 @@ export function createApp(deps: Dependencies) {
         q.radius_meters,
         q.limit,
         isGuest(c),
+        c.get("guestId"),
       ),
     );
   });
@@ -1128,6 +1137,7 @@ export function createApp(deps: Dependencies) {
     return c.json(
       await deps.repository.list({
         publicOnly: isGuest(c),
+        guestId: c.get("guestId"),
         search: q.search,
         status: q.status,
         category: q.category,
@@ -1159,7 +1169,9 @@ export function createApp(deps: Dependencies) {
       .parse(q.bbox.split(",").map(Number));
     if (q.bbox.split(",").some((x) => !x.trim()))
       throw new AppError("INVALID_BBOX", 400, "Invalid bounding box");
-    return c.json(await deps.repository.map(bbox, q.limit, isGuest(c)));
+    return c.json(
+      await deps.repository.map(bbox, q.limit, isGuest(c), c.get("guestId")),
+    );
   });
   app.get("/v1/issues/:id", async (c) =>
     c.json(await deps.repository.get(issueId(c.req.param("id")))),

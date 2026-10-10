@@ -62,6 +62,7 @@ export class IssueService {
               input.longitude,
               this.repository.pool,
               !!guestOwner,
+              guestOwner,
             ),
           persist: async (_input, analysis) => {
             const stored = await this.storage.put(media);
@@ -108,6 +109,7 @@ export class IssueService {
             input.longitude,
             this.repository.pool,
             !!guestOwner,
+            guestOwner,
           )
         ).filter((nearby) => nearby.id !== issueId),
         replayed,

@@ -1,3 +1,4 @@
+import { visiblePointSql, visibleRadiusSql } from "./public-coordinates.js";
 import { randomUUID } from "node:crypto";
 import { Pool } from "pg";
 import { z } from "zod";
@@ -142,6 +143,7 @@ export class SemanticSearch {
   }
   async search(input: {
     publicOnly?: boolean;
+    guestId?: string;
     q: string;
     limit: number;
     category?: string;
@@ -151,6 +153,27 @@ export class SemanticSearch {
     radius_meters?: number;
   }) {
     try {
+      // Public filtering uses the primary visible point, never stale precise index coordinates.
+      const publicSpatialIds =
+        input.publicOnly && input.latitude !== undefined
+          ? (
+              await this.repository.pool.query(
+                `SELECT id FROM issues WHERE is_public AND ${visibleRadiusSql("geom", visiblePointSql("$4"), "ST_SetSRID(ST_MakePoint($2,$1),4326)::geography", "$3")}`,
+                [
+                  input.latitude,
+                  input.longitude,
+                  input.radius_meters,
+                  input.guestId ?? null,
+                ],
+              )
+            ).rows.map((row) => row.id)
+          : null;
+      if (publicSpatialIds?.length === 0)
+        return {
+          items: [],
+          method: "hybrid_keyword_vector",
+          model: embeddingModel,
+        };
       const vector = vectorSchema.parse(await this.embed(input.q));
       const rows = (
         await this.tiger.query(
@@ -158,6 +181,7 @@ export class SemanticSearch {
      (0.75*(1-(embedding<=>$1::vector))+0.25*ts_rank_cd(keywords,plainto_tsquery('english',$2))) AS score
      FROM fieldissue_semantic_index WHERE model=$3 AND model_revision='751bff37182d3f1213fa05d7196b954e230abad9' AND ($4::text IS NULL OR category=$4) AND ($5::text IS NULL OR status=$5)
      AND ($6::float8 IS NULL OR ST_DWithin(ST_SetSRID(ST_MakePoint(longitude,latitude),4326)::geography,ST_SetSRID(ST_MakePoint($7,$6),4326)::geography,$8))
+     AND ($10::uuid[] IS NULL OR issue_id=ANY($10::uuid[]))
      ORDER BY score DESC,issue_id LIMIT $9`,
           [
             JSON.stringify(vector),
@@ -165,10 +189,11 @@ export class SemanticSearch {
             embeddingModel,
             input.category ?? null,
             input.status ?? null,
-            input.latitude ?? null,
+            input.publicOnly ? null : (input.latitude ?? null),
             input.longitude ?? null,
             input.radius_meters ?? null,
             input.limit * 3,
+            publicSpatialIds,
           ],
         )
       ).rows;

@@ -40,3 +40,19 @@ export function publicResponse(
   if (value.publicId && value.status) out.permissions = { manage: owner };
   return out;
 }
+
+/** SQL for the same visible point used in public JSON. Parameters are bound UUIDs. */
+export function visiblePointSql(ownerParameter: string, alias: "" | "i" = "") {
+  const prefix = alias ? `${alias}.` : "";
+  return `(CASE WHEN ${prefix}guest_owner=${ownerParameter}::uuid THEN ${prefix}geom ELSE ST_SetSRID(ST_MakePoint(floor(${prefix}longitude*1000+0.5)/1000,floor(${prefix}latitude*1000+0.5)/1000),4326) END)`;
+}
+
+/** Rounding moves a point less than 80 m. The wider indexed filter cannot hide a visible match. */
+export function visibleRadiusSql(
+  precise: string,
+  visible: string,
+  center: string,
+  radius: string,
+) {
+  return `(ST_DWithin(${precise}::geography,${center},(${radius})+100) AND ST_DWithin(${visible}::geography,${center},${radius}))`;
+}
