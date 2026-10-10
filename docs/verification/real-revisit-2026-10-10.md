@@ -1,6 +1,6 @@
 # Real revisit correction: 10 October 2026
 
-Release candidate only. No production records, provider settings, deployment or DEV article were changed during this fix. FI-000007 remains OPEN. A fresh real comparison has not been performed.
+Released on 10 October 2026 after owner approval to merge and deploy. FI-000007 remains OPEN. Migration 014 superseded legacy comparisons with audit events while preserving their original output. No observation correction, fresh real comparison, provider setting change or DEV article edit was performed.
 
 ## Incident and read-only reproduction
 
@@ -81,7 +81,7 @@ The report shows eligibility, capture and upload timestamps, location source, or
 
 The viewer supports a keyboard-operated divider, a side-by-side option at mobile widths and reduced motion. Unreliable/superseded comparisons show a neutral explanation; original fields remain inspectable as raw historical output. They do not display verified change indicators or a confidence meter. An owner can still explicitly choose human resolution.
 
-A read-only route, `/app/issues/:id/evidence`, presents the chronology, exclusion and latest current comparison without inference requests. The real route will exist only after deployment: [FI-000007 evidence walkthrough](https://fieldissue-demo.onrender.com/app/issues/FI-000007/evidence).
+A read-only route, `/app/issues/:id/evidence`, presents the chronology, exclusion and latest current comparison without inference requests. The deployed route is available: [FI-000007 evidence walkthrough](https://fieldissue-demo.onrender.com/app/issues/FI-000007/evidence).
 
 These are actual browser screenshots of the built application using a local PostgreSQL database and **synthetic schematic PNGs with a deterministic test-only provider**. They verify UI behavior, not real model accuracy or a completed outdoor correction.
 
@@ -108,7 +108,7 @@ Local verification completed on 10 October 2026:
 
 No live inference test was enabled.
 
-[PR #4](https://github.com/himanshu748/fieldissue/pull/4) is open and unmerged. Full CI passed for implementation commit `b9564c036ab9c3ef4d7f2aacdd17bc9a98a847b0` in [run 38024942907](https://github.com/himanshu748/fieldissue/actions/runs/38024942907): Docker/PostGIS/API/Python tests, lint, migrations, HTTP development/runtime exercises, Render container boundaries and lifecycle, and both mobile correction journeys. A subsequent audit-label correction preserves the existing `image_identity` event marker and human-readable status recommendation; local tests, lint and build were rerun successfully. Check [the PR's current checks](https://github.com/himanshu748/fieldissue/pull/4/checks) for that final revision before merging.
+[PR #4](https://github.com/himanshu748/fieldissue/pull/4) was merged as `077376ce2f1d6e6273a31f0a7318a401e0ef21d4`. Final branch CI [38025149289](https://github.com/himanshu748/fieldissue/actions/runs/38025149289) and merged-main CI [38025590879](https://github.com/himanshu748/fieldissue/actions/runs/38025590879) both passed all three jobs: Docker/PostGIS/API/Python verification, Render container lifecycle and isolated mobile journeys.
 
 - PostgreSQL 17 with PostGIS/pgvector, isolated container `fieldissue-revisit-test`, localhost port 55439, tmpfs storage, database `fieldissue_test`. No production URL used by fixtures.
 - API tests cover A/B/C correction, owner versus unrelated guest exclusion/restoration, metadata immutability, append-only comparison history, eligible automatic/manual selection, restore/recompare, concurrent correction, no baseline, exact-image protection, invalid provider responses and unchanged OPEN status.
@@ -135,7 +135,7 @@ The test server refuses non-local databases and never loads production configura
 
 Base inspected: `origin/main` at `e09e966`; last successful main CI inspected: [37984571682](https://github.com/himanshu748/fieldissue/actions/runs/37984571682), `d773b31`. Main remained unchanged at the pre-commit fetch. Branch: `fix/revisit-evidence-corrections`.
 
-Before deployment, with explicit approval:
+Release procedure (steps 1–4 completed; remaining owner actions are separate):
 
 1. Review the PR and require all three CI jobs, including the isolated mobile workflow. Recheck main and Render's deployed commit so newer work is not overwritten.
 2. Take a private database backup using the existing verified-TLS connection. Record the Render deployment ID, current schema migrations and counts of observations/diffs/events. Do not print connection secrets or publish backups.
@@ -149,6 +149,20 @@ If verification fails: pause new evidence writes/inference and retain the backup
 
 ## Remaining production actions
 
-Approval is still required for merge/deployment, correcting B, one fresh real A → C comparison and any DEV edit. Physical Android confirmation of the new correction controls and a real 90-second recording remain after deployment. No repair, resolved status or new model conclusion is claimed in this release candidate.
+Merge and deployment are complete. Explicit owner approval is still required for correcting B, one fresh real A → C comparison and any DEV edit. Physical Android confirmation of the owner controls and a real 90-second recording remain. No repair, resolved status or new model conclusion is claimed.
 
 Companion: [90-second recording script and unpublished article evidence draft](real-revisit-demo-script-2026-10-10.md).
+
+
+## Production release receipt
+
+- Render service: `srv-db3jpv5g1s2s73aood40`, existing free plan, not suspended.
+- Deployment: `dep-db4sf6dckfvc7383ggj0`, commit `077376ce2f1d6e6273a31f0a7318a401e0ef21d4`, LIVE at **2026-10-10 05:06:47 UTC**.
+- Pre-release PostgreSQL custom-format backup completed over verified TLS: 4,455,518 bytes, SHA-256 `fe41142a4a537a82d20595e38ceeddbcd161ee63af6f1b4a2e72bbaa37608879`. Archive listing and complete decompression succeeded, including media data. The private backup is not committed. This is archive validation, not a restore drill.
+- Temporary write-pause triggers protected the migration. All three were removed after the new deployment became live. The temporary workstation database allowlist entry was removed and the prior allowlist restored.
+- Migration 014 applied. Counts remain **5 issues, 9 observations, 4 comparisons**. Events increased from **27 to 31**, exactly four migration supersession events. Every original field of FI-000007's three observations and two comparisons matched the pre-release snapshot. All observations remain eligible pending the owner's correction; issue status remains OPEN.
+- Live HTTP: `/health`, `/ready`, `/app-config`, issue detail, comparison history and integration status all returned 200. An unrelated guest's malformed correction request was rejected with **403 before input validation** and could not modify evidence.
+- Integration status reported ten configured providers/frameworks and Entire documented, with core readiness true. No fresh inference was invoked; configuration/readiness is not proof of a fresh successful call to every provider.
+- Live browser checks: original-versus-latest link targets A → C; historical B → C displays “Superseded comparison: not current evidence”, a neutral explanation and no verified change indicators. Both photos loaded in side-by-side mode, keyboard slider interaction worked, and no horizontal overflow was observed at 360px or 390px. Full owner correction/restoration remains covered by isolated CI; the unrelated live browser does not own FI-000007.
+- Startup logs confirm both processes running and the service live; no error-level records returned in the release log check.
+- Automatic deployments remain **off** to hold the judged version. A read-only Codex heartbeat checks health/readiness every ten minutes through **19 October 2026, 12:29 PM IST**. The user requires the code freeze on **12 October**; this monitor never changes code or deploys. Monitoring requires the Codex host running and does not guarantee uptime.
