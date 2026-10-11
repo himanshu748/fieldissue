@@ -60,6 +60,7 @@ suite("Tinker persistent cache and lifetime allowance", () => {
     }));
     const provider = {
       checkpoint: "tinker://test/sampler_weights/one",
+      promptVersion: "fieldissue-note-json-v2",
       interpret,
       preflight: () => {},
     } as any;
@@ -89,6 +90,36 @@ suite("Tinker persistent cache and lifetime allowance", () => {
     expect(await service.interpret(observationId)).toMatchObject({
       cached: true,
     });
+    await pool.query(
+      "DELETE FROM integration_allowances WHERE provider LIKE 'tinker%'",
+    );
+  });
+  it("keeps cached outputs separate when the prompt version changes", async () => {
+    const interpret = vi.fn(async () => ({ result: { severity: "MEDIUM" } }));
+    const provider = {
+      checkpoint: "tinker://test/sampler_weights/cache-version",
+      promptVersion: "fieldissue-note-json-v2",
+      preflight: () => {},
+      interpret,
+    } as any;
+    const previous = new TinkerNoteService(repository, provider);
+    const current = new TinkerNoteService(repository, {
+      ...provider,
+      promptVersion: "fieldissue-note-json-v3",
+    });
+    expect(await previous.interpret(observationId)).toMatchObject({
+      cached: false,
+    });
+    expect(await current.interpret(observationId)).toMatchObject({
+      cached: false,
+    });
+    expect(await previous.interpret(observationId)).toMatchObject({
+      cached: true,
+    });
+    expect(await current.interpret(observationId)).toMatchObject({
+      cached: true,
+    });
+    expect(interpret).toHaveBeenCalledTimes(2);
     await pool.query(
       "DELETE FROM integration_allowances WHERE provider LIKE 'tinker%'",
     );
