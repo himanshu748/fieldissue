@@ -1,7 +1,11 @@
 import { createHash } from "node:crypto";
 export function serviceWorker(html: string, assets: string[]) {
+  assets = assets.filter(
+    (path) =>
+      path.startsWith("/assets/") && !path.startsWith("/assets/evidence/"),
+  );
   const version = createHash("sha256")
-    .update(html + assets.join("\n"))
+    .update("media-retention-v2:" + html + assets.join("\n"))
     .digest("hex")
     .slice(0, 16);
   return `const CACHE='fieldissue-shell-${version}';const ASSETS=${JSON.stringify(["/offline-shell", ...assets])};

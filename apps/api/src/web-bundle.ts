@@ -16,6 +16,8 @@ export function loadWebBundle(directory: string) {
   };
   function walk(path: string, prefix: string) {
     for (const name of readdirSync(path)) {
+      // Report photos must use lifecycle-aware media routes, never static copies.
+      if (`${prefix}/${name}` === "/assets/evidence") continue;
       const file = join(path, name);
       if (statSync(file).isDirectory()) walk(file, `${prefix}/${name}`);
       else if (types[extname(name)])

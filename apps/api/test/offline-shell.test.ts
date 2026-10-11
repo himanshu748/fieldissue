@@ -65,3 +65,40 @@ describe("offline shell privacy boundary", () => {
     expect(await (await response!).text()).toBe("/offline-shell");
   });
 });
+
+it("purges old shell caches and never precaches report media or legacy evidence", async () => {
+  const events: Record<string, (e: any) => void> = {};
+  const added: string[] = [],
+    deleted: string[] = [];
+  let pending: Promise<void>;
+  runInNewContext(
+    serviceWorker("html", [
+      "/assets/app.js",
+      "/assets/evidence/lucknow-original.jpg",
+      "/media/photo.jpg",
+    ]),
+    {
+      self: {
+        location: { origin: "https://field.test" },
+        addEventListener: (n: string, f: any) => (events[n] = f),
+        skipWaiting: async () => {},
+        clients: { claim: async () => {} },
+      },
+      URL,
+      Response,
+      caches: {
+        open: async () => ({
+          addAll: async (urls: string[]) => added.push(...urls),
+        }),
+        keys: async () => ["fieldissue-shell-old", "unrelated"],
+        delete: async (key: string) => deleted.push(key),
+      },
+    },
+  );
+  events.install!({ waitUntil: (p: Promise<void>) => (pending = p) });
+  await pending!;
+  expect(added).toEqual(["/offline-shell", "/assets/app.js"]);
+  events.activate!({ waitUntil: (p: Promise<void>) => (pending = p) });
+  await pending!;
+  expect(deleted).toEqual(["fieldissue-shell-old"]);
+});

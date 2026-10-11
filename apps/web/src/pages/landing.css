@@ -584,3 +584,6 @@
   flex-direction: column;
   gap: 3px;
 }
+
+.landing-photo-unavailable { min-height: 16rem; padding: 2rem; display: grid; place-items: center; background: var(--color-muted, #e6e2d8); color: #292923; text-align: center; }
+.landing-photo-unavailable[hidden] { display: none; }

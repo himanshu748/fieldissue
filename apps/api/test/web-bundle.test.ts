@@ -46,3 +46,30 @@ it("serves SPA routes and only allowlisted build assets without exposing private
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+it("rejects legacy bundled evidence and excludes it from the offline manifest", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "fieldissue-retention-"));
+  try {
+    mkdirSync(join(dir, "assets/evidence"), { recursive: true });
+    writeFileSync(join(dir, "index.html"), "<h1>Synthetic shell</h1>");
+    writeFileSync(
+      join(dir, "assets/evidence/lucknow-original.jpg"),
+      "synthetic bytes",
+    );
+    const app = createApp({
+      webDirectory: dir,
+      repository: {} as any,
+      service: {} as any,
+      storage: {} as any,
+      maxUploadBytes: 1024,
+    });
+    expect(
+      (await app.request("/assets/evidence/lucknow-original.jpg")).status,
+    ).toBe(404);
+    expect(await (await app.request("/sw.js")).text()).not.toContain(
+      '"/assets/evidence/lucknow-original.jpg"',
+    );
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
