@@ -1,3 +1,4 @@
+import { TabPFNMeasuredCurve } from "@/components/field/tabpfn-curve";
 import { TabPFNDemo } from "@/components/field/tabpfn-demo";
 import { TinkerNote } from "@/components/field/tinker-note";
 import { RecordedTinkerExamples } from "@/components/field/tinker-examples";
@@ -43,6 +44,8 @@ function IntegrationRow({ item }: { item: IntegrationStatus }) {
 function MetricsTable({ metrics }: { metrics: Record<string, unknown> }) {
   const base = metrics.base as Record<string, number> | undefined;
   const tuned = metrics.fineTuned as Record<string, number> | undefined;
+  const fewShot = metrics.fewShot as Record<string, number> | undefined;
+  const secondSeed = metrics.secondSeed as Record<string, number> | undefined;
   const total = metrics.heldOutExamples as number | undefined;
   if (!base || !tuned)
     return <pre className="overflow-x-auto bg-muted p-3 font-mono text-xs">{JSON.stringify(metrics, null, 2)}</pre>;
@@ -58,6 +61,8 @@ function MetricsTable({ metrics }: { metrics: Record<string, unknown> }) {
             <th scope="col" className="py-2 font-mono text-xs uppercase">Metric</th>
             <th scope="col" className="py-2 text-right font-mono text-xs uppercase">Base</th>
             <th scope="col" className="py-2 text-right font-mono text-xs uppercase">Fine-tuned</th>
+            {fewShot ? <th scope="col" className="py-2 text-right font-mono text-xs uppercase">Five-shot</th> : null}
+            {secondSeed ? <th scope="col" className="py-2 text-right font-mono text-xs uppercase">Seed 1729</th> : null}
           </tr>
         </thead>
         <tbody>
@@ -70,10 +75,12 @@ function MetricsTable({ metrics }: { metrics: Record<string, unknown> }) {
                 {base[k] ?? "n/a"}
                 {total ? `/${total}` : ""}
               </td>
-              <td className={cn("py-2 text-right font-mono", (tuned[k] ?? 0) > (base[k] ?? 0) && "text-grass")}>
+              <td className={cn("py-2 text-right font-mono", (k === "costlyErrorOrInvalid" ? (tuned[k] ?? 0) < (base[k] ?? 0) : (tuned[k] ?? 0) > (base[k] ?? 0)) && "text-grass")}>
                 {tuned[k] ?? "n/a"}
                 {total ? `/${total}` : ""}
               </td>
+              {fewShot ? <td className="py-2 text-right font-mono">{fewShot[k] ?? "n/a"}{total ? `/${total}` : ""}</td> : null}
+              {secondSeed ? <td className="py-2 text-right font-mono">{secondSeed[k] ?? "n/a"}{total ? `/${total}` : ""}</td> : null}
             </tr>
           ))}
         </tbody>
@@ -180,7 +187,7 @@ function LabContent({ issueId }: { issueId?: string }) {
   }, []);
   const latestObservationId = latest.data?.observations.at(-1)?.id;
   useEffect(() => {
-    if (["#tinker-examples", "#backboard", "#github-actions", "#entire-evidence"].includes(hash) && evaluations.data && integrations.data && !latest.loading)
+    if (["#tinker-examples", "#tabpfn-learning-curve", "#backboard", "#github-actions", "#entire-evidence"].includes(hash) && evaluations.data && integrations.data && !latest.loading)
       document.getElementById(hash.slice(1))?.scrollIntoView({ block: "start" });
   }, [hash, evaluations.data, integrations.data, latest.loading]);
   const byId = new Map((integrations.data?.integrations ?? []).map((i) => [i.id.toLowerCase(), i]));
@@ -193,8 +200,7 @@ function LabContent({ issueId }: { issueId?: string }) {
         <p className="eyebrow text-muted-foreground">Model Lab · for developers and judges</p>
         <h1 className="mt-2 text-3xl leading-tight font-bold uppercase sm:text-5xl">Inspect the machinery</h1>
         <p className="mt-3 max-w-2xl text-muted-foreground">
-          Everything here is read from this deployment. If a service is not configured, it says so. No output on this page is
-          generated for display.
+          Everything here is read from this deployment. If a service is not configured, it says so. Recorded evaluations are labelled separately from live provider actions.
         </p>
       </div>
 
@@ -261,6 +267,7 @@ function LabContent({ issueId }: { issueId?: string }) {
       <section className="flex flex-col gap-4" aria-labelledby="tabpfn-demo">
         <h2 id="tabpfn-demo" className="text-2xl font-bold uppercase">Revisit scenario tester</h2>
         <p><a className="underline" href="/v1/openapi" target="_blank" rel="noreferrer">Public read API specification</a> · Public reports only; rate limits apply.</p>
+      {evaluations.data?.tabpfnLearningCurve ? <TabPFNMeasuredCurve data={evaluations.data.tabpfnLearningCurve} /> : null}
       <TabPFNDemo available={byId.get("tabpfn")?.status === "configured"} />
       </section>
 

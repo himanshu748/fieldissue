@@ -25,6 +25,7 @@ import { comparisonModels, type ModelComparisonService } from "./backboard.js";
 import type { SemanticSearch } from "./semantic.js";
 import { evaluations } from "./model-lab.js";
 import { tinkerExamples } from "./tinker-examples.js";
+import { tabpfnLearningCurve } from "./tabpfn-demo.js";
 import { loadWebBundle } from "./web-bundle.js";
 import {
   landingPageHtml,
@@ -835,6 +836,7 @@ export function createApp(deps: Dependencies) {
   app.get("/v1/model-lab/evaluations", (c) =>
     c.json({
       tinkerExamples,
+      tabpfnLearningCurve,
       evaluations: evaluations.map((e) => ({
         ...e,
         serving:

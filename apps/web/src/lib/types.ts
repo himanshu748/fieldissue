@@ -179,12 +179,29 @@ export interface TinkerExamples {
   model: string;
   modelVersion: string;
   evidenceUrl: string;
+  summary?: {
+    slice: string;
+    model: string;
+    n: number;
+    severityAccuracy: number;
+    schemaRate: number;
+    categoryAccuracy: number;
+    costlyErrorRate: number;
+    ci95: number[];
+    macroF1: number;
+  }[];
   samples: {
     id: string;
     note: string;
     target: NotePrediction;
-    basePrediction: NotePrediction;
-    fineTunedPrediction: NotePrediction;
+    language?: "english" | "hindi" | "hinglish";
+    source?: "synthetic" | "public-source";
+    sourceUrl?: string;
+    basePrediction: NotePrediction | null;
+    fewShotPrediction?: NotePrediction | null;
+    fineTunedPrediction: NotePrediction | null;
+    secondSeedPrediction?: NotePrediction | null;
+    rawOutputs?: Record<string, string>;
   }[];
 }
 
@@ -210,7 +227,10 @@ export interface AudioSummary {
   text?: string;
 }
 
-export const COMPARISON_MODELS = ["google/gemma-3-27b-it", "qwen/qwen-2.5-72b-instruct"] as const;
+export const COMPARISON_MODELS = [
+  "google/gemma-3-27b-it",
+  "qwen/qwen-2.5-72b-instruct",
+] as const;
 
 export interface ModelInterpretation {
   status: "complete" | "pending" | "failed";
@@ -218,7 +238,12 @@ export interface ModelInterpretation {
   provider?: string;
   promptVersion?: string;
   inputModality?: string;
-  result?: { category: Category; severity: Severity; rationale: string; evidence: string[] };
+  result?: {
+    category: Category;
+    severity: Severity;
+    rationale: string;
+    evidence: string[];
+  };
   latencyMs?: number | null;
   inputTokens?: number | null;
   outputTokens?: number | null;
@@ -237,7 +262,30 @@ export interface ModelComparisonResult {
 }
 
 export interface SemanticResult {
-  items: (Issue & { similarity: number; score: number; indexedAt?: string; model?: string })[];
+  items: (Issue & {
+    similarity: number;
+    score: number;
+    indexedAt?: string;
+    model?: string;
+  })[];
   method: string;
   model: string;
+}
+
+export interface TabPFNLearningCurve {
+  recordedAt: string;
+  decisionRule: string;
+  decisionImplementation: string;
+  useful: boolean;
+  evidenceUrl: string;
+  chartUrl: string;
+  confidenceIntervalMethod: string;
+  points: {
+    trainRows: number;
+    summary: Record<
+      string,
+      Record<string, { mean: number; ci95: number[]; repeats: number }>
+    >;
+    pairedAucDifferenceVsLogistic: { mean: number; ci95: number[] };
+  }[];
 }
