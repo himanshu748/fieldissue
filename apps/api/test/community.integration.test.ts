@@ -203,6 +203,32 @@ suite("account and community boundaries", () => {
       }),
     ).rejects.toMatchObject({ code: "VISIT_EVIDENCE_REQUIRED" });
   });
+  it("keeps the previous compared observation eligible when a newer photo is excluded", async () => {
+    const newest = (
+      await pool.query(
+        "INSERT INTO observations(issue_id,note,media_url,storage_key,mime_type,latitude,longitude,captured_at,exclusion_type) VALUES($1,'wrong photo','https://example.invalid/excluded','fixture-excluded','image/png',0,0,now()+interval '1 second','WRONG_PHOTOGRAPH') RETURNING id",
+        [issue],
+      )
+    ).rows[0].id;
+    try {
+      await expect(
+        community.evidence(
+          pool as never,
+          { id: issue, status: "OPEN" },
+          newest,
+        ),
+      ).rejects.toMatchObject({ code: "EVIDENCE_CHANGED" });
+      await expect(
+        community.evidence(
+          pool as never,
+          { id: issue, status: "OPEN" },
+          second,
+        ),
+      ).resolves.toBeUndefined();
+    } finally {
+      await pool.query("DELETE FROM observations WHERE id=$1", [newest]);
+    }
+  });
   it("requires current nonduplicate evidence and two independent reviewers, atomically resolving once", async () => {
     await expect(
       community.propose(owner, space, {
