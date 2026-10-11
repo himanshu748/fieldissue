@@ -270,9 +270,9 @@ function LabContent({ issueId }: { issueId?: string }) {
         <ul className="space-y-2">
           <li><a className="underline min-h-11 inline-flex items-center" href="https://dev.to/challenges/hacktoberfest-week1-2026-10-05" target="_blank" rel="noreferrer">Official category rules include GitHub Actions</a></li>
           <li><a className="underline min-h-11 inline-flex items-center" href="https://github.com/himanshu748/fieldissue/blob/main/.github/workflows/backend-ci.yml" target="_blank" rel="noreferrer">Inspect the CI workflow</a></li>
-          <li><a className="underline min-h-11 inline-flex items-center" href="https://github.com/himanshu748/fieldissue/actions/runs/38030232150" target="_blank" rel="noreferrer">Passing CI run from 10 October</a></li>
+          <li><a className="underline min-h-11 inline-flex items-center" href="https://github.com/himanshu748/fieldissue/actions/runs/38112115842" target="_blank" rel="noreferrer">Passing CI run from 11 October</a></li>
           <li><a className="underline min-h-11 inline-flex items-center" href="https://github.com/himanshu748/fieldissue/blob/main/.github/workflows/demo-monitor.yml" target="_blank" rel="noreferrer">Inspect the read-only demo monitor</a></li>
-          <li><a className="underline min-h-11 inline-flex items-center" href="https://github.com/himanshu748/fieldissue/actions/runs/38028160908" target="_blank" rel="noreferrer">Passing monitor run from 10 October</a></li>
+          <li><a className="underline min-h-11 inline-flex items-center" href="https://github.com/himanshu748/fieldissue/actions/runs/38104193861" target="_blank" rel="noreferrer">Passing monitor run from 11 October</a></li>
         </ul>
       </section>
 
