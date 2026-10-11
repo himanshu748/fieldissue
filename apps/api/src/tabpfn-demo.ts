@@ -1,3 +1,4 @@
+export { tabpfnLearningCurve } from "./tabpfn-curve.js";
 import { reserveModelAllowance } from "./model-allowance.js";
 import { createHash, randomUUID } from "node:crypto";
 import { z } from "zod";
