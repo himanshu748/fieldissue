@@ -1,0 +1,18 @@
+{
+  "source_sha256": "cdae2ea9b2dd890642a062167c1e24d2addec01591e2148dbc8d6e4c67834aca",
+  "source_session_id": "01a114cc-bf9a-73b1-a1b6-ef3a7cda04db",
+  "included_source_rows": [
+    20489,
+    20494,
+    20546,
+    20614,
+    20621,
+    20625,
+    20629,
+    20632,
+    20698
+  ],
+  "excerpt_sha256": "13b9913f4b31e02ef806dc5c3620cedc42e8360c58e7fe8f923af270fbdf6cdf",
+  "omitted": "Prior tasks, internal reasoning, private metadata and unrelated tool calls",
+  "redaction": "Private local paths removed; coding tool records otherwise preserved"
+}
