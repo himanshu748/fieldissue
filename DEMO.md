@@ -9,7 +9,7 @@ resolve it yourself.
 
 ## Verified build
 
-[Main CI run 38117561736](https://github.com/himanshu748/fieldissue/actions/runs/38117561736) passed on 11 October 2026 at commit `89801d3`: **195 API tests**, **79 Python tests** and **14 browser tests**, extracted from its logs. Docker and HTTP checks also passed. CI uses isolated provider fixtures; hosted checks are separate.
+[Main CI run 38125089592](https://github.com/himanshu748/fieldissue/actions/runs/38125089592) passed on 11 October 2026 at commit `aefd36a`: **199 API tests**, **93 Python tests** and **16 browser tests**, extracted from its logs. Docker and HTTP checks also passed. CI uses isolated provider fixtures; hosted checks are separate.
 
 The independent evaluation PR passed [CI run 38124482114](https://github.com/himanshu748/fieldissue/actions/runs/38124482114) at `026a550` with **199 API tests**, **93 Python tests** and **16 browser tests**. One live-mutation browser test was intentionally skipped. Counts were extracted from the logs; container, PostGIS and HTTP checks also passed. This proves the candidate branch, not a hosted release.
 
@@ -55,7 +55,7 @@ The model never resolves an issue itself. Ordinary status changes require report
 
 The Lab includes real Tinker trained-note interpretation and a real TabPFN API scenario tester. This PR adds 234 recorded Tinker test notes with language, source and severity-error filters. Show the five-shot comparison, an error and the 30-report public slice. Public labels are assistant rubric labels, not human ground truth. Show the category regression: 25/30 five-shot to 20/30 primary fine-tuned, alongside severity improving 15/30 to 23/30.
 
-The new synthetic TabPFN curve uses six training sizes, five repeats and a fixed 500-row test. Its predeclared usefulness rule failed because AUC stayed below logistic regression at 32, 64 and 128 rows. The old live scenario model is unchanged. Backboard compares two real open models. Saved responses are identified as saved. The new recorded views and candidate checkpoint await merge and deployment approval; the local compiled provider call has succeeded.
+The new synthetic TabPFN curve uses six training sizes, five repeats and a fixed 500-row test. Its predeclared usefulness rule failed because AUC stayed below logistic regression at 32, 64 and 128 rows. The old live scenario model is unchanged. Backboard compares two real open models. Saved responses are identified as saved. The new recorded views and validation-selected checkpoint are live after approval. One fresh hosted call returned 200 with `cached: false`. It overcalled the original cut-tree note as HIGH / major obstruction without stated obstruction. Show the error honestly; note interpretation never changes issue status. [Hosted proof](docs/verification/model-evaluation-hosted-2026-10-11.json).
 
 Walks can be saved and loaded manually across signed-in sessions. Google Maps walking directions require consent to share coordinates; internal map lines are straight connections. The PWA stores offline photo captures with explicit consent and manual retry, but does not provide offline AI or maps. Calendar files and in-app reminders do not send email or push. Open311 downloads are exports, not government submissions.
 

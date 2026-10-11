@@ -39,11 +39,11 @@ An exploratory scenario-family bootstrap added after measurement resampled 18 sy
 
 Read the slices separately. Public-source references have no LOW or CRITICAL labels, so the fixed four-label macro F1 has a maximum of 0.5 there. Synthetic notes share template structure. All 95% intervals use 1,000 paired note-index resamples and cannot establish field generalization. McNemar p values are unadjusted. Latency includes queue time under eight concurrent requests.
 
-The selected checkpoint won against the previous checkpoint on validation severity accuracy using the same v3 prompt. That selection is separate from the final test results. Deployment and one hosted live note call require explicit merge approval and remain unverified in this PR.
+The selected checkpoint won against the previous checkpoint on validation severity accuracy using the same v3 prompt. That selection is separate from the final test results. The candidate was deployed after explicit approval. [Hosted proof](model-evaluation-hosted-2026-10-11.json) records one fresh call, including its unsupported HIGH / major obstruction claim on a sparse cut-tree note. Successful transport is separate from semantic correctness.
 
 Provider-verified selected checkpoint expiry: `2026-11-06T23:58:59.818852+00:00`. New checkpoints were shortened to expire before the November 8 sponsor-credit expiry. Earlier evaluation artifacts and checkpoints were not changed.
 
-Observed-operation token and storage upper estimate: $0.938267 in credits. Preflight maximum: $5.751388. Cash: $0. The cost record includes current provider usage events. They lag real time and are not a reconciled invoice.
+Observed-operation token and storage upper estimate: $0.938356 in credits. Preflight maximum: $5.751388. Cash: $0. The cost record includes current provider usage events. They lag real time and are not a reconciled invoice.
 
 [Every prediction and per-language metric](tinker-evaluation-2026-10-11.json) · [Validation outputs and training steps](tinker-training-2026-10-11.json) · [Cost accounting](tinker-cost-2026-10-11.json)
 

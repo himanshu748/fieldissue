@@ -90,6 +90,6 @@ See the [PRD audit](verification/prd-audit-2026-10-08.md) for the October 8 rele
 
 ## Independent evaluation, 11 October 2026
 
-The [Tinker accounting record](verification/tinker-cost-2026-10-11.json) gives a $0.938267 observed token and storage upper estimate for the new benchmark plus one local compiled-provider call. Provider usage events lag, so this is not a reconciled invoice. The $5.751388 preflight bound stayed within sponsor credits. New sampler retention ends before the November 8 credit expiry.
+The [Tinker accounting record](verification/tinker-cost-2026-10-11.json) gives a $0.938356 observed token and storage upper estimate for the new benchmark plus one local compiled-provider call and one fresh hosted note call. Provider usage events lag, so this is not a reconciled invoice. The $5.751388 preflight bound stayed within sponsor credits. New sampler retention ends before the November 8 credit expiry.
 
-The [TabPFN learning curve](verification/tabpfn-learning-curve-2026-10-11.json) reserved 300,000 free prediction tokens across 30 real API requests. Its small-data usefulness rule failed. Cash spent: $0. No payment method, plan change or paid resource was added. Hosted checkpoint rollout remains gated on explicit merge approval.
+The [TabPFN learning curve](verification/tabpfn-learning-curve-2026-10-11.json) reserved 300,000 free prediction tokens across 30 real API requests. Its small-data usefulness rule failed. Cash spent: $0. No payment method, plan change or paid resource was added. [Hosted checkpoint rollout](verification/model-evaluation-hosted-2026-10-11.json) was verified after explicit approval. The fresh note output retained a semantic overcall; it did not change issue status.

@@ -5,7 +5,7 @@ Read the frozen [rubric](SEVERITY_RUBRIC.md), [protocol](experiment_protocol.jso
 
 Validation selected learning rate 0.0001, two epochs and rank 16. Primary seed 42 scored 178/204 severity against 159/204 fixed five-shot and 115/204 zero-shot. Seed 1729 scored 179/204 with two invalid outputs. Public primary severity was 23/30 against 15/30 five-shot but category accuracy fell from 25/30 to 20/30. Publish both. Template dependence limits field generalization.
 
-[Complete summary](../../../docs/verification/tinker-evaluation-2026-10-11.md), [every prediction](../../../docs/verification/tinker-evaluation-2026-10-11.json), [training selection](../../../docs/verification/tinker-training-2026-10-11.json) and [cost record](../../../docs/verification/tinker-cost-2026-10-11.json) preserve all runs. Candidate expiry is 6 November 2026 UTC. The observed token and storage upper estimate is $0.938267 in credits; billing events lag and are not reconciled. Cash is $0. The preflight bound was $5.751388, below the approved $10 threshold.
+[Complete summary](../../../docs/verification/tinker-evaluation-2026-10-11.md), [every prediction](../../../docs/verification/tinker-evaluation-2026-10-11.json), [training selection](../../../docs/verification/tinker-training-2026-10-11.json) and [cost record](../../../docs/verification/tinker-cost-2026-10-11.json) preserve all runs. Candidate expiry is 6 November 2026 UTC. The observed token and storage upper estimate is $0.938356 in credits; billing events lag and are not reconciled. Cash is $0. The preflight bound was $5.751388, below the approved $10 threshold.
 
 Run modules from `services/intelligence` with `TINKER_API_KEY` present. Reproduction consumes credits. The runner refuses an existing started output directory; review usage before authorizing a rerun.
 
@@ -15,7 +15,7 @@ uv run --frozen --extra evaluation python -m training.run_independent --help
 uv run --frozen --extra evaluation python -m training.publish_independent /private/run ../../docs/verification
 ```
 
-The generated production prompt exactly matches the evaluated v3 prompt. Configure `TINKER_PROMPT_VERSION=fieldissue-note-json-v3` and the selected `TINKER_MODEL_PATH` together after merge approval. A real API call through the compiled provider succeeded locally; hosted rollout is pending. The new Lab shows all 234 notes with language, source and severity-outcome filters. Its public category regression stays visible.
+The generated production prompt exactly matches the evaluated v3 prompt. The approved hosted deployment configures `TINKER_PROMPT_VERSION=fieldissue-note-json-v3` and the selected `TINKER_MODEL_PATH` together. A real compiled-provider call and one fresh hosted call succeeded. The hosted call overcalled a sparse cut-tree note as HIGH / major obstruction. Its schema was valid but that unsupported claim remains a model error. [Hosted proof](../../../docs/verification/model-evaluation-hosted-2026-10-11.json). The new Lab shows all 234 notes with language, source and severity-outcome filters. Its public category regression stays visible.
 
 The expanded [synthetic TabPFN experiment](revisit-demo/README.md) uses `TABPFN_TOKEN` and the free Prior Labs API. It reserved 300,000 prediction tokens for 30 fits. The small-data usefulness rule failed. Keep its synthetic labels and the old generator intact.
 
