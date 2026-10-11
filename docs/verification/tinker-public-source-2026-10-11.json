@@ -1,0 +1,8 @@
+{
+  "sourceUrl": "https://311.boston.gov/open311/v2/requests/101006763032.json",
+  "httpStatus": 200,
+  "sourceDescriptionMatchesFrozenNote": true,
+  "noteSha256": "3db3c245b82caf7824efc08e919c2e8686f559f7135cab0e2fa4276b72a0001c",
+  "license": "ODC-PDDL-1.0",
+  "licenseMetadataUrl": "https://data.boston.gov/api/3/action/package_show?id=311-service-requests"
+}

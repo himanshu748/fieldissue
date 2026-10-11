@@ -88,7 +88,9 @@ export class TinkerNoteProvider {
           prompt,
           max_tokens:
             this.promptVersion === "fieldissue-note-json-v3" ? 384 : 512,
-          seed: 42,
+          ...(this.promptVersion === "fieldissue-note-json-v3"
+            ? { seed: 42 }
+            : {}),
           temperature: 0,
           stop: ["<|im_end|>"],
         }),
