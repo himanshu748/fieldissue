@@ -106,3 +106,29 @@ def paired_difference(rows: list[dict], first: list[dict], second: list[dict]) -
         "pairedBootstrap95": [quantile(boot, 0.025), quantile(boot, 0.975)],
         "mcnemar": mcnemar(a, b),
     }
+
+
+def clustered_difference(rows: list[dict], first: list[dict], second: list[dict]) -> dict:
+    """Exploratory family resampling exposes shared-template dependence."""
+    groups = {}
+    for row, a, b in zip(rows, first, second, strict=True):
+        score_a = (
+            a["prediction"] is not None and a["prediction"]["severity"] == row["target"]["severity"]
+        )
+        score_b = (
+            b["prediction"] is not None and b["prediction"]["severity"] == row["target"]["severity"]
+        )
+        groups.setdefault(row["scenarioFamily"], []).append(int(score_b) - int(score_a))
+    rng = random.Random(11026)
+    names = list(groups)
+    samples = [
+        mean([v for name in rng.choices(names, k=len(names)) for v in groups[name]])
+        for _ in range(1000)
+    ]
+    return {
+        "families": len(groups),
+        "resamples": 1000,
+        "seed": 11026,
+        "ci95": [quantile(samples, 0.025), quantile(samples, 0.975)],
+        "method": "Exploratory scenario-family bootstrap added after measurement. All rows within each resampled family are kept. No model selection uses this diagnostic.",
+    }

@@ -93,3 +93,15 @@ def test_checkpoint_retention_is_bounded_before_credit_expiry():
         retention_seconds("2026-11-07T00:00:00")
     with pytest.raises(ValueError, match="passed"):
         retention_seconds("2000-01-01T00:00:00Z")
+
+
+def test_family_bootstrap_preserves_grouped_errors():
+    from training.statistics import clustered_difference
+
+    rows = [{"scenarioFamily": "same-family", "target": {"severity": "LOW"}}] * 4
+    a = [{"prediction": {"severity": "LOW"}}] * 4
+    b = [{"prediction": {"severity": "HIGH"}}] * 4
+    result = clustered_difference(rows, a, b)
+    assert result["families"] == 1
+    assert result["ci95"] == [-1, -1]
+    assert result["resamples"] == 1000

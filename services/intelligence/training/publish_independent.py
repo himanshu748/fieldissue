@@ -26,7 +26,7 @@ def publish(run_dir, destination):
         "datasetCommit": "90bb813",
         "runnerCommitAtStart": "52b021b",
         "protocolFrozenBeforeInference": True,
-        "postRunAnalysis": "Per-language paired tests and severity confusion counts were computed from the saved predictions. No model, label, selection or baseline changed.",
+        "postRunAnalysis": "Per-language paired tests, exploratory family resampling and severity confusion counts were computed from the saved predictions. No model, label, selection or baseline changed.",
     }
     for slice_name, models in evaluation["metrics"].items():
         rows = [row for row in evaluation["samples"] if row["source"] == slice_name]
@@ -40,6 +40,9 @@ def publish(run_dir, destination):
                 )
         for seed, comparisons in evaluation["comparisons"][slice_name].items():
             for baseline, comparison in comparisons.items():
+                comparison["scenarioFamilyBootstrap"] = statistics.clustered_difference(
+                    rows, [r["outputs"][baseline] for r in rows], [r["outputs"][seed] for r in rows]
+                )
                 comparison["byLanguage"] = {}
                 for language in ["english", "hindi", "hinglish"]:
                     subset = [r for r in rows if r["language"] == language]
@@ -120,6 +123,13 @@ def publish(run_dir, destination):
                 f"Metrics worse than the five-shot baseline on {slice_name}: {', '.join(worse)}."
             )
         lines.append("")
+    family = evaluation["comparisons"]["synthetic"]["fine_tuned_seed42"]["few_shot"][
+        "scenarioFamilyBootstrap"
+    ]
+    lines += [
+        f"An exploratory scenario-family bootstrap added after measurement resampled {family['families']} synthetic object families. Primary versus five-shot severity difference interval: [{family['ci95'][0]:+.1%}, {family['ci95'][1]:+.1%}]. This diagnostic keeps related notes together and did not influence selection.",
+        "",
+    ]
     lines += [
         "Read the slices separately. Public-source references have no LOW or CRITICAL labels, so the fixed four-label macro F1 has a maximum of 0.5 there. Synthetic notes share template structure. All 95% intervals use 1,000 paired note-index resamples and cannot establish field generalization. McNemar p values are unadjusted. Latency includes queue time under eight concurrent requests.",
         "",
