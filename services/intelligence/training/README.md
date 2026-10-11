@@ -15,7 +15,7 @@ uv run --frozen --extra evaluation python -m training.run_independent --help
 uv run --frozen --extra evaluation python -m training.publish_independent /private/run ../../docs/verification
 ```
 
-The generated production prompt exactly matches the evaluated v3 prompt. Configure `TINKER_PROMPT_VERSION=v3` and the selected `TINKER_MODEL_PATH` together after merge approval. A real API call through the compiled provider succeeded locally; hosted rollout is pending. The new Lab shows all 234 notes with language, source and severity-outcome filters. Its public category regression stays visible.
+The generated production prompt exactly matches the evaluated v3 prompt. Configure `TINKER_PROMPT_VERSION=fieldissue-note-json-v3` and the selected `TINKER_MODEL_PATH` together after merge approval. A real API call through the compiled provider succeeded locally; hosted rollout is pending. The new Lab shows all 234 notes with language, source and severity-outcome filters. Its public category regression stays visible.
 
 The expanded [synthetic TabPFN experiment](revisit-demo/README.md) uses `TABPFN_TOKEN` and the free Prior Labs API. It reserved 300,000 prediction tokens for 30 fits. The small-data usefulness rule failed. Keep its synthetic labels and the old generator intact.
 

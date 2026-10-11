@@ -12,7 +12,7 @@ Configure `TABPFN_API_KEY` and the returned `TABPFN_FITTED_MODEL_ID` only on the
 
 ## Larger fixed-test evaluation
 
-The [11 October learning curve](../../../docs/verification/tabpfn-learning-curve-2026-10-11.md) uses `generate_v2.py`: 2,000 training-pool rows and a fixed 500-row test from the same invented noisy formula. `learning_curve.py` compares majority, standardized default L2 logistic regression, histogram boosting, TabPFN-3.5 with one estimator and oracle probabilities. Each size 32, 64, 128, 256, 512 and 1,024 has five nested training repeats. The protocol was committed before inference.
+The [11 October learning curve](../../../../docs/verification/tabpfn-learning-curve-2026-10-11.md) uses `generate_v2.py`: 2,000 training-pool rows and a fixed 500-row test from the same invented noisy formula. `learning_curve.py` compares majority, standardized default L2 logistic regression, histogram boosting, TabPFN-3.5 with one estimator and oracle probabilities. Each size 32, 64, 128, 256, 512 and 1,024 has five nested training repeats. The protocol was committed before inference.
 
 TabPFN did not beat logistic regression on mean AUC at any of the three sizes at or below 128. The usefulness rule failed. All 30 runs, accuracy, AUC, Brier score, log loss and repeat intervals are published. This curve does not replace the live 96-row scenario fit or enable real recommendations.
 

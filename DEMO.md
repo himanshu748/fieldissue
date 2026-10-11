@@ -11,6 +11,8 @@ resolve it yourself.
 
 [Main CI run 38117561736](https://github.com/himanshu748/fieldissue/actions/runs/38117561736) passed on 11 October 2026 at commit `89801d3`: **195 API tests**, **79 Python tests** and **14 browser tests**, extracted from its logs. Docker and HTTP checks also passed. CI uses isolated provider fixtures; hosted checks are separate.
 
+The independent evaluation PR passed [CI run 38124482114](https://github.com/himanshu748/fieldissue/actions/runs/38124482114) at `026a550` with **199 API tests**, **93 Python tests** and **16 browser tests**. One live-mutation browser test was intentionally skipped. Counts were extracted from the logs; container, PostGIS and HTTP checks also passed. This proves the candidate branch, not a hosted release.
+
 ## Try it
 
 **Entire proof:** open [Model Lab's development record](https://fieldissue-demo.onrender.com/app/lab#entire-evidence), then its [public checkpoint](https://entire.io/gh/himanshu748/fieldissue/commit/e5c5ec14baafdc25c40b364c9678f1c181b1e264). Show ID `01M4MS0B5PNB39JGA84HZTC0GH`, expand the reviewed session response and open View changes to see `scripts/verify-entire-checkpoint.sh`. Both views were verified in signed-out Safari Private Browsing on 11 October. The shared record is a reviewed excerpt of actual coding work. [Capture and privacy verification](docs/verification/entire-public-checkpoint-2026-10-11.md).
