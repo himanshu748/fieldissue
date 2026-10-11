@@ -280,7 +280,7 @@ When changing the host API `PORT`, also update `MEDIA_BASE_URL` so newly uploade
 | Sentry | Opt-in sanitized API/Python diagnostics with `SENTRY_DSN`; no image bytes, notes, raw model output, credentials, or request bodies are intentionally collected |
 | Tinker | Live fine-tuned Qwen3 field-note interpretation on issue pages and Model Lab, with explicit consent, provenance and saved results. Set `TINKER_API_KEY`, `TINKER_MODEL_PATH`, `TINKER_CHECKPOINT_EXPIRES_AT`. Synthetic training; Gemma remains the vision model |
 | DigitalOcean | Portable production Docker image and standard `PORT`, `0.0.0.0`, health/readiness interfaces; no DigitalOcean resources or deployment were created |
-| Entire | Actual Claude implementation checkpoint, reviewed nine-message excerpt linked from Model Lab, plus private DEV session 648 prepared for submission. Full transcript remains local |
+| Entire | [Public coding checkpoint](https://entire.io/gh/himanshu748/fieldissue/commit/e5c5ec14baafdc25c40b364c9678f1c181b1e264), ID `01M4MS0B5PNB39JGA84HZTC0GH`, with reviewed session and code diff verified signed out. Also includes the historical Claude excerpt in Model Lab. Full original transcripts remain local |
 
 These names describe implemented interfaces, not partnerships or endorsements. Optional integrations can incur provider charges when enabled. Confirm data-sharing, licenses, credentials, and budget in your own deployment before making live calls.
 

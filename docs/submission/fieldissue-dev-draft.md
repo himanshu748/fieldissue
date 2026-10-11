@@ -93,7 +93,7 @@ The application is MIT-licensed. Hosted providers retain their own terms; using 
 
 Codex implemented backend work and performed integration and browser verification. Claude Opus implemented the frontend and later performed two source reviews of the P2 changes. Those reviews did not run the deployment or substitute for acceptance testing.
 
-The Entire CLI captured the frontend implementation session. A [reviewed excerpt of nine actual messages](https://github.com/himanshu748/fieldissue/blob/main/docs/verification/entire-v2-curated-session.json) is public, with private paths and tool context removed. Raw agent logs remain private. The landing-page park illustration was generated with Codex and labeled as an illustration; it is never used as field evidence. This write-up was prepared with AI assistance.
+The Entire CLI captured the development session. [Checkpoint `01M4MS0B5PNB39JGA84HZTC0GH`](https://entire.io/gh/himanshu748/fieldissue/commit/e5c5ec14baafdc25c40b364c9678f1c181b1e264) shows a reviewed excerpt of actual Codex coding work and the committed synchronization verifier. Its session and View changes were verified in signed-out Safari Private Browsing. The earlier [reviewed excerpt of nine actual Claude messages](https://github.com/himanshu748/fieldissue/blob/main/docs/verification/entire-v2-curated-session.json) also remains public. Raw original agent logs remain private. The landing-page park illustration was generated with Codex and labeled as an illustration; it is never used as field evidence. This write-up was prepared with AI assistance.
 
 ## Prize Categories
 
@@ -107,7 +107,7 @@ Alongside overall consideration, these are the implemented partner integrations:
 | Best Use of TabPFN | Real API scenario tester and published evaluation; synthetic data only, below the majority baseline. |
 | Best Use of Backboard | Saved Gemma 3 27B and Qwen2.5 72B comparisons through one API. |
 | Best Use of ElevenLabs | Playable, cached field briefings generated from report text. |
-| Best Use of Entire | Reviewed implementation-session evidence linked above. |
+| Best Use of Entire | Public checkpoint `01M4MS0B5PNB39JGA84HZTC0GH` with session and code diff, verified signed out. |
 | Best Use of Mastra | Typed observation and revisit workflows around Gemma. |
 | Best Use of Sentry Agent Tracing | Actual evaluation spans and sanitized failure diagnosis, with linked trace/event evidence. |
 | Best Use of SerpApi | Nearby place context from live search, with optional failure handling. |
