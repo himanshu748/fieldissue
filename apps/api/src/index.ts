@@ -150,6 +150,8 @@ const tinkerNotes =
           config.TINKER_API_KEY,
           config.TINKER_MODEL_PATH,
           config.TINKER_CHECKPOINT_EXPIRES_AT,
+          fetch,
+          config.TINKER_PROMPT_VERSION,
         ),
       )
     : undefined;
