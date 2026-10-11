@@ -15,7 +15,7 @@ Deadline: **12 October 2026, 06:59 UTC / 12:29 IST** (11 October, 23:59 PDT). Su
 - Tinker metrics copied from its evaluation, including unchanged category/schema scores and synthetic sample size.
 - TabPFN data origin, below-baseline result and disabled real-history ranking stated.
 - Screenshots inspected: public synthetic control and synthetic Lab result only. No credentials, private account data or private field photos.
-- Entire excerpt links to reviewed public repository evidence, not the private DEV session.
+- Entire checkpoint `01M4MS0B5PNB39JGA84HZTC0GH` links to a reviewed session and code diff verified signed out. The private DEV session is not the judge link.
 - Sentry links include actual sanitized event and trace evidence, not a fabricated trace graphic.
 - AI assistance disclosed. No claim that Claude executed hosted checks.
 - Zero-cash approach explained without claiming permanently free hosting. Render database and Tinker checkpoint expiry stated.

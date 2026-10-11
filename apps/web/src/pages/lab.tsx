@@ -278,6 +278,9 @@ function LabContent({ issueId }: { issueId?: string }) {
 
       <section className="flex flex-col gap-3" aria-labelledby="entire-evidence">
         <h2 id="entire-evidence" className="text-2xl font-bold uppercase">Entire development record</h2>
+        <p className="max-w-2xl text-muted-foreground">Open the reviewed Codex checkpoint for the synchronization verifier. Its session and committed code changes are readable without an Entire account. This is an excerpt of actual coding work from 11 October; earlier tasks and private context remain local.</p>
+        <p className="text-sm">Checkpoint ID: <code className="break-all font-mono">01M4MS0B5PNB39JGA84HZTC0GH</code></p>
+        <a className="underline min-h-11 inline-flex items-center gap-2" href="https://entire.io/gh/himanshu748/fieldissue/commit/e5c5ec14baafdc25c40b364c9678f1c181b1e264" target="_blank" rel="noreferrer">Open the public Entire checkpoint <ArrowUpRightIcon aria-hidden className="size-4" /></a>
         <p className="max-w-2xl text-muted-foreground">Read nine actual messages from Claude's frontend implementation session, captured by Entire. Private paths and tool context were removed. This record documents development; live acceptance checks are recorded separately.</p>
         <a className="underline min-h-11 inline-flex items-center gap-2" href="https://github.com/himanshu748/fieldissue/blob/main/docs/verification/entire-v2-curated-session.json" target="_blank" rel="noreferrer">Read the reviewed session excerpt <ArrowUpRightIcon aria-hidden className="size-4" /></a>
       </section>

@@ -13,6 +13,8 @@ resolve it yourself.
 
 ## Try it
 
+**Entire proof:** open [Model Lab's development record](https://fieldissue-demo.onrender.com/app/lab#entire-evidence), then its [public checkpoint](https://entire.io/gh/himanshu748/fieldissue/commit/e5c5ec14baafdc25c40b364c9678f1c181b1e264). Show ID `01M4MS0B5PNB39JGA84HZTC0GH`, expand the reviewed session response and open View changes to see `scripts/verify-entire-checkpoint.sh`. Both views were verified in signed-out Safari Private Browsing on 11 October. The shared record is a reviewed excerpt of actual coding work. [Capture and privacy verification](docs/verification/entire-public-checkpoint-2026-10-11.md).
+
 **Hosted:** [Landing page](https://fieldissue-demo.onrender.com/) · [Workspace](https://fieldissue-demo.onrender.com/app). Public guest access requires no token or account. Your browser owns the reports it creates; sign in through Community to retain ownership across devices. Operator access is for private administration, not judges.
 The free service sleeps when idle and takes about a minute to wake. Photos and comparisons survive web restarts in PostgreSQL. The free database
 expires on **7 November 2026**; export or migrate before then. The workspace shows this retention limit.

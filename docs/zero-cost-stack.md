@@ -44,7 +44,7 @@ free image does not include the local TabPFN/PyTorch runtime. TabPFN is optional
 | Sentry | Sanitized Node/Python and Tinker instrumentation implemented/tested. Existing Sponsored Team subscription has a **$0 pay-as-you-go limit** | Dedicated `fieldissue` Hono project created; controlled sanitized error verified as FIELDISSUE-1 and 37 actual Tinker evaluation events as FIELDISSUE-2 in the dashboard. See `docs/verification/sentry-live-2026-10-07.json` |
 | Tinker | Live trained note interpretation, synthetic training data, saved results and strict validation | October 9 retraining and held-out evaluation completed; 30-day checkpoint, 200 lifetime calls, total conservative credit bound $0.6462488 including prior run and storage reserve. Cash $0. See `docs/verification/tinker-*-2026-10-09.json` |
 | Prior Labs TabPFN | Live synthetic scenario tester using the real TabPFN-3.5 API | Free 5M daily / 20M monthly tokens. 96 invented training rows, 24 held-out; provenance and actual outputs published. Quoted request ceiling and 100-call lifetime cap. No real walk ranking or automatic resolution |
-| Entire | Actual captured Claude frontend session | Reviewed nine-message excerpt published in repository and linked from Model Lab. DEV session 648 is a private draft. Full transcript is not published |
+| Entire | Actual captured development sessions | [Public Codex checkpoint](https://entire.io/gh/himanshu748/fieldissue/commit/e5c5ec14baafdc25c40b364c9678f1c181b1e264), ID `01M4MS0B5PNB39JGA84HZTC0GH`, with reviewed excerpt and committed verifier. Signed-out session and diff checks passed. Historical Claude excerpt remains linked in Model Lab. Full original transcripts remain private |
 
 ## Verified boundaries
 
