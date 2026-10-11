@@ -406,7 +406,12 @@ export function createApp(deps: Dependencies) {
           ].includes(path);
       if (!allowed) forbidden();
     }
-    if (write)
+    // Uploads charge new work only after scoped idempotency validation.
+    const uploadRequest =
+      c.req.method === "POST" &&
+      (path === "/v1/issues" ||
+        /^\/v1\/issues\/[^/]+\/observations$/.test(path));
+    if (write && !uploadRequest)
       await guestAllowance(
         deps.repository.pool,
         guestId!,
@@ -1098,6 +1103,9 @@ export function createApp(deps: Dependencies) {
       media,
       scopedKey(key, c.get("guestId")),
       isGuest(c) ? c.get("guestId") : undefined,
+      isGuest(c)
+        ? () => guestAllowance(deps.repository.pool, c.get("guestId")!, true)
+        : undefined,
     );
     return c.json(result, result.replayed ? 200 : 201);
   });
@@ -1223,6 +1231,9 @@ export function createApp(deps: Dependencies) {
       input,
       media,
       scopedKey(key, c.get("guestId")),
+      isGuest(c)
+        ? () => guestAllowance(deps.repository.pool, c.get("guestId")!, true)
+        : undefined,
     );
     return c.json(result, result.replayed ? 200 : 201);
   });

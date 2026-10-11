@@ -120,8 +120,8 @@ export function CommunityPage() {
         );
       const detail = await api.issue(issueId);
       const observations = detail.observations ?? [];
-      const latest = observations.at(-1);
-      if (!latest) throw new Error("No revisit evidence available.");
+      const latest = observations.filter((observation) => !observation.exclusionType).at(-1);
+      if (!latest) throw new Error("No eligible revisit evidence remains. Restore a valid observation or add a new revisit.");
       await communityApi.action(board.id, "propose", {
         issueId,
         observationId: latest.id,

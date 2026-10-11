@@ -1,9 +1,17 @@
+import { readFile } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
 
 test.skip(
   !process.env.FIELDISSUE_LOCAL_E2E,
   "Landing checks run against an isolated local server.",
 );
+
+test.beforeEach(async ({ page }) => {
+  const body = await readFile("tests/fixtures/revisit/original.png");
+  await page.route("**/media/*.jpg", (route) =>
+    route.fulfill({ status: 200, contentType: "image/png", body }),
+  );
+});
 
 for (const width of [320, 390, 768, 1280]) {
   test(`landing fits ${width}px and keeps report/evidence paths accessible`, async ({
@@ -58,14 +66,20 @@ test("saved photo switch works by keyboard without calling model endpoints", asy
   await expect(original).toHaveAttribute("aria-pressed", "false");
   await expect(
     page.locator(".landing-viewer-image img:visible"),
-  ).toHaveAttribute("src", "/assets/evidence/lucknow-revisit.jpg");
+  ).toHaveAttribute(
+    "alt",
+    "Return photo of the same cut tree, dry branches and litter from a different angle",
+  );
   await expect(page.locator(".landing-viewer figcaption")).toContainText(
     "10 October 2026",
   );
   await original.click();
   await expect(
     page.locator(".landing-viewer-image img:visible"),
-  ).toHaveAttribute("src", "/assets/evidence/lucknow-original.jpg");
+  ).toHaveAttribute(
+    "alt",
+    "Original report photo: a cut tree surrounded by dry branches and scattered litter in Lucknow",
+  );
   expect(writes).toEqual([]);
 });
 
@@ -87,4 +101,50 @@ test("reduced motion shows content without photo transforms or hidden reveals", 
     "opacity",
     "1",
   );
+});
+
+test("removed landing photos show an unavailable state without a static fallback", async ({
+  page,
+}) => {
+  await page.route("**/media/*.jpg", (route) =>
+    route.fulfill({ status: 404, body: "Removed" }),
+  );
+  await page.goto("/");
+  await expect(page.locator(".landing-photo-main")).toContainText(
+    "Photo unavailable",
+  );
+  await expect(page.locator(".landing-photo-main img")).toHaveCount(0);
+  await expect(page.locator('img[src^="/assets/evidence/"]')).toHaveCount(0);
+});
+
+test("landing media sends the configured operator token without putting it in image URLs", async ({
+  page,
+}) => {
+  await page.addInitScript(() =>
+    sessionStorage.setItem("fieldissue-token", "isolated-landing-token"),
+  );
+  const authorizations: (string | undefined)[] = [];
+  const body = await readFile("tests/fixtures/revisit/original.png");
+  await page.route("**/media/*.jpg", async (route) => {
+    const auth = route.request().headers().authorization;
+    authorizations.push(auth);
+    await route.fulfill(
+      auth === "Bearer isolated-landing-token"
+        ? { status: 200, contentType: "image/png", body }
+        : { status: 401, body: "Access required" },
+    );
+  });
+  await page.goto("/");
+  await expect(page.locator(".landing-photo-main img")).toHaveAttribute(
+    "src",
+    /^blob:/,
+  );
+  await expect(page.locator(".landing-photo-return img")).toHaveAttribute(
+    "src",
+    /^blob:/,
+  );
+  expect(authorizations).toEqual([
+    "Bearer isolated-landing-token",
+    "Bearer isolated-landing-token",
+  ]);
 });

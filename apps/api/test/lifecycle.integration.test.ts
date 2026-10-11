@@ -4,6 +4,7 @@ import { IssueRepository } from "../src/repository.js";
 import { IssueService } from "../src/service.js";
 import { DataLifecycle } from "../src/lifecycle.js";
 import { PostgresStorageProvider } from "../src/postgres-storage.js";
+import { createApp } from "../src/app.js";
 import { migrate } from "../src/migrate.js";
 
 const suite = process.env.TEST_DATABASE_URL ? describe : describe.skip;
@@ -216,6 +217,38 @@ suite("evidence identity and complete data removal", () => {
           ])
         ).rowCount,
       ).toBe(0);
+  });
+  it("stops anonymous landing media access when its report becomes private or is removed", async () => {
+    const issue = await create();
+    const app = createApp({
+      repository,
+      service,
+      storage,
+      publicAccess: true,
+      accessToken: "local-retention-test-operator-token",
+      maxUploadBytes: 100000,
+    });
+    const url = `/media/${issue.observations[0].storageKey}`;
+    await pool.query("UPDATE issues SET is_public=true WHERE id=$1", [
+      issue.id,
+    ]);
+    const visible = await app.request(url);
+    expect(visible.status).toBe(200);
+    expect(visible.headers.get("Cache-Control")).toContain("no-store");
+    await pool.query("UPDATE issues SET is_public=false WHERE id=$1", [
+      issue.id,
+    ]);
+    expect((await app.request(url)).status).toBe(404);
+    await pool.query("UPDATE issues SET is_public=true WHERE id=$1", [
+      issue.id,
+    ]);
+    const lifecycle = new DataLifecycle(repository, storage);
+    await lifecycle.remove(issue.publicId);
+    expect((await app.request(url)).status).toBe(404);
+    await lifecycle.cleanup();
+    await expect(
+      storage.read(issue.observations[0].storageKey),
+    ).rejects.toMatchObject({ code: "MEDIA_NOT_FOUND" });
   });
   it("expires inactive records only, leaving recently updated evidence intact", async () => {
     const old = await create(),

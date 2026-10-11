@@ -1,4 +1,5 @@
-import { useRef, useState } from "react";
+import { useProtectedMedia } from "@/hooks/use-protected-media";
+import { useRef, useState, type ComponentProps } from "react";
 import {
   motion,
   useReducedMotion,
@@ -10,18 +11,44 @@ import { Link } from "react-router";
 
 export const evidencePhotos = [
   {
-    src: "/assets/evidence/lucknow-original.jpg",
+    src: "/media/6ad06b75-3c98-4c57-9d83-9c379a072e23.jpg",
     label: "Original",
     date: "9 October 2026",
     alt: "Original report photo: a cut tree surrounded by dry branches and scattered litter in Lucknow",
   },
   {
-    src: "/assets/evidence/lucknow-revisit.jpg",
+    src: "/media/78fc9ef8-bc69-41ce-8eee-e71559d7a7e4.jpg",
     label: "Return visit",
     date: "10 October 2026",
     alt: "Return photo of the same cut tree, dry branches and litter from a different angle",
   },
 ];
+
+function EvidenceImage(props: ComponentProps<"img">) {
+  const { url, error } = useProtectedMedia(
+    props.src?.replace(/^\/media\//, ""),
+  );
+  const [unavailable, setUnavailable] = useState(false);
+  return error || unavailable ? (
+    <div
+      hidden={props.hidden}
+      className="landing-photo-unavailable"
+      role="status"
+    >
+      Photo unavailable. It may have been removed or made private.
+    </div>
+  ) : url ? (
+    <img {...props} src={url} onError={() => setUnavailable(true)} />
+  ) : (
+    <div
+      hidden={props.hidden}
+      className="landing-photo-unavailable"
+      role="status"
+    >
+      Loading report photo...
+    </div>
+  );
+}
 
 export function EvidencePhotos() {
   const ref = useRef<HTMLDivElement>(null);
@@ -40,7 +67,7 @@ export function EvidencePhotos() {
         animate={{ opacity: 1, y: 0, rotate: 3 }}
         transition={{ duration: 0.8, delay: 0.1 }}
       >
-        <img
+        <EvidenceImage
           src={evidencePhotos[0].src}
           alt={evidencePhotos[0].alt}
           width={1200}
@@ -59,7 +86,7 @@ export function EvidencePhotos() {
         animate={{ opacity: 1 }}
         transition={{ duration: 0.8, delay: 0.35 }}
       >
-        <img
+        <EvidenceImage
           src={evidencePhotos[1].src}
           alt={evidencePhotos[1].alt}
           width={1200}
@@ -101,7 +128,7 @@ export function EvidenceViewer() {
       <figure>
         <div className="landing-viewer-image">
           {evidencePhotos.map((photo, index) => (
-            <img
+            <EvidenceImage
               key={photo.src}
               src={photo.src}
               alt={photo.alt}

@@ -54,7 +54,7 @@ jobs:
           import urllib.request
           assert urllib.request.urlopen("http://127.0.0.1:8000/health").status == 200
           entries = open("/proc/net/tcp").read().splitlines()[1:]
-          bindings = [line.split()[1] for line in entries if line.split()[1].endswith(":1F40")]
+          bindings = [line.split()[1] for line in entries if line.split()[1].endswith(":1F40") and line.split()[3] == "0A"]
           assert bindings == ["0100007F:1F40"], bindings
           '
       - name: Verify bundled local embeddings under the free-instance memory limit

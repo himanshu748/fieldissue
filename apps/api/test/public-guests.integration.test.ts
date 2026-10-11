@@ -334,6 +334,115 @@ suite("public guests preserve ownership and private evidence", () => {
     expect(analyses).toBe(before);
     expect((await app.request("/v1/issues")).status).toBe(200);
   });
+
+  for (const operation of ["create", "revisit"] as const)
+    for (const limit of ["uploads", "writes"] as const)
+      it(`replays a committed ${operation} after the final ${limit} slot without charging again`, async () => {
+        const session = await app.request("/app-config");
+        const cookie = session.headers.get("set-cookie")!.split(";")[0]!;
+        const guest = cookie.split("=")[1]!.split(".")[0]!;
+        let path = "/v1/issues";
+        if (operation === "revisit") {
+          const initial = await app.request(path, {
+            method: "POST",
+            headers: headers(cookie),
+            body: form(),
+          });
+          expect(initial.status).toBe(201);
+          const issue = await initial.json();
+          ids.push(issue.id);
+          keys.push(issue.observations[0].storageKey);
+          path += `/${issue.publicId}/observations`;
+        }
+        await pool.query(
+          "INSERT INTO guest_allowances(day,guest_id,writes,uploads) VALUES((clock_timestamp() AT TIME ZONE 'UTC')::date,$1,$2,$3) ON CONFLICT(day,guest_id) DO UPDATE SET writes=$2,uploads=$3",
+          [guest, limit === "writes" ? 19 : 0, limit === "uploads" ? 5 : 0],
+        );
+        const request = (
+          key = "final-slot",
+          consent = true,
+          changed = false,
+        ) => {
+          const data = form(consent);
+          if (operation === "revisit") data.delete("reporterId");
+          if (changed) data.set("note", "different input");
+          return app.request(path, {
+            method: "POST",
+            headers: { ...headers(cookie), "Idempotency-Key": key },
+            body: data,
+          });
+        };
+        const before = analyses;
+        const committed = await request();
+        expect(committed.status).toBe(201);
+        const body = await committed.json();
+        const observation =
+          operation === "create" ? body.observations[0] : body.observation;
+        keys.push(observation.storageKey);
+        if (operation === "create") ids.push(body.id);
+        const allowance = async () =>
+          (
+            await pool.query(
+              "SELECT writes,uploads FROM guest_allowances WHERE guest_id=$1",
+              [guest],
+            )
+          ).rows;
+        const used = await allowance();
+        for (let retry = 0; retry < 2; retry++) {
+          const replay = await request();
+          expect(replay.status).toBe(200);
+          expect(await replay.json()).toMatchObject({ replayed: true });
+        }
+        expect((await request("final-slot", true, true)).status).toBe(409);
+        expect((await request("final-slot", false)).status).toBe(400);
+        expect((await request("new-work")).status).toBe(429);
+        expect(await allowance()).toEqual(used);
+        expect(analyses).toBe(before + 1);
+        expect(
+          (
+            await repository.observations(
+              operation === "create" ? body.id : observation.issueId,
+            )
+          ).items,
+        ).toHaveLength(operation === "create" ? 1 : 2);
+        await pool.query("DELETE FROM guest_allowances WHERE guest_id=$1", [
+          guest,
+        ]);
+      });
+
+  it("atomically gives the final upload slot to only one concurrent new request", async () => {
+    const session = await app.request("/app-config");
+    const cookie = session.headers.get("set-cookie")!.split(";")[0]!;
+    const guest = cookie.split("=")[1]!.split(".")[0]!;
+    await pool.query(
+      "INSERT INTO guest_allowances(day,guest_id,writes,uploads) VALUES((clock_timestamp() AT TIME ZONE 'UTC')::date,$1,19,5)",
+      [guest],
+    );
+    const before = analyses;
+    const results = await Promise.all(
+      ["race-one", "race-two"].map((key) =>
+        app.request("/v1/issues", {
+          method: "POST",
+          headers: { ...headers(cookie), "Idempotency-Key": key },
+          body: form(),
+        }),
+      ),
+    );
+    expect(results.map((r) => r.status).sort()).toEqual([201, 429]);
+    const issue = await results.find((r) => r.status === 201)!.json();
+    ids.push(issue.id);
+    keys.push(issue.observations[0].storageKey);
+    expect(analyses).toBe(before + 1);
+    expect(
+      (
+        await pool.query(
+          "SELECT writes,uploads FROM guest_allowances WHERE guest_id=$1",
+          [guest],
+        )
+      ).rows[0],
+    ).toEqual({ writes: 20, uploads: 6 });
+    await pool.query("DELETE FROM guest_allowances WHERE guest_id=$1", [guest]);
+  });
   it("gates trained-note processing by explicit consent and report ownership", async () => {
     const observationId = (await repository.get(published.id)).observations[0]!
       .id;
