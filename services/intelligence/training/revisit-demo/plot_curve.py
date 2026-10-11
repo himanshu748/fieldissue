@@ -47,7 +47,7 @@ def plot(source: Path, destination: Path):
     ax.set_title("FieldIssue synthetic revisit learning curve", loc="left", weight="bold")
     ax.grid(axis="y", alpha=0.25)
     ax.spines[["top", "right"]].set_visible(False)
-    ax.legend(loc="lower right", frameon=False)
+    ax.legend(loc="center left", bbox_to_anchor=(1.02, 0.5), frameon=False)
     fig.supxlabel(
         "95% Student t intervals across 5 training repeats. Invented labels, not real revisits.",
         fontsize=9,
