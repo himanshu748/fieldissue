@@ -19,7 +19,7 @@ export function TabPFNMeasuredCurve({ data }: { data: TabPFNLearningCurve }) {
     <section
       id="tabpfn-learning-curve"
       aria-labelledby="tabpfn-curve-title"
-      className="space-y-4 border border-ink bg-surface p-4 sm:p-6"
+      className="scroll-mt-24 space-y-4 border border-ink bg-surface p-4 sm:p-6"
     >
       <div className="flex flex-wrap gap-2">
         <Badge variant="outline">Measured learning curve</Badge>
