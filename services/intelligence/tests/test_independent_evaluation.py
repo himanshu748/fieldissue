@@ -79,3 +79,17 @@ def test_large_revisit_generator_preserves_old_files_and_probability_formula(tmp
     assert metadata["poolRows"] == 2000
     assert dataset_sha256(old) == before
     assert module.probability([10, 2, 30, 1, 0, 0, 1, 0]) == pytest.approx(0.2227001388)
+
+
+def test_checkpoint_retention_is_bounded_before_credit_expiry():
+    from datetime import UTC, datetime, timedelta
+
+    from training.run_independent import retention_seconds
+
+    assert retention_seconds(None) == 2592000
+    deadline = datetime.now(UTC) + timedelta(days=2)
+    assert 3600 < retention_seconds(deadline.isoformat()) < 2 * 86400
+    with pytest.raises(ValueError, match="time zone"):
+        retention_seconds("2026-11-07T00:00:00")
+    with pytest.raises(ValueError, match="passed"):
+        retention_seconds("2000-01-01T00:00:00Z")

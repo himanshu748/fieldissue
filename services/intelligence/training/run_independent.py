@@ -100,8 +100,21 @@ def preflight(output):
     return result
 
 
-def run(output: Path, old_checkpoint: str = ""):
+def retention_seconds(deadline: str | None):
+    if not deadline:
+        return 2592000
+    parsed = datetime.fromisoformat(deadline)
+    if parsed.tzinfo is None:
+        raise ValueError("Checkpoint deadline must include a time zone")
+    seconds = min(2592000, int((parsed - datetime.now(UTC)).total_seconds()) - 60)
+    if seconds < 3600:
+        raise ValueError("Checkpoint deadline is too close or already passed")
+    return seconds
+
+
+def run(output: Path, old_checkpoint: str = "", checkpoint_deadline: str | None = None):
     common.require_key()
+    retention_seconds(checkpoint_deadline)
     if (output / "run-started.json").exists():
         raise ValueError("This run already started. Review usage before authorizing any rerun.")
     frozen = verify_frozen()
@@ -169,7 +182,8 @@ def run(output: Path, old_checkpoint: str = ""):
                     )
                     print(f"lr={lr} epoch={epoch} step={len(logs)}", flush=True)
                 checkpoint = client.save_weights_for_sampler(
-                    f"fieldissue-v3-lr{lr}-e{epoch}", ttl_seconds=2592000
+                    f"fieldissue-v3-lr{lr}-e{epoch}",
+                    ttl_seconds=retention_seconds(checkpoint_deadline),
                 ).result()
                 predictor = service.create_sampling_client(model_path=checkpoint.path)
                 outputs = sample(predictor, validation, sdk)
@@ -180,7 +194,7 @@ def run(output: Path, old_checkpoint: str = ""):
                     "seed": 42,
                     "samplerPath": checkpoint.path,
                     "createdAt": datetime.now(UTC).isoformat(),
-                    "checkpointTtlSeconds": 2592000,
+                    "checkpointTtlSeconds": retention_seconds(checkpoint_deadline),
                     "validation": metric,
                     "validationOutputs": outputs,
                     "trainingMetrics": list(logs),
@@ -241,7 +255,7 @@ def run(output: Path, old_checkpoint: str = ""):
                 )
                 print("SECOND_SEED", epoch, len(second_logs), flush=True)
         second = client.save_weights_for_sampler(
-            "fieldissue-v3-seed1729", ttl_seconds=2592000
+            "fieldissue-v3-seed1729", ttl_seconds=retention_seconds(checkpoint_deadline)
         ).result()
         secondary = service.create_sampling_client(model_path=second.path)
         second_validation = sample(secondary, validation, sdk)
@@ -313,7 +327,8 @@ def run(output: Path, old_checkpoint: str = ""):
                 and selected["validation"]["severityAccuracy"] > previous_metric["severityAccuracy"]
             ),
             "checkpointExpiresAt": (
-                datetime.fromisoformat(selected["createdAt"]) + timedelta(days=30)
+                datetime.fromisoformat(selected["createdAt"])
+                + timedelta(seconds=selected["checkpointTtlSeconds"])
             ).isoformat(),
             "metrics": metrics,
             "comparisons": comparisons,
@@ -344,9 +359,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--old-checkpoint", default="")
+    parser.add_argument(
+        "--checkpoint-deadline", help="Expire before sponsor credits, with a one-minute margin"
+    )
     parser.add_argument("--preflight-only", action="store_true")
     args = parser.parse_args()
     if args.preflight_only:
         print(json.dumps(preflight(args.output), indent=2))
     else:
-        run(args.output, args.old_checkpoint)
+        run(args.output, args.old_checkpoint, args.checkpoint_deadline)
