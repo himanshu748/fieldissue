@@ -251,9 +251,9 @@ const app = createApp({
     {
       id: "entire",
       name: "Entire",
-      status: "documented",
+      status: "verified",
       detail:
-        "Actual Entire checkpoint with a reviewed nine-message transcript excerpt in docs/verification/entire-v2-curated-session.json. Full session remains private.",
+        "Public coding checkpoint 01M4MS0B5PNB39JGA84HZTC0GH with reviewed session and committed changes, verified signed out on 11 October 2026. Open it from the development record below. Full original transcripts remain private.",
     },
     {
       id: "tabpfn",
