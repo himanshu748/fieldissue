@@ -1,0 +1,159 @@
+{
+  "checkedAt": "2026-10-11T08:36:35.657Z",
+  "health": {
+    "status": 200,
+    "body": {
+      "status": "ok",
+      "service": "fieldissue-api"
+    }
+  },
+  "ready": {
+    "status": 200,
+    "body": {
+      "status": "ready"
+    }
+  },
+  "exampleCount": 234,
+  "publicSourceCount": 30,
+  "tabpfnCurveSizes": [
+    32,
+    64,
+    128,
+    256,
+    512,
+    1024
+  ],
+  "tabpfnUseful": false,
+  "servingCheckpoint": "tinker://cb2e8a82-058b-574a-a436-a14540bb1f3e:train:1/sampler_weights/fieldissue-v3-lr0.0001-e2",
+  "existingEvidenceUnchanged": true,
+  "anonymousCoordinates": {
+    "latitude": 26.94,
+    "longitude": 80.917
+  },
+  "integrations": {
+    "coreReady": true,
+    "integrations": [
+      {
+        "id": "render",
+        "name": "Render",
+        "status": "configured",
+        "detail": "Application hosting for the Node API and private Python intelligence service."
+      },
+      {
+        "id": "gemma",
+        "name": "Gemma",
+        "status": "configured",
+        "detail": "Core readiness checks model availability; saved observations carry actual inference provenance."
+      },
+      {
+        "id": "mastra",
+        "name": "Mastra",
+        "status": "configured",
+        "detail": "Validated evidence workflow orchestration."
+      },
+      {
+        "id": "serpapi",
+        "name": "SerpApi",
+        "status": "configured",
+        "detail": "Optional nearby place context; report creation survives provider failure."
+      },
+      {
+        "id": "sentry",
+        "name": "Sentry",
+        "status": "configured",
+        "detail": "Sanitized service errors and timing; no report photos or notes."
+      },
+      {
+        "id": "tinker",
+        "name": "Tinker",
+        "status": "configured",
+        "detail": "Live fine-tuned Qwen3 field-note interpretation. Synthetic training data; notes are user reports, not visual evidence. Checkpoint expires 2026-11-06T23:58:59.818Z."
+      },
+      {
+        "id": "elevenlabs",
+        "name": "ElevenLabs",
+        "status": "configured",
+        "detail": "Cached spoken issue briefings when quota and credentials are configured."
+      },
+      {
+        "id": "backboard",
+        "name": "Backboard",
+        "status": "configured",
+        "detail": "Consent-based Gemma 3 and Qwen 2.5 text interpretation comparison; results never resolve issues."
+      },
+      {
+        "id": "tiger",
+        "name": "Tiger Data",
+        "status": "configured",
+        "detail": "Secondary hybrid keyword and open-model vector search; writes use a durable retry queue."
+      },
+      {
+        "id": "github-actions",
+        "name": "GitHub Copilot category",
+        "status": "documented",
+        "detail": "Qualifying usage: GitHub Actions runs CI and a read-only demo health monitor. The Lab links the workflows and passing runs. No Copilot-authored code is claimed."
+      },
+      {
+        "id": "entire",
+        "name": "Entire",
+        "status": "verified",
+        "detail": "Public coding checkpoint 01M4MS0B5PNB39JGA84HZTC0GH with reviewed session and committed changes, verified signed out on 11 October 2026. Open it from the development record below. Full original transcripts remain private."
+      },
+      {
+        "id": "tabpfn",
+        "name": "TabPFN",
+        "status": "configured",
+        "detail": "Real TabPFN-3.5 inference in the synthetic scenario tester. 96 invented training rows; not calibrated for real revisit scheduling."
+      }
+    ]
+  },
+  "deployId": "dep-db5kj9o473hc73bgn2ng",
+  "servedCommit": "aefd36a4dcf5c27f3badfc8c575b2a153e3bfa97",
+  "mainCi": {
+    "runId": 38125089592,
+    "url": "https://github.com/himanshu748/fieldissue/actions/runs/38125089592",
+    "apiTests": 199,
+    "pythonTests": 93,
+    "browserTests": 16,
+    "liveMutationBrowserTestsSkipped": 1
+  },
+  "freshTinkerNoteCall": {
+    "checkedAt": "2026-10-11T08:34:42.339Z",
+    "scope": "One fresh hosted Tinker note interpretation on the existing FI-000007 original note. No new report, observation or comparison.",
+    "status": 200,
+    "requestLatencyMs": 6212,
+    "response": {
+      "result": {
+        "category": "ENVIRONMENT",
+        "object": "tree",
+        "condition": "major_obstruction",
+        "severity": "HIGH",
+        "evidence": [
+          "tree has been cut down"
+        ]
+      },
+      "model": "Qwen/Qwen3-8B",
+      "modelVersion": "tinker://cb2e8a82-058b-574a-a436-a14540bb1f3e:train:1/sampler_weights/fieldissue-v3-lr0.0001-e2",
+      "provider": "Tinker",
+      "promptVersion": "fieldissue-note-json-v3",
+      "inputModality": "text",
+      "trainingData": "synthetic",
+      "evidenceSource": "user_report",
+      "changesIssueStatus": false,
+      "latencyMs": 5895,
+      "createdAt": "2026-10-11T08:34:42.256Z",
+      "inputTokens": 339,
+      "outputTokens": 39,
+      "cached": false
+    }
+  },
+  "semanticFailure": "The original note only says Tree has been cut down. The model returned HIGH and major_obstruction without an explicit obstruction in the note. Valid schema and successful transport do not establish correct triage. Output was retained without changing issue status.",
+  "browser": {
+    "exampleCount": 234,
+    "tabpfnCurveRows": 6,
+    "consoleErrors": [],
+    "evidenceWalkthroughRendered": true,
+    "evidenceImagesLoaded": 5
+  },
+  "postDeployErrorLogEntries": 0
+}

@@ -1,6 +1,6 @@
 {
   "kind": "fieldissue-tinker-credit-accounting",
-  "checkedAt": "2026-10-11T08:06:56.641417+00:00",
+  "checkedAt": "2026-10-11T08:39:37.801095+00:00",
   "pricingSource": "https://tinker-docs.thinkingmachines.ai/tinker/models.json",
   "clientTokenAccounting": {
     "trainingInputTokens": 1384048,
@@ -11,7 +11,7 @@
   "fullRateTokenCostUpperEstimateUsd": 0.80888399,
   "providerCheckpointStorageBytes": 1292849568,
   "thirtyDayStorageUpperEstimateUsd": 0.12928495680000002,
-  "observedOperationAndStorageUpperEstimateUsd": 0.9382665818000001,
+  "observedOperationAndStorageUpperEstimateUsd": 0.9383560868000002,
   "providerUsage": {
     "matchingEvents": 0,
     "reportedGrossCostUsd": 0,
@@ -52,5 +52,13 @@
     "fullRateUpperEstimateUsd": 9.763500000000001e-05,
     "scope": "Local compiled production provider boundary, real Tinker API. Not a hosted demo call."
   },
-  "totalFreshProviderCalls": 1597
+  "totalFreshProviderCalls": 1598,
+  "additionalHostedNoteCall": {
+    "inputTokens": 339,
+    "outputTokens": 39,
+    "fullRateUpperEstimateUsd": 8.9505e-05,
+    "publicReport": "FI-000007",
+    "cached": false,
+    "createdAt": "2026-10-11T08:34:42.256Z"
+  }
 }
