@@ -35,6 +35,7 @@ export class IssueService {
     media: Media,
     key?: string,
     guestOwner?: string,
+    reserveNewUpload: () => Promise<void> = async () => {},
   ) {
     const hash = createHash("sha256")
       .update(JSON.stringify(guestOwner ? { input, guestOwner } : input))
@@ -51,6 +52,7 @@ export class IssueService {
       let replayed = issueId !== null;
       let revisitMetadata: Record<string, unknown> | undefined;
       if (!issueId) {
+        await reserveNewUpload();
         const result = await runCreateWorkflow(input, {
           analyze: async () => {
             await this.consume(1);
@@ -126,6 +128,7 @@ export class IssueService {
     input: ObservationInput,
     media: Media,
     key?: string,
+    reserveNewUpload: () => Promise<void> = async () => {},
   ) {
     const issue = await this.repository.get(id);
     const hash = createHash("sha256")
@@ -137,6 +140,7 @@ export class IssueService {
       ? await this.repository.findObservationRequest(issue.id, key, hash)
       : null;
     if (!observation) {
+      await reserveNewUpload();
       await this.consume(1);
       const analysis = validatedAnalysis(
         await this.intelligence.analyze(this.evidence(media, input.note)),
