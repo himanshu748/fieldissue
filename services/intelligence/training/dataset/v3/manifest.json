@@ -1,0 +1,82 @@
+{
+  "kind": "fieldissue-frozen-dataset-v3",
+  "generationMethod": "Assistant-authored domain facts combined with split-specific objects and writing frames. No external generation model was used.",
+  "limitations": "Template-generated synthetic notes have correlated wording. Lexical deduplication does not prove semantic independence. Note bootstrap intervals do not remove template correlation.",
+  "counts": {
+    "train": 408,
+    "validation": 66,
+    "test": 204
+  },
+  "distributions": {
+    "train": {
+      "language": {
+        "english": 136,
+        "hinglish": 136,
+        "hindi": 136
+      },
+      "severity": {
+        "LOW": 108,
+        "HIGH": 96,
+        "MEDIUM": 108,
+        "CRITICAL": 96
+      }
+    },
+    "validation": {
+      "language": {
+        "hindi": 22,
+        "english": 22,
+        "hinglish": 22
+      },
+      "severity": {
+        "HIGH": 16,
+        "CRITICAL": 14,
+        "MEDIUM": 18,
+        "LOW": 18
+      }
+    },
+    "test": {
+      "language": {
+        "english": 68,
+        "hinglish": 68,
+        "hindi": 68
+      },
+      "severity": {
+        "LOW": 54,
+        "CRITICAL": 48,
+        "MEDIUM": 54,
+        "HIGH": 48
+      }
+    }
+  },
+  "nearDuplicateThreshold": 0.6,
+  "dropped": [
+    {
+      "id": "v3-validation-safety-3-4-2",
+      "split": "validation",
+      "matchedId": "v3-train-safety-3-0-2",
+      "jaccard": 0.6206896551724138
+    },
+    {
+      "id": "v3-validation-lighting-3-4-1",
+      "split": "validation",
+      "matchedId": "v3-train-lighting-3-2-1",
+      "jaccard": 0.6179775280898876
+    }
+  ],
+  "sha256": {
+    "train": "129e2f1eaeab3d1d6467a66856e0c22cdd9dae1556da8b54ae27569884ba6324",
+    "validation": "4595471aa7cc89f873cad85a776fc49b940bb90e2e870811cee4c8e2cd4fe804",
+    "test": "63cdfe44d2170370894cd1fb7cca55123a3bcdbd7bd427bb08b42b988b620050",
+    "public-source": "666f3c5bde8f58d3e490d528cf1ebbcb49db93c1150b8257468402ecd18792e2"
+  },
+  "fewShotIds": [
+    "v3-train-cleanliness-0-0-0",
+    "v3-train-lighting-1-1-1",
+    "v3-train-accessibility-2-2-2",
+    "v3-train-safety-3-3-0",
+    "v3-train-infrastructure-1-0-2"
+  ],
+  "publicSourceRows": 30,
+  "rubricSha256": "0ee7fff0944f8d26b3520637b49043b28973d9ae2b8851d7264d313a6b41a355",
+  "publicSourceNearDuplicateDrops": []
+}

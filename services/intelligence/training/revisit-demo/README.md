@@ -9,3 +9,19 @@ The October 9 account has a free allowance of 5M daily / 20M monthly tokens and 
 Configure `TABPFN_API_KEY` and the returned `TABPFN_FITTED_MODEL_ID` only on the API server. The Model Lab sends eight numeric scenario values; no issue IDs, photos, notes or coordinates. Results always say synthetic, never change issue status and never rank real walks. The separate local real-history TabPFN adapter and human-review export remain available for future genuine data.
 
 [Held-out evaluation](../../../../docs/verification/tabpfn-synthetic-evaluation-2026-10-09.json) · [live API result](../../../../docs/verification/tabpfn-live-2026-10-09.json) · [official REST contract](https://docs.priorlabs.ai/api/rest-quickstart)
+
+## Larger fixed-test evaluation
+
+The [11 October learning curve](../../../../docs/verification/tabpfn-learning-curve-2026-10-11.md) uses `generate_v2.py`: 2,000 training-pool rows and a fixed 500-row test from the same invented noisy formula. `learning_curve.py` compares majority, standardized default L2 logistic regression, histogram boosting, TabPFN-3.5 with one estimator and oracle probabilities. Each size 32, 64, 128, 256, 512 and 1,024 has five nested training repeats. The protocol was committed before inference.
+
+TabPFN did not beat logistic regression on mean AUC at any of the three sizes at or below 128. The usefulness rule failed. All 30 runs, accuracy, AUC, Brier score, log loss and repeat intervals are published. This curve does not replace the live 96-row scenario fit or enable real recommendations.
+
+Install the locked evaluation dependencies, set `TABPFN_TOKEN` privately and run explicitly:
+
+```sh
+uv sync --frozen --extra evaluation
+PYTHONPATH=. uv run --frozen --extra evaluation python training/revisit-demo/learning_curve.py --output .local/tabpfn-curve
+uv run --frozen --extra evaluation python training/revisit-demo/plot_curve.py ../../docs/verification/tabpfn-learning-curve-2026-10-11.json .local/curve.svg
+```
+
+Completed points are reused only when data hashes, protocol hash and training indices match. Quote reservations occur before inference and persist after failures. The registered free-quota ceiling is 4.5M tokens; this run reserved 300,000. No API key or signed upload URL is published.

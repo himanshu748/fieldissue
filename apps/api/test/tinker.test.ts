@@ -95,3 +95,23 @@ it("rejects chat-template injection tokens before making any request", async () 
   ).rejects.toMatchObject({ code: "NOTE_SPECIAL_TOKENS" });
   expect(fetcher).not.toHaveBeenCalled();
 });
+
+it("uses the selected rubric prompt only when explicitly configured", async () => {
+  const fetcher = vi.fn(async () => reply());
+  const provider = new TinkerNoteProvider(
+    "key",
+    checkpoint,
+    future,
+    fetcher,
+    "fieldissue-note-json-v3",
+  );
+  const result = await provider.interpret("dustbin full hai");
+  const body = JSON.parse((fetcher.mock.calls[0] as any)[1].body);
+  expect(body.prompt).toContain("Urgent wording alone is insufficient");
+  expect(body.prompt).toContain("Respect negation and safe alternatives");
+  expect(body.max_tokens).toBe(384);
+  expect(body.seed).toBe(42);
+  expect(result.promptVersion).toBe("fieldissue-note-json-v3");
+  const previous = new TinkerNoteProvider("key", checkpoint, future, fetcher);
+  expect(previous.preflight("bin full")).not.toContain("Urgent wording alone");
+});

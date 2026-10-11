@@ -1,0 +1,27 @@
+{
+  "checkedAt": "2026-10-11T08:08:33.399Z",
+  "scope": "Local compiled production provider boundary, real Tinker API. Not a hosted demo call.",
+  "trainingFixtureId": "v3-train-environment-0-2-0",
+  "note": "A local maintenance note: stream bank has minor cosmetic disturbance; vegetation and normal access remain intact.",
+  "result": {
+    "category": "ENVIRONMENT",
+    "object": "stream_bank",
+    "condition": "minor_wear",
+    "severity": "LOW",
+    "evidence": [
+      "stream bank has minor cosmetic disturbance; vegetation and normal access remain intact"
+    ]
+  },
+  "model": "Qwen/Qwen3-8B",
+  "modelVersion": "tinker://cb2e8a82-058b-574a-a436-a14540bb1f3e:train:1/sampler_weights/fieldissue-v3-lr0.0001-e2",
+  "provider": "Tinker",
+  "promptVersion": "fieldissue-note-json-v3",
+  "inputModality": "text",
+  "trainingData": "synthetic",
+  "evidenceSource": "user_report",
+  "changesIssueStatus": false,
+  "latencyMs": 8123,
+  "createdAt": "2026-10-11T08:08:33.397Z",
+  "inputTokens": 353,
+  "outputTokens": 48
+}

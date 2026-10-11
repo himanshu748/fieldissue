@@ -212,7 +212,7 @@ export const api = {
       json: { observationId, models, consentToExternalProcessing: true },
     }),
   evaluations: (signal?: AbortSignal) =>
-    request<{ evaluations: Evaluation[]; tinkerExamples?: TinkerExamples }>("/v1/model-lab/evaluations", { signal }),
+    request<{ evaluations: Evaluation[]; tinkerExamples?: TinkerExamples; tabpfnLearningCurve?: import("./types").TabPFNLearningCurve }>("/v1/model-lab/evaluations", { signal }),
   integrations: (signal?: AbortSignal) =>
     request<{ integrations: IntegrationStatus[]; coreReady: boolean }>(
       "/v1/integrations/status",

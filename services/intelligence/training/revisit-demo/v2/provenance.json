@@ -1,0 +1,13 @@
+{
+  "seed": 20261011,
+  "rows": 2500,
+  "poolRows": 2000,
+  "testRows": 500,
+  "source": "invented-stochastic-formula",
+  "formula": "sigmoid(-2.5 + 0.07*days + 0.5*status + 0.45*previous_change_count + 0.1*severity)",
+  "labels": "Independent Bernoulli draws. Not real revisit outcomes.",
+  "sha256": {
+    "train_pool.csv": "1dfecc39241472d52079ba4b0c647a070870ba2c885b5c55d507db5dbef014bd",
+    "test.csv": "a054ca006d5326e64bbc3241289889fdc48c50b32b39210ecac7da2cc88a4387"
+  }
+}

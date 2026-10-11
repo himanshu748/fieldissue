@@ -5,9 +5,11 @@ import { categorySchema, severitySchema } from "@fieldissue/shared";
 import { AppError } from "./errors.js";
 import type { IssueRepository } from "./repository.js";
 import { trace } from "./telemetry.js";
-import { tinkerSystemPrompt } from "./tinker-prompt.js";
+import { tinkerSystemPrompt, tinkerSystemPromptV3 } from "./tinker-prompt.js";
 
 export const tinkerPromptVersion = "fieldissue-note-json-v2";
+export type TinkerPromptVersion =
+  "fieldissue-note-json-v2" | "fieldissue-note-json-v3";
 export const noteInterpretationSchema = z
   .object({
     category: categorySchema,
@@ -24,6 +26,7 @@ export class TinkerNoteProvider {
     readonly checkpoint: string,
     readonly expiresAt: string,
     private fetcher: typeof fetch = fetch,
+    readonly promptVersion: TinkerPromptVersion = tinkerPromptVersion,
   ) {}
   get available() {
     return (
@@ -53,7 +56,11 @@ export class TinkerNoteProvider {
         422,
         "Remove model control tokens from the note before interpreting it.",
       );
-    const prompt = `<|im_start|>system\n${tinkerSystemPrompt}<|im_end|>\n<|im_start|>user\n${`{"note": ${JSON.stringify(note)}}`}<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n`;
+    const instruction =
+      this.promptVersion === "fieldissue-note-json-v3"
+        ? tinkerSystemPromptV3
+        : tinkerSystemPrompt;
+    const prompt = `<|im_start|>system\n${instruction}<|im_end|>\n<|im_start|>user\n${`{"note": ${JSON.stringify(note)}}`}<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n`;
     if (Buffer.byteLength(prompt, "utf8") > 4096)
       throw new AppError(
         "NOTE_LENGTH",
@@ -79,7 +86,11 @@ export class TinkerNoteProvider {
         body: JSON.stringify({
           model: this.checkpoint,
           prompt,
-          max_tokens: 512,
+          max_tokens:
+            this.promptVersion === "fieldissue-note-json-v3" ? 384 : 512,
+          ...(this.promptVersion === "fieldissue-note-json-v3"
+            ? { seed: 42 }
+            : {}),
           temperature: 0,
           stop: ["<|im_end|>"],
         }),
@@ -113,7 +124,7 @@ export class TinkerNoteProvider {
         model: "Qwen/Qwen3-8B",
         modelVersion: this.checkpoint,
         provider: "Tinker",
-        promptVersion: tinkerPromptVersion,
+        promptVersion: this.promptVersion,
         inputModality: "text",
         trainingData: "synthetic",
         evidenceSource: "user_report",
@@ -159,7 +170,11 @@ export class TinkerNoteService {
         422,
         "Add a note when reporting to use note interpretation.",
       );
-    const key = [observationId, this.provider.checkpoint, tinkerPromptVersion];
+    const key = [
+      observationId,
+      this.provider.checkpoint,
+      this.provider.promptVersion,
+    ];
     const cached = (
       await pool.query(
         "SELECT status,result FROM model_comparisons WHERE observation_id=$1 AND model=$2 AND prompt_version=$3",

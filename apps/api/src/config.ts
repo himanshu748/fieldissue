@@ -61,6 +61,9 @@ export const configSchema = z
       .string()
       .regex(/^tinker:\/\/[^\s]+\/sampler_weights\/[^\s]+$/)
       .optional(),
+    TINKER_PROMPT_VERSION: z
+      .enum(["fieldissue-note-json-v2", "fieldissue-note-json-v3"])
+      .default("fieldissue-note-json-v2"),
     TINKER_CHECKPOINT_EXPIRES_AT: z.iso.datetime().optional(),
     BACKBOARD_API_KEY: z.string().optional(),
     TIGER_DATABASE_URL: z.string().url().optional(),

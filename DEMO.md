@@ -11,6 +11,8 @@ resolve it yourself.
 
 [Main CI run 38117561736](https://github.com/himanshu748/fieldissue/actions/runs/38117561736) passed on 11 October 2026 at commit `89801d3`: **195 API tests**, **79 Python tests** and **14 browser tests**, extracted from its logs. Docker and HTTP checks also passed. CI uses isolated provider fixtures; hosted checks are separate.
 
+The independent evaluation PR passed [CI run 38124482114](https://github.com/himanshu748/fieldissue/actions/runs/38124482114) at `026a550` with **199 API tests**, **93 Python tests** and **16 browser tests**. One live-mutation browser test was intentionally skipped. Counts were extracted from the logs; container, PostGIS and HTTP checks also passed. This proves the candidate branch, not a hosted release.
+
 ## Try it
 
 **Entire proof:** open [Model Lab's development record](https://fieldissue-demo.onrender.com/app/lab#entire-evidence), then its [public checkpoint](https://entire.io/gh/himanshu748/fieldissue/commit/e5c5ec14baafdc25c40b364c9678f1c181b1e264). Show ID `01M4MS0B5PNB39JGA84HZTC0GH`, expand the reviewed session response and open View changes to see `scripts/verify-entire-checkpoint.sh`. Both views were verified in signed-out Safari Private Browsing on 11 October. The shared record is a reviewed excerpt of actual coding work. [Capture and privacy verification](docs/verification/entire-public-checkpoint-2026-10-11.md).
@@ -51,7 +53,9 @@ and confidence is 0. The photo is stored but not interpreted. Set
 
 The model never resolves an issue itself. Ordinary status changes require report ownership. Optional accounts support private communities, assignments, saved walks and an inbox. Community resolution requires fresh compared evidence and two eligible member approvals; accounts are nicknames, not verified identities.
 
-The Lab includes real Tinker trained-note interpretation and a real TabPFN API scenario tester. TabPFN uses clearly labeled synthetic data and scored below the majority baseline; real-history revisit ranking is disabled. Backboard compares two real open models. Saved responses are identified as saved, not fresh inference.
+The Lab includes real Tinker trained-note interpretation and a real TabPFN API scenario tester. This PR adds 234 recorded Tinker test notes with language, source and severity-error filters. Show the five-shot comparison, an error and the 30-report public slice. Public labels are assistant rubric labels, not human ground truth. Show the category regression: 25/30 five-shot to 20/30 primary fine-tuned, alongside severity improving 15/30 to 23/30.
+
+The new synthetic TabPFN curve uses six training sizes, five repeats and a fixed 500-row test. Its predeclared usefulness rule failed because AUC stayed below logistic regression at 32, 64 and 128 rows. The old live scenario model is unchanged. Backboard compares two real open models. Saved responses are identified as saved. The new recorded views and candidate checkpoint await merge and deployment approval; the local compiled provider call has succeeded.
 
 Walks can be saved and loaded manually across signed-in sessions. Google Maps walking directions require consent to share coordinates; internal map lines are straight connections. The PWA stores offline photo captures with explicit consent and manual retry, but does not provide offline AI or maps. Calendar files and in-app reminders do not send email or push. Open311 downloads are exports, not government submissions.
 

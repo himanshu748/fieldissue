@@ -1,0 +1,56 @@
+{
+  "kind": "fieldissue-tinker-credit-accounting",
+  "checkedAt": "2026-10-11T08:06:56.641417+00:00",
+  "pricingSource": "https://tinker-docs.thinkingmachines.ai/tinker/models.json",
+  "clientTokenAccounting": {
+    "trainingInputTokens": 1384048,
+    "samplingInputTokens": 765946,
+    "samplingOutputTokens": 84239,
+    "generations": 1596
+  },
+  "fullRateTokenCostUpperEstimateUsd": 0.80888399,
+  "providerCheckpointStorageBytes": 1292849568,
+  "thirtyDayStorageUpperEstimateUsd": 0.12928495680000002,
+  "observedOperationAndStorageUpperEstimateUsd": 0.9382665818000001,
+  "providerUsage": {
+    "matchingEvents": 0,
+    "reportedGrossCostUsd": 0,
+    "unpricedEvents": 0,
+    "costDataThrough": null,
+    "sanitizedEvents": []
+  },
+  "preflight": {
+    "pricingSource": "https://tinker-docs.thinkingmachines.ai/tinker/models.json",
+    "pricingCheckedAt": "2026-10-11",
+    "ratesUsdPerMillionTokens": {
+      "train": 0.44,
+      "prefill": 0.195,
+      "output": 0.6
+    },
+    "counts": {
+      "train": 408,
+      "validation": 66,
+      "test": 204
+    },
+    "maximumTrainingTokens": 7520256,
+    "maximumSamplingGenerations": 1596,
+    "maximumOutputTokens": 384,
+    "maximumInputTokens": 4096,
+    "storageReserveUsd": 0.8,
+    "storageAssumption": "At most eight 1 GB checkpoints retained for 30 days at $0.10 per GB month.",
+    "maximumCreditSpendUsd": 5.751388159999999,
+    "creditCapUsd": 6,
+    "cashAuthorizedUsd": 0,
+    "cashSpentUsd": 0,
+    "billingStatus": "Preflight bound, not an invoice. Actual usage is read after the run."
+  },
+  "cashSpentUsd": 0,
+  "billingStatus": "Usage events lag real time. Client token accounting uses full uncached rates and is an upper estimate, not a reconciled invoice. Storage expires before sponsor credits.",
+  "additionalProviderBoundarySmoke": {
+    "inputTokens": 353,
+    "outputTokens": 48,
+    "fullRateUpperEstimateUsd": 9.763500000000001e-05,
+    "scope": "Local compiled production provider boundary, real Tinker API. Not a hosted demo call."
+  },
+  "totalFreshProviderCalls": 1597
+}

@@ -1,4 +1,25 @@
-# FieldIssue: real Tinker note → compact strict JSON demo
+# FieldIssue Tinker evaluation
+## Independent benchmark, 11 October 2026
+
+Read the frozen [rubric](SEVERITY_RUBRIC.md), [protocol](experiment_protocol.json) and [dataset source card](dataset/v3/SOURCE_CARD.md) first. The new split has 408 training notes, 66 validation notes, 204 synthetic test notes and 30 genuine Boston 311 English descriptions. Labels are assistant rubric labels assigned before inference. No test label, prompt or seed was selected from model results.
+
+Validation selected learning rate 0.0001, two epochs and rank 16. Primary seed 42 scored 178/204 severity against 159/204 fixed five-shot and 115/204 zero-shot. Seed 1729 scored 179/204 with two invalid outputs. Public primary severity was 23/30 against 15/30 five-shot but category accuracy fell from 25/30 to 20/30. Publish both. Template dependence limits field generalization.
+
+[Complete summary](../../../docs/verification/tinker-evaluation-2026-10-11.md), [every prediction](../../../docs/verification/tinker-evaluation-2026-10-11.json), [training selection](../../../docs/verification/tinker-training-2026-10-11.json) and [cost record](../../../docs/verification/tinker-cost-2026-10-11.json) preserve all runs. Candidate expiry is 6 November 2026 UTC. The observed token and storage upper estimate is $0.938267 in credits; billing events lag and are not reconciled. Cash is $0. The preflight bound was $5.751388, below the approved $10 threshold.
+
+Run modules from `services/intelligence` with `TINKER_API_KEY` present. Reproduction consumes credits. The runner refuses an existing started output directory; review usage before authorizing a rerun.
+
+```sh
+uv sync --frozen --extra dev --extra evaluation
+uv run --frozen --extra evaluation python -m training.run_independent --help
+uv run --frozen --extra evaluation python -m training.publish_independent /private/run ../../docs/verification
+```
+
+The generated production prompt exactly matches the evaluated v3 prompt. Configure `TINKER_PROMPT_VERSION=fieldissue-note-json-v3` and the selected `TINKER_MODEL_PATH` together after merge approval. A real API call through the compiled provider succeeded locally; hosted rollout is pending. The new Lab shows all 234 notes with language, source and severity-outcome filters. Its public category regression stays visible.
+
+The expanded [synthetic TabPFN experiment](revisit-demo/README.md) uses `TABPFN_TOKEN` and the free Prior Labs API. It reserved 300,000 prediction tokens for 30 fits. The small-data usefulness rule failed. Keep its synthetic labels and the old generator intact.
+
+## Earlier plumbing demonstration
 
 This runnable supervised fine-tuning/evaluation demonstration uses the actual Tinker SDK. A real credit-funded Qwen3-8B run completed on October 7, 2026: 36 training notes, one epoch, nine optimizer steps, and an 18-note held-out base-versus-checkpoint evaluation. The [training manifest](../../../docs/verification/tinker-training-2026-10-07.json), [raw evaluation](../../../docs/verification/tinker-evaluation-2026-10-07.json), and [cost evidence](../../../docs/verification/tinker-cost-2026-10-07.json) preserve the results. Both models passed strict JSON/schema validation on 18/18 notes; category accuracy stayed at 17/18, and severity accuracy changed from 14/18 to 16/18. This is a tiny synthetic plumbing demonstration, not real-world validation. Checkpoints have a one-hour TTL and are not permanent deployed models. Running with credentials uses Tinker's remote service and can incur training, sampling, and checkpoint-storage charges. Review [current models and pricing](https://tinker-docs.thinkingmachines.ai/tinker/models/models_and_pricing/) first.
 
