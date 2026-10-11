@@ -30,7 +30,7 @@ const statusTone: Record<string, string> = {
 function IntegrationRow({ item }: { item: IntegrationStatus }) {
   return (
     <li className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 border-b border-border py-3">
-      <span className="font-semibold">{item.name}</span>
+      <span className="font-semibold">{item.id === "entire" ? <a className="underline" href="#entire-evidence">{item.name}</a> : item.name}</span>
       <span className="flex items-center gap-2 font-mono text-xs uppercase">
         <span aria-hidden className={cn("size-2 rounded-full", statusTone[item.status.toLowerCase()] ?? "bg-observe")} />
         {label(item.status)}
@@ -180,7 +180,7 @@ function LabContent({ issueId }: { issueId?: string }) {
   }, []);
   const latestObservationId = latest.data?.observations.at(-1)?.id;
   useEffect(() => {
-    if (["#tinker-examples", "#backboard", "#github-actions"].includes(hash) && evaluations.data && integrations.data && !latest.loading)
+    if (["#tinker-examples", "#backboard", "#github-actions", "#entire-evidence"].includes(hash) && evaluations.data && integrations.data && !latest.loading)
       document.getElementById(hash.slice(1))?.scrollIntoView({ block: "start" });
   }, [hash, evaluations.data, integrations.data, latest.loading]);
   const byId = new Map((integrations.data?.integrations ?? []).map((i) => [i.id.toLowerCase(), i]));
@@ -270,14 +270,14 @@ function LabContent({ issueId }: { issueId?: string }) {
         <ul className="space-y-2">
           <li><a className="underline min-h-11 inline-flex items-center" href="https://dev.to/challenges/hacktoberfest-week1-2026-10-05" target="_blank" rel="noreferrer">Official category rules include GitHub Actions</a></li>
           <li><a className="underline min-h-11 inline-flex items-center" href="https://github.com/himanshu748/fieldissue/blob/main/.github/workflows/backend-ci.yml" target="_blank" rel="noreferrer">Inspect the CI workflow</a></li>
-          <li><a className="underline min-h-11 inline-flex items-center" href="https://github.com/himanshu748/fieldissue/actions/runs/38112115842" target="_blank" rel="noreferrer">Passing CI run from 11 October</a></li>
+          <li><a className="underline min-h-11 inline-flex items-center" href="https://github.com/himanshu748/fieldissue/actions/runs/38117561736" target="_blank" rel="noreferrer">Passing CI run from 11 October</a></li>
           <li><a className="underline min-h-11 inline-flex items-center" href="https://github.com/himanshu748/fieldissue/blob/main/.github/workflows/demo-monitor.yml" target="_blank" rel="noreferrer">Inspect the read-only demo monitor</a></li>
           <li><a className="underline min-h-11 inline-flex items-center" href="https://github.com/himanshu748/fieldissue/actions/runs/38104193861" target="_blank" rel="noreferrer">Passing monitor run from 11 October</a></li>
         </ul>
       </section>
 
       <section className="flex flex-col gap-3" aria-labelledby="entire-evidence">
-        <h2 id="entire-evidence" className="text-2xl font-bold uppercase">Entire development record</h2>
+        <h2 id="entire-evidence" className="scroll-mt-24 text-2xl font-bold uppercase">Entire development record</h2>
         <p className="max-w-2xl text-muted-foreground">Open the reviewed Codex checkpoint for the synchronization verifier. Its session and committed code changes are readable without an Entire account. This is an excerpt of actual coding work from 11 October; earlier tasks and private context remain local.</p>
         <p className="text-sm">Checkpoint ID: <code className="break-all font-mono">01M4MS0B5PNB39JGA84HZTC0GH</code></p>
         <a className="underline min-h-11 inline-flex items-center gap-2" href="https://entire.io/gh/himanshu748/fieldissue/commit/e5c5ec14baafdc25c40b364c9678f1c181b1e264" target="_blank" rel="noreferrer">Open the public Entire checkpoint <ArrowUpRightIcon aria-hidden className="size-4" /></a>
