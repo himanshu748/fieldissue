@@ -9,7 +9,7 @@ resolve it yourself.
 
 ## Verified build
 
-[Main CI run 38031644266](https://github.com/himanshu748/fieldissue/actions/runs/38031644266) passed on 10 October 2026 at commit `1769e2f`: **186 API tests** and **79 Python tests**, extracted from its test logs. Docker checks and mobile browser journeys also passed. CI uses isolated provider fixtures; hosted checks are separate.
+[Main CI run 38112115842](https://github.com/himanshu748/fieldissue/actions/runs/38112115842) passed on 11 October 2026 at commit `ebe627b`: **195 API tests**, **79 Python tests** and **14 browser tests**, extracted from its logs. Docker and HTTP checks also passed. CI uses isolated provider fixtures; hosted checks are separate.
 
 ## Try it
 
@@ -53,7 +53,7 @@ The Lab includes real Tinker trained-note interpretation and a real TabPFN API s
 
 Walks can be saved and loaded manually across signed-in sessions. Google Maps walking directions require consent to share coordinates; internal map lines are straight connections. The PWA stores offline photo captures with explicit consent and manual retry, but does not provide offline AI or maps. Calendar files and in-app reminders do not send email or push. Open311 downloads are exports, not government submissions.
 
-The dated [P2 acceptance ledger](docs/verification/p2-acceptance-2026-10-09.md) distinguishes local, hosted, provider and device checks. Physical Android camera/GPS and a real outdoor before/after visit still need independent verification.
+The dated [P2 acceptance ledger](docs/verification/p2-acceptance-2026-10-09.md) distinguishes local, hosted, provider and device checks. The [real Lucknow revisit record](docs/verification/real-revisit-2026-10-10.md) and [public evidence walkthrough](https://fieldissue-demo.onrender.com/app/issues/FI-000007/evidence) document the outdoor report and saved Unchanged comparison. The original photos have device locations. Both existing revisits used inherited coordinates, so they do not prove fresh GPS capture. Automated browser tests use synthetic fixtures and cannot establish physical phone behavior.
 
 ## ~2-minute video shot list
 
